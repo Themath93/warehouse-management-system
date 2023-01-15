@@ -1,0 +1,267 @@
+## 출고
+from datetime import datetime
+from xl_utils import clear_form, get_idx, get_out_info, get_row_list_to_string, row_nm_check
+import xlwings as xw
+import pandas as pd
+
+
+wb_cy = xw.Book.caller()
+# wb_cy = xw.Book('cytiva.xlsm')
+
+class ShipReady():
+    SHEET_NAMES =  ['Temp_DB', 'Shipment information', '인수증', 
+    '대리점송장', '대리점 출고대기', '로컬리스트', 'In-Transit part report', '기타리스트',
+     '출고리스트', 'Cytiva Inventory BIN']
+
+    STATUS = ['waiting_for_out', 'ship_is_ready', '_is_empty','local_out_row_input_required']
+
+    WS_DB = wb_cy.sheets[SHEET_NAMES[0]]
+    WS_SI = wb_cy.sheets[SHEET_NAMES[1]]
+    WS_POD = wb_cy.sheets[SHEET_NAMES[2]]
+    WS_BR = wb_cy.sheets[SHEET_NAMES[3]]
+    WS_LC = wb_cy.sheets[SHEET_NAMES[5]]
+    WS_SVMX = wb_cy.sheets[SHEET_NAMES[6]]
+    WS_OTHER = wb_cy.sheets[SHEET_NAMES[7]]
+
+    @classmethod
+    def ship_ready(self):
+        out_rows=get_row_list_to_string(row_nm_check(wb_cy)['selection_row_nm'])
+
+        # 출고행 번호에 값이 있을 경우
+        if self.WS_SI.range("C2").value == None:
+
+            self.WS_SI.range("C2").value = out_rows
+            
+            self.check_local_empty()
+        else :
+        # 출고행 번호에 값이 없을 경우
+
+            self.check_local_empty()
+    
+    @classmethod
+    def only_local(self):
+        """
+        SO출고시 Local품목만 따로 출고하는경우
+        """
+        self.WS_SI.range("C2").value = 'only_local'
+
+        self.check_local_empty()
+        if self.WS_SI.range("H4").value == self.STATUS[3] :
+            local_check(self.WS_SI,self.WS_LC)
+
+
+    @classmethod
+    def check_local_empty(self):
+        si_sht_list = self.WS_SI.range('C2:C6').value
+            
+        si_sht_list_name = self.WS_SI.range('B2:B6').value
+            
+        none_list = []
+        must_fill = []
+        for index, val in enumerate(si_sht_list):
+            if val == None:
+                none_list.append(index)
+                    
+            # 필수 입력분이 누락되었을 경우
+        if len(none_list) > 0 :
+            for val in none_list:
+                must_fill.append(si_sht_list_name[val])
+
+            self.WS_SI.range("H4").value = (', '.join(must_fill)) + "_is_empty"
+            self.WS_SI.range("H4").color = (255,0,0)
+            ## must_fill == [] 일 경우 출고를 시작 할 수 있게된다.
+
+
+        #로컬만 출고인경우 only_local
+        elif si_sht_list[0] == 'only_local' :
+            self.WS_SI.range("H4").value = self.STATUS[3]
+            self.WS_SI.range("H4").color = (255,255,0)
+            self.WS_LC.activate()
+
+
+            # Local출고 체크
+        else:
+            self.WS_SI.range("H4").value = self.STATUS[3]
+            self.WS_SI.range("H4").color = (255,255,0)
+            local_check(self.WS_SI,self.WS_LC)
+
+
+
+
+    @classmethod
+    def local_ready(self):
+
+        local_row_nums = get_row_list_to_string(row_nm_check(wb_cy)['selection_row_nm'])
+
+        confirm_local = wb_cy.app.api.InputBox("행 번호 : " + local_row_nums + " 출고가 맞습니까? 맞으면 1, 틀리면 0",
+                                        "Local Check",
+                                        "1 또는 0만 입력해주세요. 취소는 취소버튼을 눌러주세요.",
+                                        Type=1)
+
+
+        if confirm_local == 1 :
+            # local_only
+            if self.WS_LC.range("C2").value == None :
+                self.WS_LC.range("C2").value = local_row_nums
+                self.WS_LC.range("E4").color = (0,255,255)
+                self.WS_LC.range("E4").value = self.STATUS[1]
+                self.WS_SI.activate()
+                self.WS_SI.range("C7").value = local_row_nums
+                self.WS_SI.range("C2").value = 'only_local'
+                # self.check_local_empty()
+
+            else : 
+                print("로컬 출고 확인")
+                self.WS_LC.range("C2").value = local_row_nums
+                self.WS_LC.range("E4").color = (0,255,255)
+                self.WS_LC.range("E4").value = self.STATUS[1]
+                self.WS_SI.activate()
+                self.WS_SI.range("C7").value = local_row_nums
+                self.WS_SI.range("H4").color = (0,255,255)
+                self.WS_SI.range("H4").value = self.STATUS[1]
+
+        elif confirm_local == 0 :
+            self.WS_LC.range("C2").clear_contents()
+            self.WS_LC.range("E4").value = self.STATUS[3]
+            print("로컬 출고 행 번호가 아님")
+
+        elif confirm_local == False :
+            print("취소")
+    
+
+
+
+
+
+
+
+# ShipConform 기능
+class ShipConfirm():
+    """
+    모든 품목에 대하여 출고 확정 기능을 담당
+    """
+    SHEET_NAMES =  ['Temp_DB', 'Shipment information', '인수증', 
+    '대리점송장', '대리점 출고대기', '로컬리스트', 'In-Transit part report', '기타리스트',
+     '출고리스트', 'Cytiva Inventory BIN']
+
+    STATUS = ['waiting_for_out', 'ship_is_ready', '_is_empty','local_out_row_input_required']
+
+    WS_DB = wb_cy.sheets[SHEET_NAMES[0]]
+    WS_SI = wb_cy.sheets[SHEET_NAMES[1]]
+    WS_POD = wb_cy.sheets[SHEET_NAMES[2]]
+    WS_BR = wb_cy.sheets[SHEET_NAMES[3]]
+    WS_LC = wb_cy.sheets[SHEET_NAMES[5]]
+    WS_SVMX = wb_cy.sheets[SHEET_NAMES[6]]
+    WS_OTHER = wb_cy.sheets[SHEET_NAMES[7]]
+
+    # @classmethod
+    # def local_ship(self):
+    #     """
+    #     local만출고시 사용
+    #     """
+
+
+
+    @classmethod
+    def ship_confirm(self):
+        # SO 품목 출고 담당
+
+        # 선택한 시트 객체
+        sel_sht=wb_cy.selection.sheet
+        status_cel = sel_sht.range("AAA4").end('left')
+
+
+        ## ship_is_ready 상태에서만 ship_confirm기능 사용가능
+        if status_cel.value == self.STATUS[1] :
+
+            tmp_idx = str(self.WS_DB.range("C500000").end('up').row + 1)
+            tmp_list = get_out_info(sel_sht)
+
+            # si 시트 출고 시 local품목이 있을 경우
+            if sel_sht.name == self.SHEET_NAMES[2] \
+                    and tmp_list[-1] != 'no_local' :
+                    
+                tmp_list[-1] = 'lc_' + str(get_idx(self.WS_LC))
+                self.__creatd_tmp_db_row(sel_sht, status_cel, tmp_idx)
+                # 로컬도 같이 출고 했으니 로컬항목도 지울 것
+            # 로컬만 출고일 경우
+            # elif sel_sht.name == self.SHEET_NAMES[2] \
+            #         and sel_sht.range("C2") == 'only_local' :
+            #     tmp_list[-1] = 'lc_' + str(get_idx(self.WS_LC))
+            #     self.__creatd_tmp_db_row(sel_sht, status_cel, tmp_idx)
+                clear_form(self.WS_LC)
+            else :
+                self.__creatd_tmp_db_row(sel_sht, status_cel, tmp_idx)
+        else  : 
+            print("무응답")
+
+
+
+
+
+
+
+
+
+        
+
+    @classmethod
+    def __creatd_tmp_db_row(self, sel_sht, status_cel, tmp_idx):
+        self.WS_DB.range("C"+ tmp_idx).value = get_out_info(sel_sht)
+
+        # 성공적으로 tmep_db에 저장이 된상태라면 출고양식들을 지워줄 필요가있다.
+        sel_sht.range("C2:C7").clear_contents()
+        sel_sht.range("C4").value = '=TODAY()+1'
+        status_cel.color = None
+        status_cel.value = self.STATUS[0]
+
+
+
+        
+
+
+
+
+
+
+
+# utils for out_bound it self
+
+def local_check(WS_SI,WS_LC):
+
+    ans_local = wb_cy.app.api.InputBox("Local출고 품목이 있을 경우 1, 없을경우 0 을 입력해주세요.",
+                                    "Local Check",
+                                    "1 또는 0만 입력해주세요. 취소는 취소버튼을 눌러주세요.",
+                                    Type=1)
+
+    if ans_local == 1 :
+        print("로컬품목 있음")
+        WS_SI.range("H4").color = (255,255,0)
+        WS_SI.range("H4").value = 'local_out_row_input_required'
+        WS_SI.range("C7").value = "need_row_nums"
+        ##여기서 로컬페이지 actvate 
+        local_act_ob(WS_SI,WS_LC)
+        
+    elif ans_local == 0 :
+        print("로컬품목 없음")
+        WS_SI.range("C7").value = "no_local"
+        WS_SI.range("H4").color = (0,255,255)
+        WS_SI.range("H4").value = 'ship_is_ready'
+        
+    elif ans_local == False :
+        print("출고 취소")
+        WS_SI.range("C2:C7").clear_contents()
+        WS_SI.range("C4").value = "=TODAY()+1"
+        WS_SI.range("H4").color = (255,255,255)
+        WS_SI.range("H4").value = "waiting_for_out"
+        ## clear_form() 매서드호출 하여 초기화
+
+def local_act_ob(WS_SI,WS_LC) : 
+
+    WS_LC.range('C3').options(transpose=True).value = WS_SI.range("C3:C6").value
+    WS_LC.range('C7').options(transpose=True).value = WS_SI.range("C2").value
+    
+    WS_LC.activate()
+
+    WS_LC.range("E4").value = "local_out_row_input_required"
+    WS_LC.range("E4").color = (0,255,255)
