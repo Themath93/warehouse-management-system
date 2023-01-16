@@ -1,0 +1,5 @@
+*.xlsx
+
+*.xlsm
+
+*.ipynb_checkpoints
