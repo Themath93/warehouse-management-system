@@ -1,5 +1,6 @@
+# excel 파일들 add금지
 *.xlsx
-
 *.xlsm
 
+#주피터 노트북 conflict 요소들 add금지
 *.ipynb_checkpoints

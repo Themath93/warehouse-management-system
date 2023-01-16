@@ -159,6 +159,12 @@ def print_form(subject=None):
     wb_cy = xw.Book('cytiva.xlsm')
     wb_pf = xw.Book('print_form.xlsx')
     ws_svc = wb_pf.sheets['SVC']
+    bin_loc = wb_cy.sheets['Cytiva Inventory BIN']
+
+
+
+    subject = subject.replace('_prfm','')
+
     
     outlook = cli.Dispatch("Outlook.Application").GetNamespace("MAPI") # 아웃룩
     inbox = outlook.GetDefaultFolder(6) # 받은편지함
@@ -166,80 +172,91 @@ def print_form(subject=None):
     
     part_request = []
     for ms in inbox.Items:
-        if 'SVC' in ms.Subject:
+        if subject in ms.Subject:
             part_request.append(ms)
             
     
     if 'SVC' in part_request[0].Subject:
     
 
-        body_exam = part_request[0].Body
-        body = body_exam[:body_exam.rfind('}')+1]
-        body
-        json_body = json.loads(body)
+        __forming_datas(ws_svc, bin_loc, now, part_request)
 
-        json_body.keys()
+        ws_svc.range("A1:H43").api.PrintPreview()
 
-        form_data= json_body['data']
 
-        df_parts = pd.DataFrame(form_data['parts'])
+
+
+
+def __forming_datas(ws_svc, bin_loc, now, part_request):
+    body_exam = part_request[0].Body
+    body = body_exam[:body_exam.rfind('}')+1]
+    body
+    json_body = json.loads(body)
+
+    json_body.keys()
+
+    form_data= json_body['data']
+
+    df_parts = pd.DataFrame(form_data['parts'])
         ## BIN 컬럼채우기
-        bin_loc = wb_cy.sheets['Cytiva Inventory BIN']
-        bin_last_row = bin_loc.range('A100000').end('up').row
-        bin_last_col = bin_loc.range('AAA'+str(bin_last_row)).end('left').column
-        df_bin= pd.DataFrame(bin_loc.range((2,1),(bin_last_row,bin_last_col)).options(numbers=int).value)
-        dict_bin = dict(zip(df_bin[0].astype(str),df_bin[1]))
-        bin_list = []
-        for part_no in df_parts[df_parts.columns[0]]:
-            bin_list.append(dict_bin[part_no])
-        df_parts['BIN'] = bin_list
+        
+    bin_last_row = bin_loc.range('A100000').end('up').row
+    bin_last_col = bin_loc.range('AAA'+str(bin_last_row)).end('left').column
+    df_bin= pd.DataFrame(bin_loc.range((2,1),(bin_last_row,bin_last_col)).options(numbers=int).value)
+    dict_bin = dict(zip(df_bin[0].astype(str),df_bin[1]))
+    bin_list = []
+    for part_no in df_parts[df_parts.columns[0]]:
+        bin_list.append(dict_bin[part_no])
+    df_parts['BIN'] = bin_list
         ## BIN 컬럼채우기
 
         # Index
 
-        ws_svc.range('B21:H40').clear_contents()
+    ws_svc.range('B21:H40').clear_contents()
 
 
         # 요청출고의 인덱스번호로결정 1 로가정
-        ws_svc.range('E2').value = 1
+    ws_svc.range('E2').value = 1
         # Printed Day E3
-        ws_svc.range('E3').value = now
+    ws_svc.range('E3').value = now
         # Delievery Type E5
-        is_return = form_data['is_return']
-        if is_return == 0 :
-            is_return = None
-        else :
-            is_return = '왕복'
-        ws_svc.range('E5').value = is_return
-        ws_svc.range('E3').value = now
+    is_return = form_data['is_return']
+    if is_return == 0 :
+        is_return = None
+    else :
+        is_return = '왕복'
+    ws_svc.range('E5').value = is_return
+    ws_svc.range('E3').value = now
         # Recipient B6
-        ws_svc.range('B6').value = form_data['recipient']
+    ws_svc.range('B6').value = form_data['recipient']
         # Contact E6
-        ws_svc.range('E6').value = form_data['contact']
+    ws_svc.range('E6').value = form_data['contact']
         # Request day A10
-        ws_svc.range('A10').value  = form_data['req_day']
+    ws_svc.range('A10').value  = form_data['req_day']
         # request hour A11
-        ws_svc.range('A11').value  = form_data['req_time']
+    ws_svc.range('A11').value  = form_data['req_time']
         # Address D10
-        ws_svc.range('D10').value = form_data['address']
+    ws_svc.range('D10').value = form_data['address']
         # Deilevery Instructions A14
-        ws_svc.range('A14').value = form_data['del_instruction']
+    ws_svc.range('A14').value = form_data['del_instruction']
         # parts_info A20
-        ws_svc.range('A20').value = df_parts
+    ws_svc.range('A20').value = df_parts
         # Depart From B41
-        ws_svc.range('B41').value = '서울시 강서구 하늘길 247 3층 C구역'
+    ws_svc.range('B41').value = '서울시 강서구 하늘길 247 3층 C구역'
         # TEL B42
-        ws_svc.range('B42').value = '02-2660-3767'
+    ws_svc.range('B42').value = '02-2660-3767'
         # Phone B43
-        ws_svc.range('B43').value = '담당자 폰번호'
+    ws_svc.range('B43').value = '담당자 폰번호'
         # URGENT E41
-        is_urgent = form_data['is_urgent']
-        if is_urgent == 0 :
-            is_urgent = None       
-        else :
-            is_urgent = '긴급' 
-        ws_svc.range('E41').value = is_urgent
+    is_urgent = form_data['is_urgent']
+    if is_urgent == 0 :
+        is_urgent = None       
+    else :
+        is_urgent = '긴급' 
+    ws_svc.range('E41').value = is_urgent
         
+
+
             
         
         

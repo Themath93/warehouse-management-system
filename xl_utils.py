@@ -207,16 +207,43 @@ def sht_protect(mode=True):
     """
     True 이면 시트보호모드, False 이면 시트보호해제
     """
-    wb = wx.Book.caller()
-    if mode == True:
-        wb_cy.selection.sheet.api.Protect(Password='themath93', DrawingObjects=False, Contents=True, Scenarios=True,
-        UserInterfaceOnly=True, AllowFormattingCells=True, AllowFormattingColumns=True,
-        AllowFormattingRows=True, AllowInsertingColumns=True, AllowInsertingRows=True,
-        AllowInsertingHyperlinks=True, AllowDeletingColumns=True, AllowDeletingRows=True,
-        AllowSorting=True, AllowFiltering=True, AllowUsingPivotTables=True)
-    elif mode == False:
-        wb_cy.selection.sheet.api.Unprotect(Password='themath93')
+    wb = xw.Book.caller()
+    act_sht=wb_cy.selection.sheet
+    status_col = act_sht.range("XFD4").end('left').column
+    status_cel = act_sht.range(4,status_col)
+    password = 'themath93'
 
+    if mode == True:
+
+        if status_cel.value != 'edit_mode' :
+            wb_cy.save()
+            act_sht.api.Unprotect(Password = password)
+
+            # status창 변경
+            status_cel.value = 'edit_mode'
+
+        else : 
+            clear_form()
+            protect_sht(act_sht,password)
+
+            # status창 변경
+
+
+
+    elif mode == False:
+        wb_cy.save()
+        act_sht.api.Unprotect(Password='themath93')
+
+        # status창 변경
+        status_cel.value = 'edit_mode'
+
+def protect_sht(act_sht,password):
+    act_sht.api.Protect(Password=password, DrawingObjects=True, Contents=True, Scenarios=True,
+            UserInterfaceOnly=True, AllowFormattingCells=True, AllowFormattingColumns=True,
+            AllowFormattingRows=True, AllowInsertingColumns=True, AllowInsertingRows=True,
+            AllowInsertingHyperlinks=True, AllowDeletingColumns=True, AllowDeletingRows=True,
+            AllowSorting=True, AllowFiltering=True, AllowUsingPivotTables=True)
+    
 
 
 

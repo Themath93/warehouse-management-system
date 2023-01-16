@@ -13,7 +13,13 @@ class ShipReady():
     '대리점송장', '대리점 출고대기', '로컬리스트', 'In-Transit part report', '기타리스트',
      '출고리스트', 'Cytiva Inventory BIN']
 
-    STATUS = ['waiting_for_out', 'ship_is_ready', '_is_empty','local_out_row_input_required']
+    STATUS = ['waiting_for_out', 'ship_is_ready', '_is_empty','local_out_row_input_required', 'edit_mode']
+
+    ACT_SEL = wb_cy.selection.sheet
+
+    STATUS_COL = ACT_SEL.range('XFD4').end('left').column
+
+    STATUS_CELL = ACT_SEL.range(4,STATUS_COL)
 
     WS_DB = wb_cy.sheets[SHEET_NAMES[0]]
     WS_SI = wb_cy.sheets[SHEET_NAMES[1]]
@@ -25,30 +31,45 @@ class ShipReady():
 
     @classmethod
     def ship_ready(self):
-        out_rows=get_row_list_to_string(row_nm_check(wb_cy)['selection_row_nm'])
+        
+        #edit_mode인 경우에는 출고 자체금지!
+        if self.STATUS_CELL.value != self.STATUS[4] :
 
-        # 출고행 번호에 값이 있을 경우
-        if self.WS_SI.range("C2").value == None:
+            out_rows=get_row_list_to_string(row_nm_check(wb_cy)['selection_row_nm'])
 
-            self.WS_SI.range("C2").value = out_rows
-            
-            self.check_local_empty()
+            # 출고행 번호에 값이 있을 경우
+            if self.WS_SI.range("C2").value == None:
+
+                self.WS_SI.range("C2").value = out_rows
+                
+                self.check_local_empty()
+            else :
+            # 출고행 번호에 값이 없을 경우
+
+                self.check_local_empty()
         else :
-        # 출고행 번호에 값이 없을 경우
-
-            self.check_local_empty()
+            wb_cy.app.alert(self.STATUS_CELL.value+"에서는 출고기능 사용이 불가합니다.",'안내')
     
     @classmethod
     def only_local(self):
         """
         SO출고시 Local품목만 따로 출고하는경우
         """
-        self.WS_SI.range("C2").value = 'only_local'
 
-        self.check_local_empty()
-        if self.WS_SI.range("H4").value == self.STATUS[3] :
-            local_check(self.WS_SI,self.WS_LC)
+        
 
+        #edit_mode인 경우에는 출고 자체금지!
+        if self.STATUS_CELL.value != self.STATUS[4] :
+            
+            self.WS_SI.range("C2").value = 'only_local'
+           
+            self.check_local_empty()
+            if self.WS_SI.range("H4").value == self.STATUS[3] :
+                
+                local_check(self.WS_SI,self.WS_LC)
+        
+        else : 
+            wb_cy.app.alert(self.STATUS_CELL.value+"에서는 출고기능 사용이 불가합니다.",'안내')
 
     @classmethod
     def check_local_empty(self):
@@ -144,7 +165,7 @@ class ShipConfirm():
     '대리점송장', '대리점 출고대기', '로컬리스트', 'In-Transit part report', '기타리스트',
      '출고리스트', 'Cytiva Inventory BIN']
 
-    STATUS = ['waiting_for_out', 'ship_is_ready', '_is_empty','local_out_row_input_required']
+    STATUS = ['waiting_for_out', 'ship_is_ready', '_is_empty','local_out_row_input_required', 'edit_mode']
 
     WS_DB = wb_cy.sheets[SHEET_NAMES[0]]
     WS_SI = wb_cy.sheets[SHEET_NAMES[1]]
