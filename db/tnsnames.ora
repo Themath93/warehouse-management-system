@@ -1,0 +1,12 @@
+fulfill_high = (description= (retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1522)(host=adb.ap-seoul-1.oraclecloud.com))(connect_data=(service_name=g49a201087ad489_fulfill_high.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))
+
+fulfill_low = (description= (retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1522)(host=adb.ap-seoul-1.oraclecloud.com))(connect_data=(service_name=g49a201087ad489_fulfill_low.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))
+
+fulfill_medium = (description= (retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1522)(host=adb.ap-seoul-1.oraclecloud.com))(connect_data=(service_name=g49a201087ad489_fulfill_medium.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))
+
+fulfill_tp = (description= (retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1522)(host=adb.ap-seoul-1.oraclecloud.com))(connect_data=(service_name=g49a201087ad489_fulfill_tp.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))
+
+fulfill_tpurgent = (description= (retry_count=20)(retry_delay=3)(address=(protocol=tcps)(port=1522)(host=adb.ap-seoul-1.oraclecloud.com))(connect_data=(service_name=g49a201087ad489_fulfill_tpurgent.adb.oraclecloud.com))(security=(ssl_server_dn_match=yes)))
+
+
+
