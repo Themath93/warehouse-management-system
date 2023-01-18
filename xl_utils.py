@@ -151,7 +151,7 @@ def get_out_table(sheet_name,index_row_number=9):
         
         if i == None:
             continue
-        elif '_index' in i :
+        elif '_INDEX' in i :
             col_num = idx
     
     df_so = pd.DataFrame()

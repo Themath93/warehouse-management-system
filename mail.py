@@ -153,11 +153,17 @@ class Email():
 
 
 # 통합제어에서 프린트 클릭하면 폼채워서 프린트하기
-def print_form(subject=None):
+def print_form(subject=None,print_form_dir = "C:\\Users\\lms46\\Desktop\\fulfill\\print_form.xlsx"):
     """
+    메일제목, print_form.xlsx 절대경로 
     """
     wb_cy = xw.Book('cytiva.xlsm')
-    wb_pf = xw.Book('print_form.xlsx')
+
+    ## print_form이 켜져있지 않을 경우
+    try :
+        wb_pf = xw.Book('print_form.xlsx')
+    except:
+        wb_pf = xw.Book(print_form_dir)
     ws_svc = wb_pf.sheets['SVC']
     bin_loc = wb_cy.sheets['Cytiva Inventory BIN']
 
