@@ -258,3 +258,10 @@ def get_empty_row(sheet=wb_cy.selection.sheet,col=1):
     elif type(col) == str :
         row_start_nm = sel_sht.range(col+str(1048576)).end('up').row + 1 
     return row_start_nm
+
+
+
+
+
+
+    

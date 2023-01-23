@@ -1,9 +1,14 @@
 from datetime import datetime
+from datajob.dw.mail_detail import MailDetail
+from datajob.dw.mail_status import MailStatus
 from xl_utils import get_empty_row
+
 import xlwings as xw
 import pandas as pd
 import win32com.client as cli
 import json
+
+
 
 
 wb_cy = xw.Book.caller()
@@ -15,6 +20,10 @@ class Email():
      '출고리스트', 'Cytiva Inventory BIN','통합제어']
 
     STATUS = ['waiting_for_out', 'ship_is_ready', '_is_empty','local_out_row_input_required']
+
+    ML_STATUS= ['REQUESTED','PROCESSING', 'SHIPPED']
+
+    ML_FOLDERS = ['inbox','1_Requests', '2_Processing', '3_ShipConfirmed']
 
     SORT_REQUEST = ['SVC']
 
@@ -43,6 +52,13 @@ class Email():
             if service_request in ms.Subject:
 
                 part_request.append(ms)
+
+        # mail_detail 테이블에 인서트
+        MailDetail.put_data(self)
+        # mail_stauts 테이블에 인서트
+        MailStatus.put_data(self,self.ML_STATUS[0],self.ML_FOLDERS[1])
+
+
         # 박스생성하여 메일의 서브젝트 이름 설정하기기
         for idx, ms in enumerate(part_request) :
             cel_left = self.WS_MAIN.range('J'+str(get_empty_row(self.WS_MAIN,'J'))).left
@@ -67,18 +83,19 @@ class Email():
             self.WS_MAIN.shapes[-1].api.TextFrame.VerticalAlignment = 2
             
             ms_body = (ms.Body)
-            req_type = ms.Subject.split('_')[0]
+            split_list_sub =  ms.Subject.split('_')
+            req_type = split_list_sub[0]
             body = ms_body[:ms_body.rfind('}')+1]
             json_body = json.loads(body)
             dict_data = json_body['data']
 
             # 메일 내용 채우기
             # index는 1부터 시작
-            self.WS_MAIN.range('J'+str(get_empty_row(self.WS_MAIN,'J'))).value = idx + 1
+            self.WS_MAIN.range('J'+str(get_empty_row(self.WS_MAIN,'J'))).value = split_list_sub[2]
             # print_form용 번호도 추가
-            self.WS_MAIN.range('R'+str(get_empty_row(self.WS_MAIN,'R'))).value = idx + 1
+            self.WS_MAIN.range('R'+str(get_empty_row(self.WS_MAIN,'R'))).value = idx +1
             # 요청타입 K
-            self.WS_MAIN.range('K'+str(get_empty_row(self.WS_MAIN,'K'))).value = req_type = ms.Subject.split('_')[0]
+            self.WS_MAIN.range('K'+str(get_empty_row(self.WS_MAIN,'K'))).value = req_type
             # 출고요청일 L
             self.WS_MAIN.range('L'+str(get_empty_row(self.WS_MAIN,'L'))).value = json_body['meta']['std_day']
             # 배송요청일 M
@@ -88,14 +105,19 @@ class Email():
             # 긴급여부 O
             self.WS_MAIN.range('O'+str(get_empty_row(self.WS_MAIN,'O'))).value = dict_data['is_urgent']
 
+        
+
             # 출고까지남은시간 P
             left_time = self.WS_MAIN.range('M'+str(get_empty_row(self.WS_MAIN,'M')-1)).value - datetime.today()
             # 시간
             left_hour = round(left_time.total_seconds()/60 //60)
             # 분
             left_min = round(left_time.total_seconds()/60 %60)
-
             self.WS_MAIN.range('P'+str(get_empty_row(self.WS_MAIN,'P'))).value = str(left_hour) + '시간 ' + str(left_min)+'분 남음'
+           
+            # 해당 배송건 현재상태 Q
+            self.WS_MAIN.range('Q'+str(get_empty_row(self.WS_MAIN,'Q'))).value = self.ML_STATUS[0]
+       
         # 시간계산
 
 
@@ -112,6 +134,10 @@ class Email():
                 shp.api.OnAction = 'connect_email'
             elif '_prfm' in shp.name :
                 shp.api.OnAction = 'print_form'
+
+        
+        # move_mail로 실제메일 이동
+        move_mail('inbox','1_Requests')
 
 
     @classmethod
@@ -263,6 +289,56 @@ def __forming_datas(ws_svc, bin_loc, now, part_request):
         
 
 
-            
-        
-        
+
+
+
+
+
+
+# 메일 폴더이동 모듈 만들예정
+def move_mail(from_fd,to_fd,req_type="SVC"):
+
+    outlook = cli.Dispatch("Outlook.Application").GetNamespace("MAPI") # 아웃룩
+    inbox = outlook.GetDefaultFolder(6) # 받은편지함
+    request_folder = outlook.GetDefaultFolder(6).Parent.Folders('1_Requests') # 1번폴더
+    process_folder = outlook.GetDefaultFolder(6).Parent.Folders('2_Processing') # 2번폴더
+    shipped_folder = outlook.GetDefaultFolder(6).Parent.Folders('3_ShipConfirmed') # 3번폴더
+
+    
+    ml_folders = ['inbox','1_Requests', '2_Processing', '3_ShipConfirmed']
+
+    fd_dict = {
+
+        ml_folders[0]:inbox, ml_folders[1]:request_folder, ml_folders[2]:process_folder,ml_folders[3]:shipped_folder
+    }
+
+
+    from_fd = fd_dict[from_fd]
+    to_fd = fd_dict[to_fd]
+
+    part_request = []
+    for ms in from_fd.Items:
+        if req_type in ms.Subject:
+            part_request.append(ms)
+    
+    # from_folder내용이 없을 경우
+    if len(part_request) == 0:
+        return None
+    else :
+        for ms in part_request:
+            if req_type in ms.Subject:
+                ms.Move(to_fd)
+
+
+
+
+   
+   
+   
+   
+   
+   
+   
+ 
+
+
