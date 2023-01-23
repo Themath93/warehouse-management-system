@@ -154,19 +154,38 @@ class Email():
 
     @classmethod
     def display_mail(self,shape_name=None):
-
-        ms_list = self.get_email_obj()
+        
+        ms_list = self.get_current_state(shape_name)
 
         for ms in ms_list:
             if shape_name in ms.Subject:
                 ms.Display()
 
-    def get_email_obj():
+    @classmethod
+    def get_current_state(self, shape_name):
+        idx = int(shape_name.split('_')[2])
+        emp_row_nm = get_empty_row(col='J') ## J = 10, ML_INDEX 컬럼
+        idx_list = self.WS_MAIN.range("J12:J"+str(emp_row_nm+1)).options(numbers=int).value
+        row_nm = idx_list.count(idx)
+        status_cel = self.WS_MAIN.range(11 + row_nm,17).value ## Q=17, STATUS 컬럼 , 11 ML_INDEX의 row 번호
+        ml_dict =dict(zip(self.ML_STATUS,self.ML_FOLDERS[1:]))
+        fd_bin = ml_dict[status_cel]
+        ms_list = self.get_email_obj(fd_bin)
+        return ms_list
+
+    @classmethod
+    def get_email_obj(self, folder_name = 'inbox'):
 
         outlook = cli.Dispatch("Outlook.Application").GetNamespace("MAPI") # 아웃룩
-        inbox = outlook.GetDefaultFolder(6) # 받은편지함
-        msg = inbox.Items #메세지 정보
 
+        if folder_name == 'inbox':
+
+            argu_folder = outlook.GetDefaultFolder(6) # 받은편지함
+        else:
+            argu_folder = outlook.GetDefaultFolder(6).Parent.Folders(folder_name) # 1번폴더
+
+
+        msg = argu_folder.Items #메세지 정보
         part_request = []
         service_request = 'SVC'
         for ms in msg:
@@ -179,11 +198,16 @@ class Email():
 
 
 # 통합제어에서 프린트 클릭하면 폼채워서 프린트하기
-def print_form(subject=None,print_form_dir = "C:\\Users\\lms46\\Desktop\\fulfill\\print_form.xlsx"):
+def print_form(shape_name=None,print_form_dir = "C:\\Users\\lms46\\Desktop\\fulfill\\print_form.xlsx"):
     """
     메일제목, print_form.xlsx 절대경로 
     """
     wb_cy = xw.Book('cytiva.xlsm')
+    ws_main = wb_cy.sheets['통합제어']
+
+    ml_status = ['REQUESTED','PROCESSING', 'SHIPPED']
+
+    ml_folders = ['inbox','1_Requests', '2_Processing', '3_ShipConfirmed']
 
     ## print_form이 켜져있지 않을 경우
     try :
@@ -192,26 +216,34 @@ def print_form(subject=None,print_form_dir = "C:\\Users\\lms46\\Desktop\\fulfill
         wb_pf = xw.Book(print_form_dir)
     ws_svc = wb_pf.sheets['SVC']
     bin_loc = wb_cy.sheets['Cytiva Inventory BIN']
-
-
-
-    subject = subject.replace('_prfm','')
-
     
-    outlook = cli.Dispatch("Outlook.Application").GetNamespace("MAPI") # 아웃룩
-    inbox = outlook.GetDefaultFolder(6) # 받은편지함
+    shape_name = shape_name.replace('_prfm','')
+
+    idx = int(shape_name.split('_')[2])
+    emp_row_nm = get_empty_row(col='J') ## J = 10, ML_INDEX 컬럼
+    idx_list = ws_main.range("J12:J"+str(emp_row_nm+1)).options(numbers=int).value
+    row_nm = idx_list.count(idx)
+    status_cel = ws_main.range(11 + row_nm,17).value ## Q=17, STATUS 컬럼 , 11 ML_INDEX의 row 번호
+    ml_dict =dict(zip(ml_status,ml_folders[1:]))
+    fd_bin = ml_dict[status_cel]
+    ms_list = Email.get_email_obj(fd_bin)
+
+   
+    # outlook = cli.Dispatch("Outlook.Application").GetNamespace("MAPI") # 아웃룩
+    # inbox = outlook.GetDefaultFolder(6) # 받은편지함
+
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
     part_request = []
-    for ms in inbox.Items:
-        if subject in ms.Subject:
+    for ms in ms_list:
+        if shape_name in ms.Subject:
             part_request.append(ms)
             
     
     if 'SVC' in part_request[0].Subject:
     
 
-        __forming_datas(ws_svc, bin_loc, now, part_request)
+        __forming_datas(ws_svc, bin_loc, now, part_request,shape_name)
 
         ws_svc.range("A1:H43").api.PrintPreview()
 
@@ -219,7 +251,7 @@ def print_form(subject=None,print_form_dir = "C:\\Users\\lms46\\Desktop\\fulfill
 
 
 
-def __forming_datas(ws_svc, bin_loc, now, part_request):
+def __forming_datas(ws_svc, bin_loc, now, part_request,shape_name=None):
     body_exam = part_request[0].Body
     body = body_exam[:body_exam.rfind('}')+1]
     body
@@ -248,7 +280,7 @@ def __forming_datas(ws_svc, bin_loc, now, part_request):
 
 
         # 요청출고의 인덱스번호로결정 1 로가정
-    ws_svc.range('E2').value = 1
+    ws_svc.range('E2').value = shape_name
         # Printed Day E3
     ws_svc.range('E3').value = now
         # Delievery Type E5
@@ -295,9 +327,11 @@ def __forming_datas(ws_svc, bin_loc, now, part_request):
 
 
 
-# 메일 폴더이동 모듈 만들예정
+# 메일 폴더간 이동 모듈 
 def move_mail(from_fd,to_fd,req_type="SVC"):
-
+    """
+    메일 폴더간 이동 모듈///
+    """
     outlook = cli.Dispatch("Outlook.Application").GetNamespace("MAPI") # 아웃룩
     inbox = outlook.GetDefaultFolder(6) # 받은편지함
     request_folder = outlook.GetDefaultFolder(6).Parent.Folders('1_Requests') # 1번폴더
