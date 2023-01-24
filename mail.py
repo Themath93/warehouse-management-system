@@ -1,4 +1,5 @@
 from datetime import datetime
+from oracle_connect import DataWarehouse
 from datajob.dw.mail_detail import MailDetail
 from datajob.dw.mail_status import MailStatus
 from xl_utils import get_empty_row
@@ -155,23 +156,11 @@ class Email():
     @classmethod
     def display_mail(self,shape_name=None):
         
-        ms_list = self.get_current_state(shape_name)
-
+        folder_bin = get_mail_status(shape_name)[4][0]
+        ms_list = self.get_email_obj(folder_bin)
         for ms in ms_list:
             if shape_name in ms.Subject:
                 ms.Display()
-
-    @classmethod
-    def get_current_state(self, shape_name):
-        idx = int(shape_name.split('_')[2])
-        emp_row_nm = get_empty_row(col='J') ## J = 10, ML_INDEX 컬럼
-        idx_list = self.WS_MAIN.range("J12:J"+str(emp_row_nm+1)).options(numbers=int).value
-        row_nm = idx_list.count(idx)
-        status_cel = self.WS_MAIN.range(11 + row_nm,17).value ## Q=17, STATUS 컬럼 , 11 ML_INDEX의 row 번호
-        ml_dict =dict(zip(self.ML_STATUS,self.ML_FOLDERS[1:]))
-        fd_bin = ml_dict[status_cel]
-        ms_list = self.get_email_obj(fd_bin)
-        return ms_list
 
     @classmethod
     def get_email_obj(self, folder_name = 'inbox'):
@@ -203,11 +192,10 @@ def print_form(shape_name=None,print_form_dir = "C:\\Users\\lms46\\Desktop\\fulf
     메일제목, print_form.xlsx 절대경로 
     """
     wb_cy = xw.Book('cytiva.xlsm')
-    ws_main = wb_cy.sheets['통합제어']
 
-    ml_status = ['REQUESTED','PROCESSING', 'SHIPPED']
-
-    ml_folders = ['inbox','1_Requests', '2_Processing', '3_ShipConfirmed']
+    # ws_main = wb_cy.sheets['통합제어']
+    # ml_status = ['REQUESTED','PROCESSING', 'SHIPPED']
+    # ml_folders = ['inbox','1_Requests', '2_Processing', '3_ShipConfirmed']
 
     ## print_form이 켜져있지 않을 경우
     try :
@@ -218,19 +206,9 @@ def print_form(shape_name=None,print_form_dir = "C:\\Users\\lms46\\Desktop\\fulf
     bin_loc = wb_cy.sheets['Cytiva Inventory BIN']
     
     shape_name = shape_name.replace('_prfm','')
-
-    idx = int(shape_name.split('_')[2])
-    emp_row_nm = get_empty_row(col='J') ## J = 10, ML_INDEX 컬럼
-    idx_list = ws_main.range("J12:J"+str(emp_row_nm+1)).options(numbers=int).value
-    row_nm = idx_list.count(idx)
-    status_cel = ws_main.range(11 + row_nm,17).value ## Q=17, STATUS 컬럼 , 11 ML_INDEX의 row 번호
-    ml_dict =dict(zip(ml_status,ml_folders[1:]))
-    fd_bin = ml_dict[status_cel]
-    ms_list = Email.get_email_obj(fd_bin)
-
-   
-    # outlook = cli.Dispatch("Outlook.Application").GetNamespace("MAPI") # 아웃룩
-    # inbox = outlook.GetDefaultFolder(6) # 받은편지함
+    
+    folder_bin = get_mail_status(shape_name)[4][0]
+    ms_list = Email.get_email_obj(folder_bin)
 
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     
@@ -364,15 +342,17 @@ def move_mail(from_fd,to_fd,req_type="SVC"):
                 ms.Move(to_fd)
 
 
-
-
-   
-   
-   
-   
-   
-   
-   
- 
-
-
+# 메일제목을 매개변수로 받아 현재 상태를 pd.Dataframe형태로 반환 한다.
+# 현재는 한 개의 메일만 받을 수 있음
+def get_mail_status(ml_sub):
+    """
+    메일제목을 argument로 받으면 현재상태의 해당 메일의 현재 ML_BIN, STATUS를 반환 
+    """
+    ml_sub = ml_sub.replace('_prfm','')
+    cur = DataWarehouse()
+    query = 'select * from MAIL_STATUS where ML_SUB = (:name1)'
+    db_obj = cur.execute(query, name1= ml_sub)
+    df_status = pd.DataFrame(db_obj.fetchall())
+    # 최신 날짜로 업데이트된 부분만 가져오기
+    df_status = df_status.sort_values(3,ascending=False).iloc[[0]][[1,2,3,4]]
+    return df_status
