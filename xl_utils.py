@@ -260,10 +260,8 @@ def get_empty_row(sheet=wb_cy.selection.sheet,col=1):
     return row_start_nm
 
 
-
-
-
-
-
-
+def get_current_time():
     
+    now = str(datetime.now()).split('.')[0]
+
+    return now
