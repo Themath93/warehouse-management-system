@@ -2,13 +2,13 @@ from datetime import datetime
 from oracle_connect import DataWarehouse
 from datajob.dw.mail_detail import MailDetail
 from datajob.dw.mail_status import MailStatus
-from xl_utils import get_current_time, get_empty_row
+from xl_utils import get_current_time, get_empty_row, save_barcode_loc
 
 import xlwings as xw
 import pandas as pd
 import win32com.client as cli
 import json
-
+import os
 
 
 
@@ -45,7 +45,7 @@ class Email():
         msg = inbox.Items #메세지 정보
         
         #시간 계산
-        self.WS_MAIN.range('K7').value = datetime.today().strftime("%y년%m월%d일 %H시%M분")
+        self.WS_MAIN.range('J7').value = get_current_time()
 
         part_request = []
         service_request = self.SORT_REQUEST[0]
@@ -53,92 +53,104 @@ class Email():
             if service_request in ms.Subject:
 
                 part_request.append(ms)
+        if len(part_request) == 0:
+            wb_cy.app.alert('가져올 메일이 없습니다.','Alert',mode='critical')
+        else :
+            # mail_detail 테이블에 인서트
+            MailDetail.put_data(self)
+            # mail_stauts 테이블에 인서트
+            MailStatus.put_data(self,self.ML_STATUS[0],self.ML_FOLDERS[1])
 
-        # mail_detail 테이블에 인서트
-        MailDetail.put_data(self)
-        # mail_stauts 테이블에 인서트
-        MailStatus.put_data(self,self.ML_STATUS[0],self.ML_FOLDERS[1])
 
+            # 박스생성하여 메일의 서브젝트 이름 설정하기기
+            for idx, ms in enumerate(part_request) :
+                cel_left = self.WS_MAIN.range('J'+str(get_empty_row(self.WS_MAIN,'J'))).left
+                cel_top = self.WS_MAIN.range('J'+str(get_empty_row(self.WS_MAIN,'J'))).top
+                cel_width = self.WS_MAIN.range('J'+str(get_empty_row(self.WS_MAIN,'J'))).width
+                cel_height = self.WS_MAIN.range('J'+str(get_empty_row(self.WS_MAIN,'J'))).height
+                self.WS_MAIN.api.Shapes.AddShape(125, cel_left, cel_top, cel_width, cel_height)
+                shp_move_mail = self.WS_MAIN.shapes[-1]
+                shp_move_mail.name = ms.Subject
+                shp_move_mail.text = '메일열기'
+                shp_move_mail.api.TextFrame.HorizontalAlignment = 2
+                shp_move_mail.api.TextFrame.VerticalAlignment = 2
+                shp_move_mail.api.Line.Visible = 0
+                shp_move_mail.api.Fill.ForeColor.RGB = '(49,255,255)'
+                shp_move_mail.characters.font.color = (255,255,255)
+                shp_move_mail.characters.font.bold = True
 
-        # 박스생성하여 메일의 서브젝트 이름 설정하기기
-        for idx, ms in enumerate(part_request) :
-            cel_left = self.WS_MAIN.range('J'+str(get_empty_row(self.WS_MAIN,'J'))).left
-            cel_top = self.WS_MAIN.range('J'+str(get_empty_row(self.WS_MAIN,'J'))).top
-            cel_width = self.WS_MAIN.range('J'+str(get_empty_row(self.WS_MAIN,'J'))).width
-            cel_height = self.WS_MAIN.range('J'+str(get_empty_row(self.WS_MAIN,'J'))).height
-            self.WS_MAIN.api.Shapes.AddShape(125, cel_left, cel_top, cel_width, cel_height)
-            self.WS_MAIN.shapes[-1].name = ms.Subject
-            self.WS_MAIN.shapes[-1].text = '메일열기'
-            self.WS_MAIN.shapes[-1].api.TextFrame.HorizontalAlignment = 2
-            self.WS_MAIN.shapes[-1].api.TextFrame.VerticalAlignment = 2
+                # print_form 연결
+                cel_left_pf = self.WS_MAIN.range('R'+str(get_empty_row(self.WS_MAIN,'R'))).left
+                cel_top_pf = self.WS_MAIN.range('R'+str(get_empty_row(self.WS_MAIN,'R'))).top
+                cel_width_pf = self.WS_MAIN.range('R'+str(get_empty_row(self.WS_MAIN,'R'))).width
+                cel_height_pf = self.WS_MAIN.range('R'+str(get_empty_row(self.WS_MAIN,'R'))).height
+                self.WS_MAIN.api.Shapes.AddShape(125, cel_left_pf, cel_top_pf, cel_width_pf, cel_height_pf)
+                shp_move_print_form = self.WS_MAIN.shapes[-1]
+                shp_move_print_form.name = ms.Subject+'_prfm'
+                shp_move_print_form.text = '프린트하기'
+                shp_move_print_form.api.TextFrame.HorizontalAlignment = 2
+                shp_move_print_form.api.TextFrame.VerticalAlignment = 2
+                shp_move_print_form.api.Line.Visible = 0
+                shp_move_print_form.api.Fill.ForeColor.RGB = '(0,214,154)'
+                shp_move_print_form.characters.font.color = (0,0,0)
+                shp_move_print_form.characters.font.bold = True
 
-            # print_form 연결
-            cel_left_pf = self.WS_MAIN.range('R'+str(get_empty_row(self.WS_MAIN,'R'))).left
-            cel_top_pf = self.WS_MAIN.range('R'+str(get_empty_row(self.WS_MAIN,'R'))).top
-            cel_width_pf = self.WS_MAIN.range('R'+str(get_empty_row(self.WS_MAIN,'R'))).width
-            cel_height_pf = self.WS_MAIN.range('R'+str(get_empty_row(self.WS_MAIN,'R'))).height
-            self.WS_MAIN.api.Shapes.AddShape(125, cel_left_pf, cel_top_pf, cel_width_pf, cel_height_pf)
-            self.WS_MAIN.shapes[-1].name = ms.Subject+'_prfm'
-            self.WS_MAIN.shapes[-1].text = '프린트하기'
-            self.WS_MAIN.shapes[-1].api.TextFrame.HorizontalAlignment = 2
-            self.WS_MAIN.shapes[-1].api.TextFrame.VerticalAlignment = 2
+                ms_body = (ms.Body)
+                split_list_sub =  ms.Subject.split('_')
+                req_type = split_list_sub[0]
+                body = ms_body[:ms_body.rfind('}')+1]
+                json_body = json.loads(body)
+                dict_data = json_body['data']
+
+                # 메일 내용 채우기
+                # index는 메일제목
+                self.WS_MAIN.range('J'+str(get_empty_row(self.WS_MAIN,'J'))).value = ms.Subject
+                # print_form용 번호도 추가
+                self.WS_MAIN.range('R'+str(get_empty_row(self.WS_MAIN,'R'))).value = idx +1
+                # 요청타입 K
+                self.WS_MAIN.range('K'+str(get_empty_row(self.WS_MAIN,'K'))).value = req_type
+                # 출고요청일 L
+                self.WS_MAIN.range('L'+str(get_empty_row(self.WS_MAIN,'L'))).value = json_body['meta']['std_day']
+                # 배송요청일 M
+                self.WS_MAIN.range('M'+str(get_empty_row(self.WS_MAIN,'M'))).value = dict_data['req_day']+' '+dict_data['req_time']
+                # 담당자 N
+                self.WS_MAIN.range('N'+str(get_empty_row(self.WS_MAIN,'N'))).value = dict_data['fe_initial']
+                # 긴급여부 O
+                self.WS_MAIN.range('O'+str(get_empty_row(self.WS_MAIN,'O'))).value = dict_data['is_urgent']
+
             
-            ms_body = (ms.Body)
-            split_list_sub =  ms.Subject.split('_')
-            req_type = split_list_sub[0]
-            body = ms_body[:ms_body.rfind('}')+1]
-            json_body = json.loads(body)
-            dict_data = json_body['data']
 
-            # 메일 내용 채우기
-            # index는 메일제목
-            self.WS_MAIN.range('J'+str(get_empty_row(self.WS_MAIN,'J'))).value = ms.Subject
-            # print_form용 번호도 추가
-            self.WS_MAIN.range('R'+str(get_empty_row(self.WS_MAIN,'R'))).value = idx +1
-            # 요청타입 K
-            self.WS_MAIN.range('K'+str(get_empty_row(self.WS_MAIN,'K'))).value = req_type
-            # 출고요청일 L
-            self.WS_MAIN.range('L'+str(get_empty_row(self.WS_MAIN,'L'))).value = json_body['meta']['std_day']
-            # 배송요청일 M
-            self.WS_MAIN.range('M'+str(get_empty_row(self.WS_MAIN,'M'))).value = dict_data['req_day']+' '+dict_data['req_time']
-            # 담당자 N
-            self.WS_MAIN.range('N'+str(get_empty_row(self.WS_MAIN,'N'))).value = dict_data['fe_initial']
-            # 긴급여부 O
-            self.WS_MAIN.range('O'+str(get_empty_row(self.WS_MAIN,'O'))).value = dict_data['is_urgent']
-
+                # 출고까지남은시간 P
+                left_time = self.WS_MAIN.range('M'+str(get_empty_row(self.WS_MAIN,'M')-1)).value - datetime.today()
+                # 시간
+                left_hour = round(left_time.total_seconds()/60 //60)
+                # 분
+                left_min = round(left_time.total_seconds()/60 %60)
+                self.WS_MAIN.range('P'+str(get_empty_row(self.WS_MAIN,'P'))).value = str(left_hour) + '시간 ' + str(left_min)+'분 남음'
+            
+                # 해당 배송건 현재상태 Q
+                self.WS_MAIN.range('Q'+str(get_empty_row(self.WS_MAIN,'Q'))).value = self.ML_STATUS[0]
         
-
-            # 출고까지남은시간 P
-            left_time = self.WS_MAIN.range('M'+str(get_empty_row(self.WS_MAIN,'M')-1)).value - datetime.today()
-            # 시간
-            left_hour = round(left_time.total_seconds()/60 //60)
-            # 분
-            left_min = round(left_time.total_seconds()/60 %60)
-            self.WS_MAIN.range('P'+str(get_empty_row(self.WS_MAIN,'P'))).value = str(left_hour) + '시간 ' + str(left_min)+'분 남음'
-           
-            # 해당 배송건 현재상태 Q
-            self.WS_MAIN.range('Q'+str(get_empty_row(self.WS_MAIN,'Q'))).value = self.ML_STATUS[0]
-       
-        # 시간계산
+            # 시간계산
 
 
-        # 도형리스트
-        shape_list = list(self.WS_MAIN.shapes)
-        df_shape_list = pd.DataFrame(shape_list)
-        # 서비스만 추출하기
+            # 도형리스트
+            shape_list = list(self.WS_MAIN.shapes)
+            df_shape_list = pd.DataFrame(shape_list)
+            # 서비스만 추출하기
 
-        shape_fe = []
+            shape_fe = []
 
-        for shp in shape_list:
-            if (service_request in shp.name) and ('_prfm' not in shp.name) :
-                shape_fe.append(shp)
-                shp.api.OnAction = 'connect_email'
-            elif '_prfm' in shp.name :
-                shp.api.OnAction = 'print_form'
+            for shp in shape_list:
+                if (service_request in shp.name) and ('_prfm' not in shp.name) :
+                    shape_fe.append(shp)
+                    shp.api.OnAction = 'connect_email'
+                elif '_prfm' in shp.name :
+                    shp.api.OnAction = 'print_form'
 
-        
-        # move_mail로 실제메일 이동
-        move_mail('inbox','1_Requests')
+            
+            # move_mail로 실제메일 이동
+            move_mail('inbox','1_Requests')
 
 
     @classmethod
@@ -228,53 +240,61 @@ def print_form(shape_name=None,print_form_dir = "C:\\Users\\lms46\\Desktop\\fulf
         # 서비스요청사항 프린트하기
         ws_svc.range("A1:H43").api.PrintPreview()
         
-        # 만약 프린트만 요구하는 것이라면 여기서 끝..
+        
 
         # 해당 index의 df을 DB로부터 읽고, 통합제어 시트의에서 해당 요청사항의 row번호를 찾는다.
         current_df = get_mail_status(shape_name)
         last_row = get_empty_row(col='J')
         idx_list = ws_main.range((12,"J"),(last_row-1,'J')).options(numbers=int).value
         idx_nm = idx_list.index(shape_name)
-        # SHIP_CONFIRM "S" 버튼생성
-
-        # ship_confirm 기능을 수행하는 버튼을 생성한다.
-        sh_conf= ws_main.range(12+idx_nm,19)
-        cel_left_sf = sh_conf.left
-        cel_top_sf = sh_conf.top
-        cel_width_sf = sh_conf.width
-        cel_height_sf = sh_conf.height
-
-        ws_main.api.Shapes.AddShape(125, cel_left_sf, cel_top_sf, cel_width_sf, cel_height_sf)
-
-        ws_main.shapes[-1].name = shape_name+'_shcf'
-        # 생성된 ship_confrim 버튼 객체
-        obj_shcf = ws_main.shapes[shape_name+'_shcf']
-        obj_shcf.text = '발송하기'
-        obj_shcf.api.TextFrame.HorizontalAlignment = 2
-        obj_shcf.api.TextFrame.VerticalAlignment = 2
-        obj_shcf.api.OnAction = 'ship_confirm_mail'
-
-
-        # 해당 메일을 1_Requests 에서 2_Processing로 이동한다.
-        move_mail(ml_folders[1],ml_folders[2],ml_index=shape_name)
-        ml_status_to = ml_status[1]
-        bin_folder_to = ml_folders[2]
         
-        # 현재시간
-        # index 는 None이어야 자동 증분
-        current_df[0][0] = None
-        # 메일 상태 db 업데이트
-        # 상태 업데이트
-        current_df[2][0] = ml_status_to
-        # 업데이트시간
-        current_df[3][0] = get_current_time()
-        # 아웃룩상 폴더
-        current_df[4][0] = bin_folder_to
-        MailStatus.update_status(df_ms=current_df)
+        # 만약 프린트만 요구하는 것이라면 여기서 끝..
+        if ws_main.range((12+idx_nm,"Q")).value != ml_status[0] :
+            return None
+        else :
+            # SHIP_CONFIRM "S" 버튼생성
+
+            # ship_confirm 기능을 수행하는 버튼을 생성한다.
+            sh_conf= ws_main.range(12+idx_nm,19)
+            cel_left_sf = sh_conf.left
+            cel_top_sf = sh_conf.top
+            cel_width_sf = sh_conf.width
+            cel_height_sf = sh_conf.height
+
+            ws_main.api.Shapes.AddShape(125, cel_left_sf, cel_top_sf, cel_width_sf, cel_height_sf)
+
+            ws_main.shapes[-1].name = shape_name+'_shcf'
+            # 생성된 ship_confrim 버튼 객체
+            obj_shcf = ws_main.shapes[shape_name+'_shcf']
+            obj_shcf.text = '발송하기'
+            obj_shcf.api.TextFrame.HorizontalAlignment = 2
+            obj_shcf.api.TextFrame.VerticalAlignment = 2
+            obj_shcf.api.Line.Visible = 0
+            obj_shcf.api.Fill.ForeColor.RGB = '(255,255,16)'
+            obj_shcf.characters.font.color = (0,0,0)
+            obj_shcf.api.OnAction = 'ship_confirm_mail'
+            obj_shcf.characters.font.bold = True
+
+            # 해당 메일을 1_Requests 에서 2_Processing로 이동한다.
+            move_mail(ml_folders[1],ml_folders[2],ml_index=shape_name)
+            ml_status_to = ml_status[1]
+            bin_folder_to = ml_folders[2]
+            
+            # 현재시간
+            # index 는 None이어야 자동 증분
+            current_df[0][0] = None
+            # 메일 상태 db 업데이트
+            # 상태 업데이트
+            current_df[2][0] = ml_status_to
+            # 업데이트시간
+            current_df[3][0] = get_current_time()
+            # 아웃룩상 폴더
+            current_df[4][0] = bin_folder_to
+            MailStatus.update_status(df_ms=current_df)
 
 
-        # excel상의 status 바꾸기 ml_status[1]
-        ws_main.range((12+idx_nm,'Q')).value =ml_status[1]
+            # excel상의 status 바꾸기 ml_status[1]
+            ws_main.range((12+idx_nm,'Q')).value =ml_status[1]
 
 
 def ship_confirm_mail(shape_name =None):
@@ -311,6 +331,10 @@ def ship_confirm_mail(shape_name =None):
 
         obj_shcf = ws_main.shapes[shape_name]
         obj_shcf.text = '발송완료'
+        obj_shcf.api.Line.Visible = 0
+        obj_shcf.api.Fill.ForeColor.RGB = '(102,102,255)'
+        obj_shcf.characters.font.color = (255,255,255)
+        obj_shcf.characters.font.bold = True
 
         move_mail(ml_folders[2],ml_folders[3],ml_index=md_index)
 
@@ -320,6 +344,7 @@ def ship_confirm_mail(shape_name =None):
  
 
 def __forming_datas(ws_svc, bin_loc, part_request,shape_name=None):
+
     body_exam = part_request[0].Body
     body = body_exam[:body_exam.rfind('}')+1]
     json_body = json.loads(body)
@@ -386,6 +411,17 @@ def __forming_datas(ws_svc, bin_loc, part_request,shape_name=None):
         is_urgent = '긴급' 
     ws_svc.range('E41').value = is_urgent
         
+    # 바코드 생성
+    pic = save_barcode_loc(shape_name)
+    top = ws_svc.range('E41').top
+    left = ws_svc.range('E41').left
+    ws_svc.pictures.add(pic, name='barcode',update=True,
+                        top=top,left=left,scale=0.55)
+    os.remove(pic)
+    ws_svc.pictures[-1].lock_aspect_ratio =False
+    ws_svc.pictures[-1].width = 262
+    ws_svc.pictures[-1].height = 51
+
 
 
 

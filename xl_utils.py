@@ -1,8 +1,13 @@
-from datetime import datetime
-import pandas as pd
-from dicts_cy import return_dict
-import xlwings as xw
 
+from dicts_cy import return_dict
+
+
+import xlwings as xw
+import pandas as pd
+import os
+from datetime import datetime
+from barcode import Code128
+from barcode.writer import ImageWriter
 
 wb_cy = xw.Book.caller()
 # wb_cy = xw.Book('cytiva.xlsm')
@@ -85,7 +90,7 @@ def main_clear(type=None):
             if type in shp.name :
                 shp.delete()
 
-        ws_main.range("J12:R"+str(last_row)).clear_contents()
+        ws_main.range("J12:S"+str(last_row)).clear_contents()
     else :
         pass
 
@@ -261,7 +266,30 @@ def get_empty_row(sheet=wb_cy.selection.sheet,col=1):
 
 
 def get_current_time():
-    
+    """
+    현재시간 년,월,일 시,분,초 반환
+    """
     now = str(datetime.now()).split('.')[0]
 
     return now
+
+
+
+def save_barcode_loc(index=str):
+    """
+    받은 index(str)을 바코드 이미지로 만들어 저장
+    """
+    file_name = index+".jpeg"
+    render_options = {
+                    "module_width": 0.05,
+                    "module_height": 9.5,
+                    "write_text": True,
+                    "module_width": 0.25,
+                    "quiet_zone": 0.1,
+                }
+
+    barcode=Code128(index,writer=ImageWriter()).render(render_options)
+    barcode.save(file_name)
+    pic = '\\'+file_name
+    pic = os.getcwd()+pic
+    return pic
