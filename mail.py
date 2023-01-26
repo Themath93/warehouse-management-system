@@ -91,8 +91,8 @@ class Email():
             dict_data = json_body['data']
 
             # 메일 내용 채우기
-            # index는 1부터 시작
-            self.WS_MAIN.range('J'+str(get_empty_row(self.WS_MAIN,'J'))).value = split_list_sub[2]
+            # index는 메일제목
+            self.WS_MAIN.range('J'+str(get_empty_row(self.WS_MAIN,'J'))).value = ms.Subject
             # print_form용 번호도 추가
             self.WS_MAIN.range('R'+str(get_empty_row(self.WS_MAIN,'R'))).value = idx +1
             # 요청타입 K
@@ -192,10 +192,14 @@ def print_form(shape_name=None,print_form_dir = "C:\\Users\\lms46\\Desktop\\fulf
     메일제목, print_form.xlsx 절대경로 
     """
     wb_cy = xw.Book('cytiva.xlsm')
+    ws_main= wb_cy.sheets['통합제어']
+    shape_name = shape_name.replace('_prfm','')
 
     # ws_main = wb_cy.sheets['통합제어']
-    # ml_status = ['REQUESTED','PROCESSING', 'SHIPPED']
-    # ml_folders = ['inbox','1_Requests', '2_Processing', '3_ShipConfirmed']
+    ml_status = ['REQUESTED','PROCESSING', 'SHIPPED']
+    ml_folders = ['inbox','1_Requests', '2_Processing', '3_ShipConfirmed']
+
+
 
     ## print_form이 켜져있지 않을 경우
     try :
@@ -205,7 +209,7 @@ def print_form(shape_name=None,print_form_dir = "C:\\Users\\lms46\\Desktop\\fulf
     ws_svc = wb_pf.sheets['SVC']
     bin_loc = wb_cy.sheets['Cytiva Inventory BIN']
     
-    shape_name = shape_name.replace('_prfm','')
+    
     
     folder_bin = get_mail_status(shape_name)[4][0]
     ms_list = Email.get_email_obj(folder_bin)
@@ -222,11 +226,54 @@ def print_form(shape_name=None,print_form_dir = "C:\\Users\\lms46\\Desktop\\fulf
     
 
         __forming_datas(ws_svc, bin_loc, now, part_request,shape_name)
-
+        
+        # 서비스요청사항 프린트하기
         ws_svc.range("A1:H43").api.PrintPreview()
 
+        # 해당 index의 df을 DB로부터 읽고, 통합제어 시트의에서 해당 요청사항의 row번호를 찾는다.
+        current_df = get_mail_status(shape_name)
+        last_row = get_empty_row(col='J')
+        idx_list = ws_main.range((12,"J"),(last_row-1,'J')).options(numbers=int).value
+        idx_nm = idx_list.index(shape_name)
+        # SHIP_CONFIRM "S" 버튼생성
+
+        # ship_confirm 기능을 수행하는 버튼을 생성한다.
+        sh_conf= ws_main.range(12+idx_nm,19)
+        cel_left_sf = sh_conf.left
+        cel_top_sf = sh_conf.top
+        cel_width_sf = sh_conf.width
+        cel_height_sf = sh_conf.height
+
+        ws_main.api.Shapes.AddShape(125, cel_left_sf, cel_top_sf, cel_width_sf, cel_height_sf)
+
+        ws_main.shapes[-1].name = shape_name+'_shcf'
+        # 생성된 ship_confrim 버튼 객체
+        obj_shcf = ws_main.shapes[shape_name+'_shcf']
+        obj_shcf.text = '발송완료'
+        obj_shcf.api.TextFrame.HorizontalAlignment = 2
+        obj_shcf.api.TextFrame.VerticalAlignment = 2
+
+        # 해당 메일을 1_Requests 에서 2_Processing로 이동한다.
+        move_mail(ml_folders[1],ml_folders[2],ml_index=shape_name)
+        ml_status_to = ml_status[1]
+        bin_folder_to = ml_folders[2]
+        
+        # 현재시간
+        # index 는 None이어야 자동 증분
+        current_df[0][0] = None
+        now = str(datetime.now()).split('.')[0]
+        # 메일 상태 db 업데이트
+        # 상태 업데이트
+        current_df[2][0] = ml_status_to
+        # 업데이트시간
+        current_df[3][0] = now
+        # 아웃룩상 폴더
+        current_df[4][0] = bin_folder_to
+        MailStatus.update_status(df_ms=current_df)
 
 
+        # excel상의 status 바꾸기 ml_status[1]
+        ws_main.range((12+idx_nm,'Q')).value =ml_status[1]
 
 
 def __forming_datas(ws_svc, bin_loc, now, part_request,shape_name=None):
@@ -306,7 +353,7 @@ def __forming_datas(ws_svc, bin_loc, now, part_request,shape_name=None):
 
 
 # 메일 폴더간 이동 모듈 
-def move_mail(from_fd,to_fd,req_type="SVC"):
+def move_mail(from_fd,to_fd,req_type="SVC",ml_index=None):
     """
     메일 폴더간 이동 모듈///
     """
@@ -328,11 +375,17 @@ def move_mail(from_fd,to_fd,req_type="SVC"):
     from_fd = fd_dict[from_fd]
     to_fd = fd_dict[to_fd]
 
+
     part_request = []
-    for ms in from_fd.Items:
-        if req_type in ms.Subject:
-            part_request.append(ms)
-    
+    if ml_index == None:
+        for ms in from_fd.Items:
+            if req_type in ms.Subject:
+                part_request.append(ms)
+    else :
+        for ms in from_fd.Items:
+            if ml_index in ms.Subject:
+                part_request.append(ms)
+        
     # from_folder내용이 없을 경우
     if len(part_request) == 0:
         return None
@@ -342,6 +395,8 @@ def move_mail(from_fd,to_fd,req_type="SVC"):
                 ms.Move(to_fd)
 
 
+
+
 # 메일제목을 매개변수로 받아 현재 상태를 pd.Dataframe형태로 반환 한다.
 # 현재는 한 개의 메일만 받을 수 있음
 def get_mail_status(ml_sub):
@@ -349,10 +404,13 @@ def get_mail_status(ml_sub):
     메일제목을 argument로 받으면 현재상태의 해당 메일의 현재 ML_BIN, STATUS를 반환 
     """
     ml_sub = ml_sub.replace('_prfm','')
+    ml_sub = ml_sub.replace('_shcf','')
     cur = DataWarehouse()
     query = 'select * from MAIL_STATUS where ML_SUB = (:name1)'
     db_obj = cur.execute(query, name1= ml_sub)
     df_status = pd.DataFrame(db_obj.fetchall())
-    # 최신 날짜로 업데이트된 부분만 가져오기
-    df_status = df_status.sort_values(3,ascending=False).iloc[[0]][[1,2,3,4]]
+    # 최신 날짜로 업데이트된 부분만 가져오기 MAIL_STATUS의 detail 부분은 제거
+    # UP_TIME 컬럼 datetime 객체로 변환 후 내림차순으로 최신 업데이트 내역을 위에서 볼 수 있도록함
+    df_status[3] = pd.to_datetime(df_status[3], format='%Y-%m-%d %H:%M:%S', errors='raise')
+    # df_status = df_status.sort_values(3,ascending=False).iloc[[0]][[1,2,3,4]]
     return df_status
