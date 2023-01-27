@@ -1,5 +1,6 @@
 
 from dicts_cy import return_dict
+from oracle_connect import DataWarehouse
 
 
 import xlwings as xw
@@ -188,12 +189,17 @@ def get_out_table(sheet_name,index_row_number=9):
 # 
 def get_out_info(sheet_name):
     
-
+    #2 배송방법 3 인수증방식
     info_list = sheet_name.range("C3:C7").value
-    info_list[1]=info_list[1].date().isoformat()
-    today= datetime.today().date().isoformat().replace('-','')
-    tmp_idx = str(wb_cy.sheets['temp_db'].range("C500000").end('up').row -1 )
-    out_idx = today + '_' + tmp_idx
+    info_list[1]=str(info_list[1].date().isoformat())
+    # 배송방법, 인수증방식은 DB에서 해당 내용으로 키값을 받아 DB에저장 -> byte사용이적어 용량에 유리
+    info_list[2] = get_tb_idx('DELIVERY_METHOD',info_list[2])
+    info_list[3] = get_tb_idx('POD_METHOD',info_list[3])
+
+    now= str(get_current_time())
+    info_list.append(now)
+    # tmp_idx = str(wb_cy.sheets['temp_db'].range("C500000").end('up').row -1 )
+    out_idx = None
     
     if sheet_name.range("C2").value == 'only_local':
         
@@ -293,3 +299,13 @@ def save_barcode_loc(index=str):
     pic = '\\'+file_name
     pic = os.getcwd()+pic
     return pic
+
+
+def get_tb_idx(tb_name=str, content=str):
+    """
+    DW의 table이름을, content에는 테이블의 content를 입력하면 tb상 key값을 반환한다.
+    """
+    cur = DataWarehouse()
+    dic_dm = dict(cur.execute(f'select * from {tb_name}').fetchall())
+    dic_dm = dict(zip(list(dic_dm.values()),list(dic_dm.keys())))
+    return dic_dm[content]
