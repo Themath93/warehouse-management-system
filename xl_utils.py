@@ -1,8 +1,14 @@
-from datetime import datetime
-import pandas as pd
-from dicts_cy import return_dict
-import xlwings as xw
 
+from dicts_cy import return_dict
+from oracle_connect import DataWarehouse
+
+
+import xlwings as xw
+import pandas as pd
+import os
+from datetime import datetime
+from barcode import Code128
+from barcode.writer import ImageWriter
 
 wb_cy = xw.Book.caller()
 # wb_cy = xw.Book('cytiva.xlsm')
@@ -85,7 +91,7 @@ def main_clear(type=None):
             if type in shp.name :
                 shp.delete()
 
-        ws_main.range("J12:R"+str(last_row)).clear_contents()
+        ws_main.range("J12:S"+str(last_row)).clear_contents()
     else :
         pass
 
@@ -151,7 +157,7 @@ def get_out_table(sheet_name,index_row_number=9):
         
         if i == None:
             continue
-        elif '_index' in i :
+        elif '_INDEX' in i :
             col_num = idx
     
     df_so = pd.DataFrame()
@@ -183,12 +189,17 @@ def get_out_table(sheet_name,index_row_number=9):
 # 
 def get_out_info(sheet_name):
     
-
+    #2 배송방법 3 인수증방식
     info_list = sheet_name.range("C3:C7").value
-    info_list[1]=info_list[1].date().isoformat()
-    today= datetime.today().date().isoformat().replace('-','')
-    tmp_idx = str(wb_cy.sheets['temp_db'].range("C500000").end('up').row -1 )
-    out_idx = today + '_' + tmp_idx
+    info_list[1]=str(info_list[1].date().isoformat())
+    # 배송방법, 인수증방식은 DB에서 해당 내용으로 키값을 받아 DB에저장 -> byte사용이적어 용량에 유리
+    info_list[2] = get_tb_idx('DELIVERY_METHOD',info_list[2])
+    info_list[3] = get_tb_idx('POD_METHOD',info_list[3])
+
+    now= str(get_current_time())
+    info_list.append(now)
+    # tmp_idx = str(wb_cy.sheets['temp_db'].range("C500000").end('up').row -1 )
+    out_idx = None
     
     if sheet_name.range("C2").value == 'only_local':
         
@@ -207,16 +218,43 @@ def sht_protect(mode=True):
     """
     True 이면 시트보호모드, False 이면 시트보호해제
     """
-    wb = wx.Book.caller()
-    if mode == True:
-        wb_cy.selection.sheet.api.Protect(Password='themath93', DrawingObjects=False, Contents=True, Scenarios=True,
-        UserInterfaceOnly=True, AllowFormattingCells=True, AllowFormattingColumns=True,
-        AllowFormattingRows=True, AllowInsertingColumns=True, AllowInsertingRows=True,
-        AllowInsertingHyperlinks=True, AllowDeletingColumns=True, AllowDeletingRows=True,
-        AllowSorting=True, AllowFiltering=True, AllowUsingPivotTables=True)
-    elif mode == False:
-        wb_cy.selection.sheet.api.Unprotect(Password='themath93')
+    wb = xw.Book.caller()
+    act_sht=wb_cy.selection.sheet
+    status_col = act_sht.range("XFD4").end('left').column
+    status_cel = act_sht.range(4,status_col)
+    password = 'themath93'
 
+    if mode == True:
+
+        if status_cel.value != 'edit_mode' :
+            wb_cy.save()
+            act_sht.api.Unprotect(Password = password)
+
+            # status창 변경
+            status_cel.value = 'edit_mode'
+
+        else : 
+            clear_form()
+            protect_sht(act_sht,password)
+
+            # status창 변경
+
+
+
+    elif mode == False:
+        wb_cy.save()
+        act_sht.api.Unprotect(Password='themath93')
+
+        # status창 변경
+        status_cel.value = 'edit_mode'
+
+def protect_sht(act_sht,password):
+    act_sht.api.Protect(Password=password, DrawingObjects=True, Contents=True, Scenarios=True,
+            UserInterfaceOnly=True, AllowFormattingCells=True, AllowFormattingColumns=True,
+            AllowFormattingRows=True, AllowInsertingColumns=True, AllowInsertingRows=True,
+            AllowInsertingHyperlinks=True, AllowDeletingColumns=True, AllowDeletingRows=True,
+            AllowSorting=True, AllowFiltering=True, AllowUsingPivotTables=True)
+    
 
 
 
@@ -231,3 +269,43 @@ def get_empty_row(sheet=wb_cy.selection.sheet,col=1):
     elif type(col) == str :
         row_start_nm = sel_sht.range(col+str(1048576)).end('up').row + 1 
     return row_start_nm
+
+
+def get_current_time():
+    """
+    현재시간 년,월,일 시,분,초 반환
+    """
+    now = str(datetime.now()).split('.')[0]
+
+    return now
+
+
+
+def save_barcode_loc(index=str):
+    """
+    받은 index(str)을 바코드 이미지로 만들어 저장
+    """
+    file_name = index+".jpeg"
+    render_options = {
+                    "module_width": 0.05,
+                    "module_height": 9.5,
+                    "write_text": True,
+                    "module_width": 0.25,
+                    "quiet_zone": 0.1,
+                }
+
+    barcode=Code128(index,writer=ImageWriter()).render(render_options)
+    barcode.save(file_name)
+    pic = '\\'+file_name
+    pic = os.getcwd()+pic
+    return pic
+
+
+def get_tb_idx(tb_name=str, content=str):
+    """
+    DW의 table이름을, content에는 테이블의 content를 입력하면 tb상 key값을 반환한다.
+    """
+    cur = DataWarehouse()
+    dic_dm = dict(cur.execute(f'select * from {tb_name}').fetchall())
+    dic_dm = dict(zip(list(dic_dm.values()),list(dic_dm.keys())))
+    return dic_dm[content]
