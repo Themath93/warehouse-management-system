@@ -46,11 +46,8 @@
             <!-- Collect the nav links for toggling -->
             <div class="collapse navbar-collapse navbar-ex1-collapse">
                 <ul class="nav navbar-nav navbar-right">
-                    <li><a href="#home">HOME</a>
-                    </li>
-                    <li><a href="#login">LOGIN</a>
-                    </li>
-                    <li><a href="#logout">LOGOUT</a>
+                   
+                    <li><a href="{% url 'index' %}">HOME</a>
                     </li>
                     <li><a href="#services">SERVICES</a>
                     </li>
@@ -62,8 +59,16 @@
                     </li>
                     <li><a href="#get_datas">GET DATA</a>
                     </li>
+                    {% if user.is_authenticated %}
+                    <li><a href="{% url 'accounts:logout' %}">{{user.username}}|LOGOUT</a>
+                    </li>
+                    {% else %}
+                    <li><a href="{% url 'accounts:login' %}">LOGIN</a>
+                    </li>
+
                     <li><a href="#"><strong>e-mail:</strong>  lms4678@naver.com</a>
                     </li>
+                    {% endif %} 
                 </ul>
             </div>
             <!-- /.navbar-collapse -->
