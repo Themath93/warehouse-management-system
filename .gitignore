@@ -10,4 +10,4 @@ instantclient_fulfill/
 db/
 
 # 민감정보인 settings.py 업로드금지
-fulfill_rest/app/settings.py
+# fulfill_rest/app/settings.py
