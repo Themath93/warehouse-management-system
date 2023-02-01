@@ -8,6 +8,8 @@
 from django.db import models
 
 
+
+
 class DeliveryMethod(models.Model):
     dm_key = models.CharField(primary_key=True, max_length=50)
     del_med = models.CharField(max_length=50)
@@ -15,6 +17,7 @@ class DeliveryMethod(models.Model):
     class Meta:
         managed = False
         db_table = 'delivery_method'
+
 
 
 class MailDetail(models.Model):
@@ -59,6 +62,29 @@ class PodMethod(models.Model):
         db_table = 'pod_method'
 
 
+class ProdPose(models.Model):
+    subinventory = models.CharField(primary_key=True, max_length=50)
+    commnet = models.CharField(max_length=500, blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'prod_pose'
+
+
+class Products(models.Model):
+    article_number = models.CharField(primary_key=True, max_length=50)
+    country = models.CharField(max_length=50, blank=True, null=True)
+    prod_centre = models.CharField(max_length=500, blank=True, null=True)
+    prod_group = models.CharField(max_length=500, blank=True, null=True)
+    description = models.CharField(max_length=500)
+    prod_status_type = models.CharField(max_length=200, blank=True, null=True)
+    bin_cur = models.CharField(max_length=50, blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'products'
+
+
 class ShipmentInformation(models.Model):
     si_index = models.BigIntegerField(primary_key=True)
     awb_no = models.CharField(max_length=100, blank=True, null=True)
@@ -97,3 +123,22 @@ class SoOut(models.Model):
     class Meta:
         managed = False
         db_table = 'so_out'
+
+
+class SystemStock(models.Model):
+    ss_key = models.BigAutoField(primary_key=True)
+    article_number = models.ForeignKey(Products, models.DO_NOTHING, db_column='article_number')
+    subinventory = models.ForeignKey(ProdPose, models.DO_NOTHING, db_column='subinventory')
+    location = models.CharField(max_length=100, blank=True, null=True)
+    quantity = models.BigIntegerField()
+    in_date = models.CharField(max_length=50)
+    expiry_date = models.CharField(max_length=50, blank=True, null=True)
+    currency = models.CharField(max_length=50, blank=True, null=True)
+    lot_cost = models.FloatField(blank=True, null=True)
+    lot_cost_in_usd = models.FloatField(blank=True, null=True)
+    std_day = models.CharField(max_length=50)
+
+    class Meta:
+        managed = False
+        db_table = 'system_stock'
+        unique_together = (('ss_key', 'article_number', 'subinventory'),)

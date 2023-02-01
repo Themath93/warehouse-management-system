@@ -1,0 +1,431 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} User Profile {% endblock %} 
+
+<!-- Specific Page CSS goes HERE  -->
+{% block stylesheets %}{% endblock stylesheets %}
+
+{% block content %}
+
+  <div class="content">
+    <div class="row">
+      <div class="col-md-8">
+        <div class="card">
+
+          <div class="card-body">
+            <form>
+              <div class="card-header">
+                <h5 class="title">Find Parts</h5>
+              </div>
+              <div class="row">
+                <div class="col-md-5 pr-md-1">
+                  <div class="form-group">
+                    <label>SUBINVENTORY</label>
+                    <input class="form-control" list="datalistOptions_sub" placeholder="KR_SERV01" id="subinventory" name="subinventory">
+                    <datalist id="datalistOptions_sub" name="subinventory_dl">
+                      {% for data in datas_pose %}
+                      <option value="{{data.subinventory}}">
+                      {% endfor %}
+                    </datalist>
+                  </div>
+                </div>
+    
+                <!-- <div class="col-md-4 pl-md-1">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Email address</label>
+                    <input type="email" class="form-control" placeholder="mike@email.com">
+                  </div>
+                </div> -->
+              </div>
+              <div class="row">
+                <div class="col-md-6 pr-md-1">
+                  <div class="form-group">
+                    <label>ARTICLE NUMBER</label>
+                    <input class="form-control" list="datalistOptions_part" placeholder="일부 입력으로도 확인 할 수 있습니다." id="article_number" name="article_number">
+                    <datalist id="datalistOptions_part" name="article_number_dl">
+                      {% for data in datas_products %}
+                      <option value="{{data.article_number}}">
+                      {% endfor %}
+                    </datalist>
+                  </div>
+                </div>
+                <div class="col-md-6 pl-md-1">
+                  <div class="form-group">
+                    <label>FAVORITES</label>
+                    <input class="form-control" list="datalistOptions_favor" id="favor_list" name="favor_list"  placeholder="Type to search...">
+                    <datalist id="datalistOptions_favor" name="favor_list_dl">
+                      <option value="San Francisco">
+                      <option value="New York">
+                      <option value="Seattle">
+                      <option value="Los Angeles">
+                      <option value="Chicago">
+                    </datalist>
+                  </div>
+                </div>
+              </div>
+              <div class="card-footer">
+                <!-- <button type="submit" class="btn btn-fill btn-primary"> Find parts </button> -->
+                <input type="button"  onclick="findParts()" class="btn btn-fill btn-primary" value="Find parts"> 
+              </div>
+              <div class="card-header">
+                <h5 class="title">Find IR ORDERS</h5>
+              </div>
+              <div class="row">
+                <div class="col-md-6 pr-md-1">
+                  <div class="form-group">
+                    <label>IR ORDER NUMBER</label>
+                    <input type="text" class="form-control" placeholder="'IR-SM' 은 제외하고 입력해도 조회가능합니다." id="ir_order_nm" name="ir_order_nm">
+                  </div>
+                </div>
+                <div class="col-md-6 pl-md-1">
+                  <div class="form-group">
+                    <label>AVAILABLE MY ORDER LISTS</label>
+                    <input class="form-control" list="datalistOptions_IR" id="myorder_list" name="myorder_list"  placeholder="Type to search...">
+                    <datalist id="datalistOptions_IR" name="myorder_list_ld">
+                      <option value="San Francisco">
+                      <option value="New York">
+                      <option value="Seattle">
+                      <option value="Los Angeles">
+                      <option value="Chicago">
+                    </datalist>
+                  </div>
+                </div>
+              </div>
+              <div class="card-footer">
+                <button type="submit" class="btn btn-fill btn-primary"> Find Order </button>
+              </div>
+              <div class="card-header">
+                <h5 class="title">Find SVC TOOL</h5>
+              </div> 
+              <div class="row">
+                <div class="col-md-6 pr-md-1">
+                  <div class="form-group">
+                    <label>TOOL NUMBER</label>
+                    <input type="text" class="form-control" placeholder=" Write here..." id="tool_nm" name="tool_nm">
+                  </div>
+                </div>
+                <div class="col-md-6 pl-md-1">
+                  <div class="form-group">
+                    <label>FAVOR TOOLS</label>
+                    <input class="form-control" list="datalistOptions_TOOL" id="favor_tools" name="favor_tools"  placeholder="Type to search...">
+                    <datalist id="datalistOptions_TOOL" name="faver_tools_list">
+                      <option value="San Francisco">
+                      <option value="New York">
+                      <option value="Seattle">
+                      <option value="Los Angeles">
+                      <option value="Chicago">
+                    </datalist>
+                  </div>
+                </div>
+              </div>
+              <div class="card-footer">
+                <button type="submit" class="btn btn-fill btn-primary"> Find TOOL </button>
+              </div>
+                 </form>
+          </div>
+
+        </div>
+      </div>
+      <div class="col-md-4">
+        <div class="card card-user">
+          <div class="card-body">
+            <p class="card-text">
+              <div class="author">
+                <div class="block block-one"></div>
+                <div class="block block-two"></div>
+                <div class="block block-three"></div>
+                <div class="block block-four"></div>
+                <a href="javascript:void(0)">
+                  <img class="avatar" src="{{ ASSETS_ROOT }}/img/emilyz.jpg" alt="...">
+                  <h5 class="title">Mike Andrew</h5>
+                </a>
+                <p class="description">
+                  Ceo/Co-Founder
+                </p>
+              </div>
+            </p>
+            <div class="card-description">
+              Do not be scared of the truth because we need to restart the human foundation in truth And I love you like Kanye loves Kanye I love Rick Owens’ bed design but the back is...
+            </div>
+          </div>
+          <div class="card-footer">
+            <div class="button-container">
+              <button href="javascript:void(0)" class="btn btn-icon btn-round btn-facebook">
+                <i class="fab fa-facebook"></i>
+              </button>
+              <button href="javascript:void(0)" class="btn btn-icon btn-round btn-twitter">
+                <i class="fab fa-twitter"></i>
+              </button>
+              <button href="javascript:void(0)" class="btn btn-icon btn-round btn-google">
+                <i class="fab fa-google-plus"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <div class="content" style="display:none;" id="service_stock">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="card ">
+          <div class="card-header">
+            <h4 class="card-title"> SERVICE STOCK</h4>
+          </div>
+          <div class="card-body">
+            <div class="table-responsive">
+              <table class="table tablesorter " id="service_parts_table">
+                <thead class=" text-primary">
+                  <tr>
+                    <th class="text-center">
+                      PROD GROUP
+                    </th>
+                    <th class="text-center">
+                      ARTICLE NUMBER
+                    </th>
+                    <th class="text-center">
+                      DESCRIPTION
+                    </th>
+                    <th class="text-center">
+                      SUBINVENTORY
+                    </th>
+                    <th class="text-center">
+                      QUANTITY
+                    </th>
+                    <th class="text-center">
+                      CHOOSE
+                    </th>
+                  </tr>
+                </thead>
+                <tbody id="parts_list_tb">
+                  <!-- <tr>
+                    <td class="text-center">
+                      607 AKTA legacy parts
+                    </td>
+                    <td class="text-center">
+                      11000314
+                    </td>
+                    <td class="text-center">
+                      CU-950 KIT FOR AKTA
+                    </td>
+                    <td class="text-center">
+                      KR_SERV01
+                    </td>
+                    <td class="text-center">
+                      1
+                    </td>
+                    <td class="text-center">
+                      <button class="btn btn-fill btn-primary">
+                        Choice
+                      </button>
+                    </td>
+                  </tr> -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div> 
+    </div>
+  </div>
+
+
+
+
+
+
+
+
+  <div class="content">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="card card-plain">
+          <div class="card-header">
+            KAKAO Maps
+          </div>
+          <div class="card-body">
+            
+            <!-- <input type="text" id="sample5_address" placeholder="주소"> -->
+            
+            <form>
+              <input type="button" onclick="sample5_execDaumPostcode()" value="주소 검색" class="btn btn-fill btn-primary"><br>
+              <div id="map" style="width:400px;height:400px;margin-top:10px;display:none"></div>
+              <div class="col-md-3 px-md-1">
+                <div class="form-group">
+                  <input type="text" class="form-control-plaintext" style="width: 400px;display:none" id="search_address" name="search_address" placeholder="주소 검색">
+                  <input type="text" class="form-control-plaintext" style="width: 400px;display:none" id="specific_address" name="specific_address" placeholder="상세 주소를 입력해주세요.">
+                  <input id="req_date" class="form-control-plaintext" name="req_date" type="date" style="background-color:bisque;display:none;" >
+                  <input id="req_time" class="form-control-plaintext" name="req_time" type="time" style="background-color:bisque;display:none;" >
+              </div>
+                </div>
+              <p><input type="submit" class="btn btn-fill btn-primary" id="add_date_submit" name="add_date_submit" style="display:none;" value="Submit"></p>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+
+<!-- 다음주소검색 api -->
+<script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+<script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=e34832f9e80f0076b332dc2abfd0e743&libraries=services"></script>
+
+<script>
+    var mapContainer = document.getElementById('map'), // 지도를 표시할 div
+        mapOption = {
+            center: new daum.maps.LatLng(37.537187, 127.005476), // 지도의 중심좌표
+            level: 5 // 지도의 확대 레벨
+        };
+
+    //지도를 미리 생성
+    var map = new daum.maps.Map(mapContainer, mapOption);
+    //주소-좌표 변환 객체를 생성
+    var geocoder = new daum.maps.services.Geocoder();
+    //마커를 미리 생성
+    var marker = new daum.maps.Marker({
+        position: new daum.maps.LatLng(37.537187, 127.005476),
+        map: map
+    });
+
+
+    function sample5_execDaumPostcode() {
+        new daum.Postcode({
+            oncomplete: function(data) {
+                var addr = data.address; // 최종 주소 변수
+
+                // 주소 정보를 해당 필드에 넣는다.
+                var search_address = document.getElementById("search_address")
+                var specific_address = document.getElementById("specific_address")
+                // 날짜 시간 입력받는 input tag
+                var req_date = document.getElementById("req_date")
+                var req_time = document.getElementById("req_time")
+                var add_date_submit = document.getElementById("add_date_submit") 
+
+                search_address.value = addr;
+                // 주소로 상세 정보를 검색
+                geocoder.addressSearch(data.address, function(results, status) {
+                    // 정상적으로 검색이 완료됐으면
+                    if (status === daum.maps.services.Status.OK) {
+
+                        var result = results[0]; //첫번째 결과의 값을 활용
+
+                        // 해당 주소에 대한 좌표를 받아서
+                        var coords = new daum.maps.LatLng(result.y, result.x);
+                        // 지도를 보여준다.
+                        mapContainer.style.display = "block";
+                        // 상세주소 및, 날짜 시간 입력을 받는 태그 보여줌
+                        search_address.style.display = "block";
+                        specific_address.style.display = 'block';
+                        req_date.style.display ='block';
+                        req_time.style.display ='block';
+                        add_date_submit.style.display = 'block';
+
+                        map.relayout();
+                        // 지도 중심을 변경한다.
+                        map.setCenter(coords);
+                        // 마커를 결과값으로 받은 위치로 옮긴다.
+                        marker.setPosition(coords)
+                    }
+                });
+            }
+        }).open();
+    }
+</script>
+
+
+<script type="text/javascript">
+
+// 실시간 재고 데이터 받기
+var data_sys = '{{ json_datas_sys|safe }}';
+var json_data_sys = JSON.parse(data_sys);
+var data_prods = '{{ json_datas_prods|safe }}';
+var json_data_prods = JSON.parse(data_prods);
+// test log찍어봄 성공.
+console.log(json_data_sys);
+
+// Find_parts 구현 onclick()
+function findParts(){
+  
+  
+  // 선택한 인벤토리 및 파트번호 찾기
+  var sub_inv = document.getElementById('subinventory').value;
+  var part_nm = document.getElementById('article_number').value;
+
+  // 선택한 인벤토리와 파트번호만 있는 json data 
+  const query_data_sys_1 = json_data_sys.filter(({subinventory_id}) => subinventory_id === sub_inv);
+  const query_data_sys_2 = query_data_sys_1.filter(({article_number_id}) => article_number_id === part_nm); 
+  const query_data_prods_1 = json_data_prods.filter(({article_number}) => article_number === part_nm);  
+
+  // part_list 보여주기
+  var service_stock = document.getElementById('service_stock');
+  service_stock.style.display = 'block'; 
+
+  //for문 돌릴 횟수 = query_data_sys_2.length
+  var for_count = query_data_sys_2.length;
+
+  // tbody
+  parts_tbody = document.getElementById('parts_list_tb');
+
+  for (var i = 0; i<for_count; i++){
+    let tr_tag = document.createElement('tr');
+    //tr안에 td 5개 마지막 td에는 input 태그 삽입
+    //prod group
+    var td_tag = document.createElement('td');
+    td_tag.setAttribute('class','text-center');
+    td_tag.innerHTML = query_data_prods_1[0].prod_group;
+    td_tag.setAttribute('id','prod_group'+'_'+ i.toString());
+    tr_tag.appendChild(td_tag);
+    //article_number
+    var td_tag = document.createElement('td');
+    td_tag.setAttribute('class','text-center');
+    td_tag.innerHTML = query_data_sys_2[i].article_number_id;
+    td_tag.setAttribute('id','article_number'+'_'+ i.toString());
+    tr_tag.appendChild(td_tag);
+    //desc;
+    var td_tag = document.createElement('td');
+    td_tag.setAttribute('class','text-center');
+    td_tag.innerHTML = query_data_prods_1[0].description;
+    td_tag.setAttribute('id','description'+'_'+ i.toString());
+    tr_tag.appendChild(td_tag);
+    //subinv
+    var td_tag = document.createElement('td');
+    td_tag.setAttribute('class','text-center');
+    td_tag.innerHTML = query_data_sys_2[i].subinventory_id;
+    td_tag.setAttribute('id','sub_inv'+'_'+ i.toString());
+    tr_tag.appendChild(td_tag);
+    //qty
+    var td_tag = document.createElement('td');
+    td_tag.setAttribute('class','text-center');
+    td_tag.innerHTML = query_data_sys_2[i].quantity;
+    td_tag.setAttribute('id','qty'+'_'+ i.toString());
+    tr_tag.appendChild(td_tag);
+    //chioce btn
+    var td_tag = document.createElement('td');
+    td_tag.setAttribute('class','text-center');
+    td_tag.innerHTML = null;
+    td_tag.setAttribute('id','parts_choice'+'_'+ i.toString());
+    tr_tag.appendChild(td_tag);
+    let input_tage = document.createElement('input');
+    input_tage.setAttribute('type','button');
+    input_tage.setAttribute('value','Choice');
+    input_tage.setAttribute('class','btn btn-fill btn-primary');
+    input_tage.setAttribute('id','parts_input'+'_'+i.toString());
+    td_tag.appendChild(input_tage);
+    
+
+    //tr appned
+    parts_tbody.appendChild(tr_tag);
+  }
+
+
+
+}
+
+</script>
+{% endblock javascripts %}
