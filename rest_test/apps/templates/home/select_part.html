@@ -23,6 +23,7 @@
                     <label>SUBINVENTORY</label>
                     <input class="form-control" list="datalistOptions_sub" placeholder="KR_SERV01" id="subinventory" name="subinventory">
                     <datalist id="datalistOptions_sub" name="subinventory_dl">
+                      <option value="ALL"></option>
                       {% for data in datas_pose %}
                       <option value="{{data.subinventory}}">
                       {% endfor %}
@@ -43,6 +44,7 @@
                     <label>ARTICLE NUMBER</label>
                     <input class="form-control" list="datalistOptions_part" placeholder="일부 입력으로도 확인 할 수 있습니다." id="article_number" name="article_number">
                     <datalist id="datalistOptions_part" name="article_number_dl">
+                      <option value="ALL"></option>
                       {% for data in datas_products %}
                       <option value="{{data.article_number}}">
                       {% endfor %}
@@ -120,7 +122,18 @@
               </div>
               <div class="card-footer">
                 <button type="submit" class="btn btn-fill btn-primary"> Find TOOL </button>
+                <input type="button" onclick="sample5_execDaumPostcode()" value="주소 입력하기" class="btn btn-fill btn-primary">
+                
               </div>
+              <div class="col-md-3 px-md-1">
+                <div class="form-group">
+                  <input type="text" class="form-control" style="width: 400px;display:none" id="search_address" name="search_address" placeholder="주소 검색">
+                  <input type="text" class="form-control" style="width: 400px;display:none" id="specific_address" name="specific_address" placeholder="상세 주소를 입력해주세요.">
+                  <input id="req_date" class="form-control" name="req_date" type="date" style="display:none;" >
+                  <input id="req_time" class="form-control" name="req_time" type="time" style="display:none;" >
+              </div>
+                </div>
+              <p><input type="submit" class="btn btn-fill btn-primary" id="add_date_submit" name="add_date_submit" style="display:none;" value="출고요청"></p>
                  </form>
           </div>
 
@@ -168,62 +181,48 @@
 
 
   <div class="content" style="display:none;" id="service_stock">
+    <div hidden id="service_part_content">
+
+    </div>
     <div class="row">
       <div class="col-md-12">
         <div class="card ">
           <div class="card-header">
-            <h4 class="card-title"> SERVICE STOCK</h4>
+            <h4 class="card-title" id="service_stock_card"></h4>
           </div>
           <div class="card-body">
             <div class="table-responsive">
               <table class="table tablesorter " id="service_parts_table">
                 <thead class=" text-primary">
                   <tr>
-                    <th class="text-center">
+                    <th data-sort="prod_group" class="text-center">
                       PROD GROUP
                     </th>
-                    <th class="text-center">
+                    <th data-sort="article_number" class="text-center">
                       ARTICLE NUMBER
                     </th>
-                    <th class="text-center">
+                    <th data-sort="description" class="text-center">
                       DESCRIPTION
                     </th>
-                    <th class="text-center">
+                    <th data-sort="subinventory" class="text-center">
                       SUBINVENTORY
                     </th>
-                    <th class="text-center">
+                    <th data-sort="quantity" class="text-center">
                       QUANTITY
                     </th>
                     <th class="text-center">
-                      CHOOSE
+                      PICK
                     </th>
                   </tr>
                 </thead>
                 <tbody id="parts_list_tb">
-                  <!-- <tr>
-                    <td class="text-center">
-                      607 AKTA legacy parts
-                    </td>
-                    <td class="text-center">
-                      11000314
-                    </td>
-                    <td class="text-center">
-                      CU-950 KIT FOR AKTA
-                    </td>
-                    <td class="text-center">
-                      KR_SERV01
-                    </td>
-                    <td class="text-center">
-                      1
-                    </td>
-                    <td class="text-center">
-                      <button class="btn btn-fill btn-primary">
-                        Choice
-                      </button>
-                    </td>
-                  </tr> -->
                 </tbody>
+
               </table>
+              <div class="d-flex justify-content-center">
+                <button class="btn btn-fill btn-primary" id="prevButton">Previous</button> 
+                <button class="btn btn-fill btn-primary" id="nextButton">Next</button> 
+              </div>
             </div>
           </div>
         </div>
@@ -250,17 +249,9 @@
             <!-- <input type="text" id="sample5_address" placeholder="주소"> -->
             
             <form>
-              <input type="button" onclick="sample5_execDaumPostcode()" value="주소 검색" class="btn btn-fill btn-primary"><br>
+              <br>
               <div id="map" style="width:400px;height:400px;margin-top:10px;display:none"></div>
-              <div class="col-md-3 px-md-1">
-                <div class="form-group">
-                  <input type="text" class="form-control-plaintext" style="width: 400px;display:none" id="search_address" name="search_address" placeholder="주소 검색">
-                  <input type="text" class="form-control-plaintext" style="width: 400px;display:none" id="specific_address" name="specific_address" placeholder="상세 주소를 입력해주세요.">
-                  <input id="req_date" class="form-control-plaintext" name="req_date" type="date" style="background-color:bisque;display:none;" >
-                  <input id="req_time" class="form-control-plaintext" name="req_time" type="time" style="background-color:bisque;display:none;" >
-              </div>
-                </div>
-              <p><input type="submit" class="btn btn-fill btn-primary" id="add_date_submit" name="add_date_submit" style="display:none;" value="Submit"></p>
+              
             </form>
           </div>
         </div>
@@ -346,86 +337,179 @@ var data_sys = '{{ json_datas_sys|safe }}';
 var json_data_sys = JSON.parse(data_sys);
 var data_prods = '{{ json_datas_prods|safe }}';
 var json_data_prods = JSON.parse(data_prods);
-// test log찍어봄 성공.
-console.log(json_data_sys);
+
+//////////////////// JSON MERGE ////////////////////////
+var json_merged = [...[json_data_sys, json_data_prods].reduce((m, a) => (a.forEach(o => m.has(o.article_number) && Object.assign(m.get(o.article_number), o) || m.set(o.article_number, o)), m), new Map).values()];
+//////////////////// JSON MERGE ////////////////////////
+
+
+query_services = json_data_sys
 
 // Find_parts 구현 onclick()
 function findParts(){
   
-  
   // 선택한 인벤토리 및 파트번호 찾기
   var sub_inv = document.getElementById('subinventory').value;
   var part_nm = document.getElementById('article_number').value;
+  
+  // 받은 argument가 'ALL' 일 경우 모든 것을 출력해줘야한다.
+  let arr1 = [sub_inv, part_nm];
+  
+  for(i=0; i<arr1.length; i++){
+    if (arr1[i] == 'ALL') {
+      query_services =  query_services;
+    } else {
+        if (i==0) {
+          query_services = query_services.filter(function(e){
+        return e.subinventory_id === arr1[i];
+    })
+        } else {
+          query_services = query_services.filter(function(e){
+        return e.article_number === arr1[i];
+    })
+        }
 
-  // 선택한 인벤토리와 파트번호만 있는 json data 
-  const query_data_sys_1 = json_data_sys.filter(({subinventory_id}) => subinventory_id === sub_inv);
-  const query_data_sys_2 = query_data_sys_1.filter(({article_number_id}) => article_number_id === part_nm); 
-  const query_data_prods_1 = json_data_prods.filter(({article_number}) => article_number === part_nm);  
+    }
+  }
 
   // part_list 보여주기
   var service_stock = document.getElementById('service_stock');
-  service_stock.style.display = 'block'; 
+  service_stock.removeAttribute('style');
+  // service stock 기준날짜 보여주기
 
-  //for문 돌릴 횟수 = query_data_sys_2.length
-  var for_count = query_data_sys_2.length;
 
-  // tbody
-  parts_tbody = document.getElementById('parts_list_tb');
 
-  for (var i = 0; i<for_count; i++){
-    let tr_tag = document.createElement('tr');
-    //tr안에 td 5개 마지막 td에는 input 태그 삽입
-    //prod group
-    var td_tag = document.createElement('td');
-    td_tag.setAttribute('class','text-center');
-    td_tag.innerHTML = query_data_prods_1[0].prod_group;
-    td_tag.setAttribute('id','prod_group'+'_'+ i.toString());
-    tr_tag.appendChild(td_tag);
-    //article_number
-    var td_tag = document.createElement('td');
-    td_tag.setAttribute('class','text-center');
-    td_tag.innerHTML = query_data_sys_2[i].article_number_id;
-    td_tag.setAttribute('id','article_number'+'_'+ i.toString());
-    tr_tag.appendChild(td_tag);
-    //desc;
-    var td_tag = document.createElement('td');
-    td_tag.setAttribute('class','text-center');
-    td_tag.innerHTML = query_data_prods_1[0].description;
-    td_tag.setAttribute('id','description'+'_'+ i.toString());
-    tr_tag.appendChild(td_tag);
-    //subinv
-    var td_tag = document.createElement('td');
-    td_tag.setAttribute('class','text-center');
-    td_tag.innerHTML = query_data_sys_2[i].subinventory_id;
-    td_tag.setAttribute('id','sub_inv'+'_'+ i.toString());
-    tr_tag.appendChild(td_tag);
-    //qty
-    var td_tag = document.createElement('td');
-    td_tag.setAttribute('class','text-center');
-    td_tag.innerHTML = query_data_sys_2[i].quantity;
-    td_tag.setAttribute('id','qty'+'_'+ i.toString());
-    tr_tag.appendChild(td_tag);
-    //chioce btn
-    var td_tag = document.createElement('td');
-    td_tag.setAttribute('class','text-center');
-    td_tag.innerHTML = null;
-    td_tag.setAttribute('id','parts_choice'+'_'+ i.toString());
-    tr_tag.appendChild(td_tag);
-    let input_tage = document.createElement('input');
-    input_tage.setAttribute('type','button');
-    input_tage.setAttribute('value','Choice');
-    input_tage.setAttribute('class','btn btn-fill btn-primary');
-    input_tage.setAttribute('id','parts_input'+'_'+i.toString());
-    td_tag.appendChild(input_tage);
-    
 
-    //tr appned
-    parts_tbody.appendChild(tr_tag);
+
+
   }
 
+  // 옵저빙
+// 1. 주기적으로 감지할 대상 요소 선정
+const target = document.getElementById('service_stock');
+ 
+// 2. 옵저버 콜백 생성
+// const callback = (mutationList, observer) => {
+//   alert('콜백시작');
+//   console.log(mutationList)
+//   // pagingTable();
+// };
+const observer = new MutationObserver( function( mutations ){
+    mutations.forEach( function( mutation ){
+        // Was it the style attribute that changed? (Maybe a classname or other attribute change could do this too? You might want to remove the attribute condition) Is display set to 'none'?
+        if( mutation.attributeName === 'style' && window.getComputedStyle( target ).getPropertyValue( 'display' ) === 'block'
+          ){
+            alert('스타일변화');
+            renderTable(query_services);
+        }
+    } );
+} );
+ 
+// 3. 옵저버 인스턴스 생성
+// const observer = new MutationObserver(callback); // 타겟에 변화가 일어나면 콜백함수를 실행하게 된다.
+ 
+// 4. DOM의 어떤 부분을 감시할지를 옵션 설정
+const config = { 
+    attributes: true, // 속성 변화 할때 감지
+    // childList: true, // 자식노드 추가/제거 감지
+    // characterData: true // 데이터 변경전 내용 기록
+};
+ 
+// 5. 감지 시작
+observer.observe( target, { attributes: true } );
 
 
-}
 
+  
+
+    // sort
+  document.addEventListener('DOMContentLoaded', init, false);
+
+  let data_service, table, sortCol;
+  let sortAsc = false;
+  const pageSize = 15;
+  let curPage = 1;
+
+  async function init() {
+    
+    // Select the table (well, tbody)
+    table = document.querySelector('#service_parts_table tbody');
+    // get the cats
+    
+    // renderTable();
+    
+    // listen for sort clicks
+    document.querySelectorAll('#service_parts_table thead tr th').forEach(t => {
+      t.addEventListener('click', sort, false);
+    });
+    
+    document.querySelector('#nextButton').addEventListener('click', nextPage, false);
+    document.querySelector('#prevButton').addEventListener('click', previousPage, false);
+  }
+
+  function renderTable(get_json_db) {
+        // db데이터받기
+    var data_sys = '{{ json_datas_sys|safe }}';
+    var json_data_sys = JSON.parse(data_sys);
+    var data_prods = '{{ json_datas_prods|safe }}';
+    var json_data_prods = JSON.parse(data_prods);
+
+    if (get_json_db != null) {
+      json_merged = get_json_db;
+    } else {
+      //////////////////// JSON MERGE ////////////////////////
+      var json_merged = [...[json_data_sys, json_data_prods].reduce((m, a) => (a.forEach(o => m.has(o.article_number) && Object.assign(m.get(o.article_number), o) || m.set(o.article_number, o)), m), new Map).values()];
+      //////////////////// JSON MERGE ////////////////////////
+    }
+
+
+    var ss_card = document.getElementById('service_stock_card');
+    ss_card.innerHTML = 'SERVICE STOCK' + ' 재고 기준 날짜 : '+ json_merged[0].std_day
+
+    // create html
+    let result = '';
+    json_merged.filter((row, index) => {
+          let start = (curPage-1)*pageSize;
+          let end =curPage*pageSize;
+          if(index >= start && index < end) return true;
+    }).forEach((c,idx) => {
+ 
+        result += `<tr id="tr_${c.article_number}">
+        <td class="text-center">${c.prod_group}</td>
+        <td class="text-center">${c.article_number}</td>
+        <td class="text-center">${c.description}</td>
+        <td class="text-center">${c.subinventory_id}</td>
+        <td class="text-center">${c.quantity}</td>
+        <td>
+          <input type="button" value="Choice" class="btn btn-fill btn-primary" id="parts_input_${c.ss_key}">  
+        </td>
+        </tr>`;
+    });
+    table.innerHTML = result;
+  }
+
+  function sort(e) {
+    let thisSort = e.target.dataset.sort;
+    if(sortCol === thisSort) sortAsc = !sortAsc;
+    sortCol = thisSort;
+    console.log('sort dir is ', sortAsc);
+    json_merged.sort((a, b) => {
+      if(a[sortCol] < b[sortCol]) return sortAsc?1:-1;
+      if(a[sortCol] > b[sortCol]) return sortAsc?-1:1;
+      return 0;
+
+    });
+    renderTable(query_services);
+  }
+
+  function previousPage() {
+    if(curPage > 1) curPage--;
+    renderTable(query_services);
+  }
+
+  function nextPage() {
+    if((curPage * pageSize) < json_merged.length) curPage++;
+    renderTable(query_services);
+  }
 </script>
 {% endblock javascripts %}

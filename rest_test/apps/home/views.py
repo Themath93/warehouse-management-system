@@ -62,8 +62,18 @@ def req_parts(request):
     system_stock_db = list(SystemStock.objects.filter(Q(std_day=tmp_date)).values())
     json_prods_db =json.dumps(list(products_db.values()),ensure_ascii=False)
     json_sys_db = json.dumps(system_stock_db,ensure_ascii=False)
-    
+    json_sys = json.loads(json_sys_db)
 
+    json_tmp_list =[]
+    for data in json_sys:
+        data['article_number'] = data.pop('article_number_id')
+        json_tmp_list.append(data)
+    json_sys_fin = json.dumps(json_tmp_list,ensure_ascii=False)
 
-    print('response')
-    return render(request, 'home/select_part.html',{'datas_pose':prod_pose_db,'datas_products':products_db,'json_datas_sys':json_sys_db,'json_datas_prods':json_prods_db})
+    # df_sys = pd.DataFrame(json_tmp_list)
+    # df_sys.to_csv('df_sys.csv',encoding='utf-8')
+
+    df_prods = pd.DataFrame(json.loads(json_prods_db))
+    df_prods.to_csv('df_prods.csv',encoding='utf-8')
+
+    return render(request, 'home/select_part.html',{'datas_pose':prod_pose_db,'datas_products':products_db,'json_datas_sys':json_sys_fin,'json_datas_prods':json_prods_db})
