@@ -1,7 +1,15 @@
+## xl_wings 절대경로 추가
+import sys, os
+sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
+
+
+from datajob.xlwings_dj.shipment_information import ShipmentInformation
+
+
 ## 출고
 from datetime import datetime
-from datajob.dw.so_out import SOOut
-from xl_utils import clear_form, get_idx, get_out_info, get_row_list_to_string, row_nm_check
+from datajob.xlwings_dj.so_out import SOOut
+from xlwings_job.xl_utils import clear_form, get_each_index_num, get_idx, get_out_info, get_row_list_to_string, row_nm_check
 import xlwings as xw
 import pandas as pd
 
@@ -136,7 +144,7 @@ class ShipReady():
         if confirm_local == 'yes' :
             # local_only
             # 로컬에서 먼저 로컬출고행을 고른다음 ws_si에서 이후 출고진행
-            if self.WS_LC.range("C2").value == None :
+            if self.WS_LC.range("C7").value == None :
                 self.WS_LC.range("C2").value = local_row_nums
                 self.WS_LC.range("E4").color = (0,255,255)
                 self.WS_LC.range("E4").value = self.STATUS[1]
@@ -189,12 +197,6 @@ class ShipConfirm():
     WS_SVMX = wb_cy.sheets[SHEET_NAMES[6]]
     WS_OTHER = wb_cy.sheets[SHEET_NAMES[7]]
 
-    # @classmethod
-    # def local_ship(self):
-    #     """
-    #     local만출고시 사용
-    #     """
-
 
 
     @classmethod
@@ -213,20 +215,19 @@ class ShipConfirm():
             tmp_list = get_out_info(sel_sht)
 
             # si 시트 출고 시 local품목이 있을 경우
-            if sel_sht.name == self.SHEET_NAMES[2] \
-                    and tmp_list[-2] != 'no_local' :
-                    
+            if (sel_sht.name == self.SHEET_NAMES[1]) and (tmp_list[-2] != 'no_local') :
+                self.__create_soout_index_insert_data_to_db(sel_sht, status_cel, tmp_idx)
                 tmp_list[-2] = 'lc_' + str(get_idx(self.WS_LC))
-                self.__creatd_tmp_db_row(sel_sht, status_cel, tmp_idx)
-                # 로컬도 같이 출고 했으니 로컬항목도 지울 것
-            # 로컬만 출고일 경우
-            # elif sel_sht.name == self.SHEET_NAMES[2] \
-            #         and sel_sht.range("C2") == 'only_local' :
-            #     tmp_list[-1] = 'lc_' + str(get_idx(self.WS_LC))
-            #     self.__creatd_tmp_db_row(sel_sht, status_cel, tmp_idx)
+
                 clear_form(self.WS_LC)
+
             else :
-                self.__creatd_tmp_db_row(sel_sht, status_cel, tmp_idx)
+                self.__create_soout_index_insert_data_to_db(sel_sht, status_cel, tmp_idx)
+                clear_form(self.WS_LC)
+
+                # 
+                ShipmentInformation.update_data(self,get_each_index_num=get_each_index_num(tmp_list[1]),ship_date=tmp_list[3])
+            ## 입력후에는 excel_sheet내용 업데이트 및 db내용 수정도 필요하다.
         else  : 
             print("무응답")
 
@@ -241,14 +242,17 @@ class ShipConfirm():
         
 
     @classmethod
-    def __creatd_tmp_db_row(self, sel_sht, status_cel, tmp_idx):
-        self.WS_DB.range("C"+ tmp_idx).value = get_out_info(sel_sht)
-        SOOut.put_data(self,get_out_info(sel_sht))
+    def __create_soout_index_insert_data_to_db(self, sel_sht, status_cel, tmp_idx):
+        tmp_list = get_out_info(sel_sht)
+        ## local 출고 품목이 있다면 local출고 index key화
+        if (sel_sht.name == self.SHEET_NAMES[1]) and (tmp_list[-2] != 'no_local') :
+            tmp_list[-2] = 'lc_' + str(get_idx(self.WS_LC))
+        
+        self.WS_DB.range("C"+ tmp_idx).value = tmp_list
+        SOOut.put_data(self,tmp_list)
         # 성공적으로 tmep_db에 저장이 된상태라면 출고양식들을 지워줄 필요가있다.
-        sel_sht.range("C2:C7").clear_contents()
-        sel_sht.range("C4").value = '=TODAY()+1'
-        status_cel.color = None
-        status_cel.value = self.STATUS[0]
+        clear_form()
+
 
 
 

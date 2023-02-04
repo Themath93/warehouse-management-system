@@ -1,14 +1,20 @@
+import sys, os
+sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
+
+
+
 from datetime import datetime
 from oracle_connect import DataWarehouse
-from datajob.dw.mail_detail import MailDetail
-from datajob.dw.mail_status import MailStatus
-from xl_utils import get_current_time, get_empty_row, save_barcode_loc
+from datajob.xlwings_dj.mail_detail import MailDetail
+from datajob.xlwings_dj.mail_status import MailStatus
+from xlwings_job.xl_utils import get_current_time, get_empty_row, save_barcode_loc
+
 
 import xlwings as xw
 import pandas as pd
 import win32com.client as cli
 import json
-import os
+
 
 
 
@@ -199,7 +205,7 @@ class Email():
 
 
 # 통합제어에서 프린트 클릭하면 폼채워서 프린트하기
-def print_form(shape_name=None,print_form_dir = "C:\\Users\\lms46\\Desktop\\fulfill\\print_form.xlsx",print_met=None):
+def print_form(shape_name=None,print_form_dir = "C:\\Users\\lms46\\Desktop\\fulfill\\xlwings_job\\print_form.xlsx",print_met=None):
     """
     메일제목, print_form.xlsx 절대경로 
     """

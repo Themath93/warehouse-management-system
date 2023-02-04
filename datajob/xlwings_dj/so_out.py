@@ -2,7 +2,7 @@ import os
 import pandas as pd
 import win32com.client as cli
 from datetime import datetime
-from oracle_connect import insert_data,DataWarehouse
+from xlwings_job.oracle_connect import insert_data,DataWarehouse
 
 
 class SOOut:

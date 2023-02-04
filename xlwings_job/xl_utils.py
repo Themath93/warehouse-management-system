@@ -69,18 +69,30 @@ def clear_form(sheet = wb_cy.selection.sheet):
 
         main_clear('SVC')
     else :
+        try:
+            __xl_clear_values(current_sheet)
+        except :
+            sht_protect(False)
+            sht_protect(True)
+            __xl_clear_values(current_sheet)
+            if current_sheet.name == 'Shipment information':
+                # si_index컬럼 기준으로 오름차순 정렬 -> so_out시 excel 내용 업데이트에 반드시필요
+                last_row = sheet.range("A1048576").end('up').row
+                sheet.range((9,'A'),(last_row,'R')).api.Sort(Key1=sheet.range((9,'A')).api, Order1=1, Header=1, Orientation=1)
+            
 
-        
-        status_cel = current_sheet.range("AAA4").end('left')
-
-        current_sheet.range("C2:C7").clear_contents()
-        status_cel.color = None
-        status_cel.value = "waiting_for_out"
-        current_sheet.range("C4").value = "=TODAY()+1"
+def __xl_clear_values(current_sheet):
+    status_cel = current_sheet.range("AAA4").end('left')
+    current_sheet.range("C2:C7").clear_contents()
+    status_cel.color = None
+    status_cel.value = "waiting_for_out"
+    current_sheet.range("C4").value = "=TODAY()+1"
 
 
 def main_clear(type=None):
-
+    """
+    통합제어 시트 from클리어 매서드
+    """
     ws_main =wb_cy.sheets['통합제어']
 
     if type != None:
@@ -100,6 +112,13 @@ def main_clear(type=None):
 def get_idx(sheet_name):
     """
     xlwings.main.Sheet를 인수로 입력
+
+    get_each_index_num 모듈의 반대로 반환함
+    example : get_idx_str='si_13384A14171A14243C14244'  ==>
+    {'out_sht_id':'si','idx_list':[13384, 14171, 14243, 14244]}
+
+    [13384, 14171, 14243, 14244] -> '13384A14171A14243C14244'
+    
     """
     # 연속된 숫자 표현
 
@@ -147,6 +166,7 @@ def get_idx(sheet_name):
 def get_out_table(sheet_name,index_row_number=9):
     """
     xlwings.main.Sheet를 인수로 입력, 해당시트의 index행번호 default = 9 (int)
+    list형태의 출고하는 시트의 index들을 반환한다.
     """
     out_row_nums = sheet_name.range("C2").options(numbers=int).value
     col_count = sheet_name.range("XFD9").end('left').column
@@ -260,7 +280,7 @@ def protect_sht(act_sht,password):
 
 def get_empty_row(sheet=wb_cy.selection.sheet,col=1):
     """
-    특정컬럼의 마지막 값의 행번호 구하기
+    특정컬럼의 값이 있는 마지막 행 + 1을 반환
     """
     sel_sht = sheet
     col_num = col
@@ -309,3 +329,37 @@ def get_tb_idx(tb_name=str, content=str):
     dic_dm = dict(cur.execute(f'select * from {tb_name}').fetchall())
     dic_dm = dict(zip(list(dic_dm.values()),list(dic_dm.keys())))
     return dic_dm[content]
+
+
+def get_each_index_num(get_idx_str):
+    """
+    DW테이블 SO_OUT상의 si_index 및 is_local 컬럼값을 넣으면 해당 row의 고유 키값을 dict형태로 반환
+
+    example : get_idx_str='si_13384A14171A14243C14244'  ==>
+    {'out_sht_id':'si','idx_list':[13384, 14171, 14243, 14244]}
+    """
+    del_sht_id = get_idx_str.split('_')[0]
+    get_idx_str = get_idx_str.split('_')[1]
+    count_A = get_idx_str.count("A")
+    count_C = get_idx_str.count("C")
+    if count_A == 0 and count_C == 0:
+        return get_idx_str
+    procs_1 = get_idx_str.split("A")
+    procs_1
+    A_list = []
+    C_list = []
+    for val in procs_1:
+        if val.count("C") > 0 :
+            C_list.append(val)
+        else :
+            A_list.append(int(val))
+    
+    for c_val in C_list:      
+        tmp_c = c_val.split('C')
+        tmp_diff = int(tmp_c[1])-int(tmp_c[0])
+        fin_C_list = []
+        for i, val in enumerate(range(tmp_diff+1)):
+            fin_C_list.append(int(tmp_c[0]) + i)
+        A_list = A_list+fin_C_list
+            
+    return {'out_sht_id':del_sht_id,'idx_list':A_list}
