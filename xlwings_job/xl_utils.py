@@ -428,3 +428,63 @@ def get_xl_rng_for_ship_date(xl_selection = wb_cy.selection,  ship_date_col_num=
             comma_spt[idx] = comma_spt[idx].replace(alpha_0,ship_date_col_num)
     rng_fin = ','.join(comma_spt)
     return rng_fin
+
+
+
+##### change_cell 모듈 ######################### cell한개의 내용 변경########
+def select_cell():
+    sel_cells = wb_cy.selection
+    sel_sht = wb_cy.selection.sheet
+    # 선택한 셀의 row번호가 10미만이면 종료 ==> table값은 row가 10부터 시작이기 때문
+    if wb_cy.selection.row < 10 :
+        wb_cy.app.alert("선택한 셀은 바꿀 수 없습니다. 매서드를 종료합니다.","Change Cell WARNING")
+        return None
+    address_cell = sel_sht.range("E3")
+    from_cell = sel_sht.range("E4")
+    # 선택한셀의 value가 list type 이면 두 개이상의 셀을 선택 했다는 것 ==> 종료
+    if type(sel_cells.value) is list :
+        wb_cy.app.alert("하나의 셀만 선택 후 진행해주세요. 두 개 이상은 불가합니다.","Change Cell WARNING")
+        return None
+    
+    address_cell.value = str(sel_cells.address)
+    from_cell.value = sel_cells.value
+
+def change_cell():
+    sel_sht = wb_cy.selection.sheet
+    address_cell = sel_sht.range("E3")
+    change_cell_list = sel_sht.range("E3:E4")
+    tb_name = sel_sht.range("D5").value
+    idx_col_name = sel_sht.range("A9").value
+    cur = DataWarehouse()
+    
+    # 셀주소가 빈값이면 중지한다.
+    if address_cell.value == None:
+        wb_cy.app.alert("바꿀 셀이 없습니다 매서드를 종료합니다","Change Cell WARNING")
+        return None
+    
+    xl_from_cell = sel_sht.range(address_cell.value)
+    to_cell = wb_cy.app.api.InputBox("바꿀 내용을 입력 해주세요", "Change Cell Input", Type=2)
+    # to_cell == False면 입력을 취소 했다는 뜻이므로 바꿀 뜻이 없는 것으로 간주하고 주소와 바뀔 값들의 form을 지운다.
+    if to_cell == False :
+        wb_cy.app.alert("취소를 선택하셨습니다. 셀 변경을 취소합니다.","Change Cell WARNING")
+        change_cell_list.clear_contents()
+        return None
+    
+    # DB UPDATE 진행
+    row_num = sel_sht.range(address_cell.value).row
+    col_mum = sel_sht.range(address_cell.value).column
+    idx_num = sel_sht.range(row_num,1).options(numbers=int).value
+    col_name = sel_sht.range(9,col_mum).options(numbers=int).value
+    query = f"UPDATE {tb_name} SET {col_name} = '{to_cell}' WHERE {idx_col_name} = {idx_num}"
+    cur.execute(query)
+    cur.execute("commit")
+    
+    # DB UPDATE 완료 후 xl_cell 내용 변경
+    xl_from_cell.value = to_cell
+    
+    # 모든게 완료 되면 change_cell_list 내용 모두삭제
+    change_cell_list.clear_contents()
+
+    # 변경 성공 메시지
+    wb_cy.app.alert("셀 내용 변경이 완료되었습니다.","Change Cell Done")
+##### change_cell 모듈 ######################### cell한개의 내용 변경########
