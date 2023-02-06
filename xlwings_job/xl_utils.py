@@ -18,6 +18,9 @@ wb_cy = xw.Book.caller()
 def row_nm_check(xw_book_name=xw.books[0]):
     """
     Return Dict, get activated sheet's name(str), get selected row's number(list)
+
+    each_list는 연속된 row번호들을 전부 계산하여 리스트안에 전부 각각 위치하도록 한다.
+    each_list의 모든 값은 int
     """
     ## SpecialCells(12) 셀이 한개만 클릭됬을 경우에는 제대로 작동 불가
 
@@ -48,8 +51,21 @@ def row_nm_check(xw_book_name=xw.books[0]):
                 range_list.append(str(num_0) + ',' + str(num_1))
         else :
             range_list.append(rng.split("$")[-1])
+
+    fin_list = []
+    for rng_val in range_list:
+        if ',' in rng_val:
+            tmp_split = rng_val.split(',')
+            cnts = int(tmp_split[1])-int(tmp_split[0])
+            tmp_list = []
+            for i in range(cnts+1):
+                tmp_list.append(int(tmp_split[0])+i)
+                
+            fin_list = fin_list + tmp_list
+        else :
+            fin_list.append(int(rng_val))
             
-    dict_row_num_sheet_name = {"sheet_name":xw_book_name.selection.sheet.name,'selection_row_nm':range_list}
+    dict_row_num_sheet_name = {"sheet_name":xw_book_name.selection.sheet.name,'selection_row_nm':range_list,'each_list':fin_list}
     
     
     return dict_row_num_sheet_name
@@ -63,7 +79,7 @@ def get_row_list_to_string(seleted_row_list) :
 ## 출고 form 초기화 및 출고 대기상태로 변경
 def clear_form(sheet = wb_cy.selection.sheet):
     current_sheet = sheet
-    
+    protect_sht_pass = 'themath93'
     #통합제어 시트일 경우
     if current_sheet.name == '통합제어' :
 
@@ -72,8 +88,8 @@ def clear_form(sheet = wb_cy.selection.sheet):
         try:
             __xl_clear_values(current_sheet)
         except :
-            sht_protect(False)
-            sht_protect(True)
+            current_sheet.api.Unprotect(Password='themath93')
+            protect_sht(current_sheet,protect_sht_pass)
             __xl_clear_values(current_sheet)
             if current_sheet.name == 'Shipment information':
                 # si_index컬럼 기준으로 오름차순 정렬 -> so_out시 excel 내용 업데이트에 반드시필요
@@ -82,6 +98,19 @@ def clear_form(sheet = wb_cy.selection.sheet):
             
 
 def __xl_clear_values(current_sheet):
+    ws_db = wb_cy.sheets['Temp_DB']
+    tmp_last_row = get_empty_row(ws_db,"T")-1
+    k = ws_db.range((2,"T"),(tmp_last_row,"T")).value
+    # tmp_dict = dict(zip(k,v))
+    # wb_cy.app.alert(k[0])
+    for sht_name in k:
+        # wb_cy.app.alert(sht_name)
+        if current_sheet.name == sht_name :
+            k_idx = k.index(current_sheet.name)
+            # wb_cy.app.alert(str(k_idx))
+            k_row = 2+k_idx
+            ws_db.range((k_row,"U")).clear_contents()
+
     status_cel = current_sheet.range("AAA4").end('left')
     current_sheet.range("C2:C7").clear_contents()
     status_cel.color = None
@@ -363,3 +392,39 @@ def get_each_index_num(get_idx_str):
         A_list = A_list+fin_C_list
             
     return {'out_sht_id':del_sht_id,'idx_list':A_list}
+
+
+    
+
+def get_xl_rng_for_ship_date(xl_selection = wb_cy.selection,  ship_date_col_num=str):
+    """
+    sheet.range(ship_date_col_xl_rng_list)
+    ship_date_col_num는 해당 시트의 ship_date컬럼의 알파벳 입력하면됨
+    range를 위한 str를 반환 객체를 반환하는 것은 아님
+    """
+
+    count_dollar = xl_selection.api.Address.count("$")
+    count_dollar
+    # 셀한개만 클릭할경우
+    if count_dollar == 2 :
+
+        rng_str = xl_selection.api.Address
+    else : 
+
+        rng_str = xl_selection.api.SpecialCells(12).Address
+
+    rng_str_1 = rng_str.replace('$','')
+    comma_spt = rng_str_1.split(',')
+
+    for idx, rng in enumerate(comma_spt):
+        if ':' in rng:
+            colon_idx = rng.index(':')
+            alpha_0 = rng[0]
+            alpha_1 = rng[colon_idx+1]
+            comma_spt[idx] = comma_spt[idx].replace(alpha_0,ship_date_col_num)
+            comma_spt[idx] = comma_spt[idx].replace(alpha_1,ship_date_col_num)
+        else:
+            alpha_0 = rng[0]
+            comma_spt[idx] = comma_spt[idx].replace(alpha_0,ship_date_col_num)
+    rng_fin = ','.join(comma_spt)
+    return rng_fin
