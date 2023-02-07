@@ -124,7 +124,7 @@
                 <button type="submit" class="btn btn-fill btn-primary"> Find TOOL </button>
                 <input type="button" onclick="sample5_execDaumPostcode()" value="주소 입력하기" class="btn btn-fill btn-primary">
               </div>
-              
+              <form action="/" method="post">
               <!-- 주소입력 및 카카오MAP -->
               <div class="col-md-3 px-md-1">
                 <div class="form-group">
@@ -232,6 +232,7 @@
     </div> 
   </div>
 </div>
+</form>
 <!-- 선택품목 끝 -->
 
 
@@ -499,13 +500,14 @@ function addPart(input_id) {
 
   
   //to_stock은 입력받기
+  // 로그인 된사람만 이용가능 -> eng일경우 본인의 trunckstock_id를 기본 value로 설정
+  trunckstock_id = 'KR_SERV01';
   subinventory_dl = document.getElementById('datalistOptions_sub').innerHTML
-  subinventory_dl = '<input class="form-control" list="datalistOptions_tosub" id="to_sub" name="to_sub"  placeholder="Transfer할 Stock입력">' +
+  subinventory_dl = `<input class="form-control" style="text-align:center;" list="datalistOptions_tosub" id="to_sub" name="to_sub"  value="${trunckstock_id}" placeholder="Transfer할 Stock입력">` +
   '<datalist id="datalistOptions_tosub" name="subinventory_dl_tosub">' +
     subinventory_dl +  '</datalist>' 
-  console.log(subinventory_dl)
-  console.log(typeof subinventory_dl)
-  var ss_card = document.getElementById('service_stock_card');
+
+  var ss_card = document.getElementById('add_part_card');
     ss_card.innerHTML = 'MY REQUEST';
   var f = selected_ts_json;
   result = `<tr id="tr_${f[0].ts_key}">
