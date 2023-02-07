@@ -123,8 +123,9 @@
               <div class="card-footer">
                 <button type="submit" class="btn btn-fill btn-primary"> Find TOOL </button>
                 <input type="button" onclick="sample5_execDaumPostcode()" value="주소 입력하기" class="btn btn-fill btn-primary">
-                
               </div>
+              
+              <!-- 주소입력 및 카카오MAP -->
               <div class="col-md-3 px-md-1">
                 <div class="form-group">
                   <input type="text" class="form-control" style="width: 400px;display:none" id="search_address" name="search_address" placeholder="주소 검색">
@@ -136,11 +137,12 @@
               <p><input type="submit" class="btn btn-fill btn-primary" id="add_date_submit" name="add_date_submit" style="display:none;" value="출고요청"></p>
                  </form>
           </div>
-
         </div>
       </div>
+      <!-- 입력 div 끝 -->
+
       <div class="col-md-4">
-        <div class="card card-user">
+        <div class="card card-use끝">
           <div class="card-body">
             <p class="card-text">
               <div class="author">
@@ -179,7 +181,58 @@
     </div>
   </div>
 
+<!-- 선택품목 시작 -->
+<div class="content" style="display:none;" id="add_part">
+  <div hidden id="add_part_content">
+  </div>
+  <div class="row">
+    <div class="col-md-12">
+      <div class="card ">
+        <div class="card-header">
+          <h4 class="card-title" id="add_part_card"></h4>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table tablesorter " id="add_part_table">
+              <thead class=" text-primary">
+                <tr>
+                  <th data-sort="prod_group" class="text-center">
+                    PART DIVISION
+                  </th>
+                  <th data-sort="article_number" class="text-center">
+                    ARTICLE NUMBER
+                  </th>
+                  <th data-sort="description" class="text-center">
+                    DESCRIPTION
+                  </th>
+                  <th data-sort="subinventory" class="text-center">
+                    SUBINVENTORY
+                  </th>
+                  <th data-sort="quantity" class="text-center">
+                    QUANTITY
+                  </th>
+                  <th class="text-center">
+                    DELETE
+                  </th>
+                </tr>
+              </thead>
+              <tbody id="add_part_tb">
+              </tbody>
+            </table>
+            <div class="d-flex justify-content-center">
+                <button class="btn btn-fill btn-primary" id="post">제출하기</button> 
+                <button class="btn btn-fill btn-primary" id="tempSave">임시저장</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div> 
+  </div>
+</div>
+<!-- 선택품목 끝 -->
 
+
+  <!-- 서비스재고 table 시작-->
   <div class="content" style="display:none;" id="service_stock">
     <div hidden id="service_part_content">
 
@@ -217,7 +270,6 @@
                 </thead>
                 <tbody id="parts_list_tb">
                 </tbody>
-
               </table>
               <div class="d-flex justify-content-center">
                 <button class="btn btn-fill btn-primary" id="prevButton">Previous</button> 
@@ -229,7 +281,7 @@
       </div> 
     </div>
   </div>
-
+  <!-- 서비스재고 table 끝 -->
 
 
 
@@ -335,16 +387,22 @@
 // 실시간 재고 데이터 받기
 var data_sys = '{{ data_ts|safe }}';
 var json_data_sys = JSON.parse(data_sys);
-
+var hidden_div = document.getElementById('service_part_content');
+  // part_list 보여주기
+var service_stock = document.getElementById('service_stock');
+var std_day = json_data_sys[0].std_day
 query_services = json_data_sys;
 
 str_data =JSON.stringify(query_services);
-console.log(typeof str_data)
-var hidden_div = document.getElementById('service_part_content');
 hidden_div.innerHTML = str_data;
 
 // Find_parts 구현 onclick()
 function findParts(){
+  // findpart 다시 누를 때 query값으로 사라진 json데이터 다시 불러온다.
+  if (service_stock.style.display == 'block') {
+    service_stock.style.display = 'none';
+    query_services = json_data_sys;
+  }
   
   // 선택한 인벤토리 및 파트번호 찾기
   var sub_inv = document.getElementById('subinventory').value;
@@ -370,18 +428,77 @@ function findParts(){
     }
   }
 
-  // part_list 보여주기
-  var service_stock = document.getElementById('service_stock');
-  service_stock.removeAttribute('style');
+
+
+
+
+  service_stock.style.display = 'block';
+
   // service stock 기준날짜 보여주기
 
+  // query된 값 다시 태그안에 넣어주기
+  str_data =JSON.stringify(query_services);
+  hidden_div.innerHTML = str_data;
+
+  // 없는 값일 경우 비우기
+  console.log(query_services)
 
 
+  } //findPart 끝
 
+//addpart 시작
+function addPart(input_id) {
+  // Select the table (well, tbody)
+  
 
-
+  
+  //part부분
+  input_ts_key = parseInt(input_id.split("_")[2]); //ts_key 만 추출 string type change to int type
+  selected_ts_json = json_data_sys.filter(function(e){
+        return e.ts_key === input_ts_key;  // djagno로 부터 받은 최초 table에서 해당 ts_key 조회로 행값 불러오기
+  });
+  
+  // qty가 기존최대 값을 넘는지 확인해보기
+  input_qty = document.getElementById('parts_qty_'+input_ts_key.toString()).value;
+  if (input_qty > selected_ts_json[0].quantity) {
+    // 받은 값이 tb 상의 값보다 클 경우 alert와 함께 addPart테이블에 추가하지 않고 함수종료
+    alert('최대 요청 개수를 초과했습니다. 최대요청가능수량 : '+selected_ts_json[0].quantity.toString());
+    return;
   }
 
+  //add_part div display --> block div 보여주기
+  var div_add_part = document.getElementById('add_part');
+  if (div_add_part.style.display == 'none') {
+    div_add_part.style.display = 'block';
+  }
+
+
+  
+  var table_ap = document.querySelector('#add_part_table tbody')
+  var ss_card = document.getElementById('service_stock_card');
+    ss_card.innerHTML = 'MY REQUEST';
+  var f = selected_ts_json;
+  result = `<tr id="tr_${f[0].ts_key}">
+        <td class="text-center">${f[0].prod_group}</td>
+        <td class="text-center">${f[0].article_number}</td>
+        <td class="text-center">${f[0].description}</td>
+        <td class="text-center">${f[0].subinventory}</td>
+        <td class="text-center">${f[0].quantity}</td>
+        <td>
+          <input type="button" value="Delete"  onClick="DeleteTr(this.id);" class="btn btn-fill btn-primary" id="parts_input_${f[0].ts_key}" name="parts_input_${f[0].ts_key}">  
+        </td>
+        </tr>`;
+  table_ap.innerHTML += result;
+
+  // 파트 중복 선택확인
+  var children_ap = Array.from(table_ap.children)
+  children_ap.forEach(e => {
+      alert(e.id.split("_")[1])
+  }); 
+  
+  //part 부분끝 
+}
+//addpart 끝
   // 옵저빙
 // 1. 주기적으로 감지할 대상 요소 선정
 const target = document.getElementById('service_stock');
@@ -397,8 +514,10 @@ const observer = new MutationObserver( function( mutations ){
         // Was it the style attribute that changed? (Maybe a classname or other attribute change could do this too? You might want to remove the attribute condition) Is display set to 'none'?
         if( mutation.attributeName === 'style' && window.getComputedStyle( target ).getPropertyValue( 'display' ) === 'block'
           ){
-            alert('스타일변화');
-            renderTable(query_services);
+            changed_id = mutation.target.id;
+            if (changed_id == 'service_stock' ) {
+              renderTable_Part(query_services);
+            }
         }
     } );
 } );
@@ -434,7 +553,7 @@ observer.observe( target, { attributes: true } );
     table = document.querySelector('#service_parts_table tbody');
     // get the cats
     
-    // renderTable();
+    // renderTable_Part();
     
     // listen for sort clicks
     document.querySelectorAll('#service_parts_table thead tr th').forEach(t => {
@@ -445,7 +564,7 @@ observer.observe( target, { attributes: true } );
     document.querySelector('#prevButton').addEventListener('click', previousPage, false);
   }
 
-  function renderTable(get_json_db) {
+  function renderTable_Part(get_json_db) {
         // db데이터받기
     var data_ts = '{{ data_ts|safe }}';
     var jons_ts = JSON.parse(data_ts)
@@ -454,7 +573,7 @@ observer.observe( target, { attributes: true } );
     };
 
     var ss_card = document.getElementById('service_stock_card');
-    ss_card.innerHTML = 'SERVICE STOCK' + ' 재고 기준 날짜 : '+ get_json_db[0].std_day
+    ss_card.innerHTML = 'SERVICE STOCK' + ' 재고 기준 날짜 : '+ std_day
 
     // create html
     let result = '';
@@ -463,15 +582,17 @@ observer.observe( target, { attributes: true } );
           let end =curPage*pageSize;
           if(index >= start && index < end) return true;
     }).forEach((c,idx) => {
- 
-        result += `<tr id="tr_${c.article_number}">
+//  
+        result += `<tr id="tr_${c.ts_key}">
         <td class="text-center">${c.prod_group}</td>
         <td class="text-center">${c.article_number}</td>
         <td class="text-center">${c.description}</td>
         <td class="text-center">${c.subinventory}</td>
-        <td class="text-center">${c.quantity}</td>
+        <td class="text-center">
+          <input type="number" value="${c.quantity}" min="0" max="${c.quantity}" class="form-control input-sm" id="parts_qty_${c.ts_key}" name="parts_qty_${c.ts_key}">  
+        </td>
         <td>
-          <input type="button" value="Choice" class="btn btn-fill btn-primary" id="parts_input_${c.ts_key}">  
+          <input type="button" value="Select"  onClick="addPart(this.id);" class="btn btn-fill btn-primary" id="parts_input_${c.ts_key}" name="parts_input_${c.ts_key}">  
         </td>
         </tr>`;
     });
@@ -489,17 +610,17 @@ observer.observe( target, { attributes: true } );
       return 0;
 
     });
-    renderTable(JSON.parse(hidden_div.innerHTML));
+    renderTable_Part(JSON.parse(hidden_div.innerHTML));
   }
 
   function previousPage() {
     if(curPage > 1) curPage--;
-    renderTable(JSON.parse(hidden_div.innerHTML));
+    renderTable_Part(JSON.parse(hidden_div.innerHTML));
   }
 
   function nextPage() {
     if((curPage * pageSize) < JSON.parse(hidden_div.innerHTML).length) curPage++;
-    renderTable(JSON.parse(hidden_div.innerHTML));
+    renderTable_Part(JSON.parse(hidden_div.innerHTML));
   }
 </script>
 {% endblock javascripts %}
