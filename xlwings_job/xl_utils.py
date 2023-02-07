@@ -1,3 +1,7 @@
+## xl_wings 절대경로 추가
+import sys, os
+sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
+
 
 from dicts_cy import return_dict
 from oracle_connect import DataWarehouse
@@ -5,7 +9,6 @@ from oracle_connect import DataWarehouse
 
 import xlwings as xw
 import pandas as pd
-import os
 from datetime import datetime
 from barcode import Code128
 from barcode.writer import ImageWriter
@@ -266,6 +269,7 @@ def get_out_info(sheet_name):
 def sht_protect(mode=True):
     """
     True 이면 시트보호모드, False 이면 시트보호해제
+    edit_mode 실행 매서드
     """
     wb = xw.Book.caller()
     act_sht=wb_cy.selection.sheet
@@ -488,3 +492,71 @@ def change_cell():
     # 변경 성공 메시지
     wb_cy.app.alert("셀 내용 변경이 완료되었습니다.","Change Cell Done")
 ##### change_cell 모듈 ######################### cell한개의 내용 변경########
+
+
+# data_insert 모드 및 data_input() 매서드로 실행
+def data_insert():
+    import sys, os
+    sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))))
+    from datajob.xlwings_dj.shipment_information import ShipmentInformation
+    """
+    입력받은 데이터를 맞는 db에 입력한다.
+    """
+    tmp_idx = [*range(1,1000)]
+    sel_sth = wb_cy.selection.sheet
+    status_col_nm =sel_sth.range("XFD4").end("left").column
+    status = sel_sth.range(4,status_col_nm)
+    cur= DataWarehouse()
+    if status.value == 'edit_mode':  # edit_mode에서만 data_input_mode() 사용 가능
+        last_row = sel_sth.range("A1048576").end('up').row
+        last_col = sel_sth.range("XFD9").end("left").column
+        xl_table = sel_sth.range((10,1),(last_row,last_col))
+        xl_table.clear_contents()
+        status.value = 'data_insert_mode'
+
+        sel_sth.range("A10").select() # 데이터 진입모드시 입력할 첫째 행으로 포인터 이동 필수..
+        sel_sth.range("A10").options(transpose=True).value = tmp_idx # index컬럼에 값이 없다면 매서드 진행 불가로 index에는 자동으로 값을 넣어주자 최대 999개
+        wb_cy.app.alert("data_insert_mode모드로 진입합니다. 데이터 입력 후 버튼을 다시한번 눌러주세요.","DATA Input Mode")
+        return None
+    elif status.value == 'data_insert_mode':  # data_insert_mode 상태면 다시 data_input기능을 마칠지 물어본다.
+        input_comfirm = wb_cy.app.alert("'AWB'컬럼은 빈칸이 없어야 정상작동 합니다. 입력한 DATA를 Confirm하시겠습니까?",
+                    "Input Confirm",buttons="yes_no_cancel")
+        if input_comfirm == 'yes': # data input 시작
+            # 입력한 값이 있는지는 확인해봐야함
+            last_row = sel_sth.range("B1048576").end('up').row
+            last_col = sel_sth.range("XFD9").end("left").column
+            # wb_cy.app.alert(str(last_row))
+            if last_row > 9: # 10번 행에 값이 있다는 뜻.. data_input실행가능
+                ShipmentInformation.data_input() # data db업로드 완료
+                # db에서 해당 테이블 모든 데이터 불러와서 xl_si_sht로 데이터 전송
+                df_si = pd.DataFrame(cur.execute('select * from shipment_information').fetchall())
+                col_names = sel_sth.range((9,1),(9,last_col)).value
+                df_si.columns=col_names
+                df_si = df_si.sort_values('SI_INDEX')
+                df_si.set_index('SI_INDEX',inplace=True)
+                df_si = df_si.replace('None','')
+                sel_sth.range("A9").value = df_si
+
+                ## 서식 맞추기
+                last_row = sel_sth.range("B1048576").end('up').row
+                last_col = sel_sth.range("XFD9").end("left").column
+                xl_content = sel_sth.range((10,1),(last_row,last_col))
+                xl_content.api.Borders.LineStyle = 1 # 모든테두리
+                xl_content.api.HorizontalAlignment = xw.constants.HAlign.xlHAlignLeft # 모든text 왼쪽정렬
+
+
+                # edit_mode로 돌아가기
+                sht_protect()
+                wb_cy.app.alert("DATA INPUT이 완료 되었습니다! (DB_반영완료).","Input COMPLETE")
+            else :
+                wb_cy.app.alert("Input할 값이 없습니다. 'AWB'컬럼에는 반드시 값이 있어야합니다.","Input WARNING")
+                return None
+
+
+        else : #False #취소이므로 매서드 중단
+            wb_cy.app.alert("DATA Input을 중단합니다.","Input Cancel")
+            return None
+        
+    else : 
+        wb_cy.app.alert("해당 기능은 'edit_mode'상태에서만 사용가능합니다.","WARNING")
+        return None
