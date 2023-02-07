@@ -206,7 +206,10 @@
                     DESCRIPTION
                   </th>
                   <th data-sort="subinventory" class="text-center">
-                    SUBINVENTORY
+                    FROM_STOCK
+                  </th>
+                  <th data-sort="" class="text-center">
+                    TO_STOCK
                   </th>
                   <th data-sort="quantity" class="text-center">
                     QUANTITY
@@ -219,7 +222,7 @@
               <tbody id="add_part_tb">
               </tbody>
             </table>
-            <div class="d-flex justify-content-center">
+            <div class="d-flex justify-content-right">
                 <button class="btn btn-fill btn-primary" id="post">제출하기</button> 
                 <button class="btn btn-fill btn-primary" id="tempSave">임시저장</button>
             </div>
@@ -495,7 +498,13 @@ function addPart(input_id) {
 
 
   
-  
+  //to_stock은 입력받기
+  subinventory_dl = document.getElementById('datalistOptions_sub').innerHTML
+  subinventory_dl = '<input class="form-control" list="datalistOptions_tosub" id="to_sub" name="to_sub"  placeholder="Transfer할 Stock입력">' +
+  '<datalist id="datalistOptions_tosub" name="subinventory_dl_tosub">' +
+    subinventory_dl +  '</datalist>' 
+  console.log(subinventory_dl)
+  console.log(typeof subinventory_dl)
   var ss_card = document.getElementById('service_stock_card');
     ss_card.innerHTML = 'MY REQUEST';
   var f = selected_ts_json;
@@ -504,7 +513,8 @@ function addPart(input_id) {
         <td class="text-center">${f[0].article_number}</td>
         <td class="text-center">${f[0].description}</td>
         <td class="text-center">${f[0].subinventory}</td>
-        <td class="text-center">${f[0].quantity}</td>
+        <td class="text-center">${subinventory_dl}</td>
+        <td class="text-center">${input_qty}</td>
         <td>
           <input type="button" value="Delete"  onClick="DeleteTr(this.id);" class="btn btn-fill btn-primary" id="parts_input_${f[0].ts_key}" name="parts_input_${f[0].ts_key}">  
         </td>
