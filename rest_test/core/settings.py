@@ -104,9 +104,16 @@ DATABASES = {
     'default':{
         'ENGINE':'django.db.backends.oracle',
         'NAME':'fulfill_high', # tnsnames.ora 파일에 등록된 NAME을 등록
+        'USER':'web_fulfill', 
+        'PASSWORD':'fulfillment123QWE!@#', #Please provide the db password here
+    },
+    'dw':{
+        'ENGINE':'django.db.backends.oracle',
+        'NAME':'fulfill_high', # tnsnames.ora 파일에 등록된 NAME을 등록
         'USER':'dw_fulfill', 
         'PASSWORD':'fulfillment123QWE!@#', #Please provide the db password here
     }
+
 }
 
 # Password validation

@@ -333,17 +333,15 @@
 <script type="text/javascript">
 
 // 실시간 재고 데이터 받기
-var data_sys = '{{ json_datas_sys|safe }}';
+var data_sys = '{{ data_ts|safe }}';
 var json_data_sys = JSON.parse(data_sys);
-var data_prods = '{{ json_datas_prods|safe }}';
-var json_data_prods = JSON.parse(data_prods);
 
-//////////////////// JSON MERGE ////////////////////////
-var json_merged = [...[json_data_sys, json_data_prods].reduce((m, a) => (a.forEach(o => m.has(o.article_number) && Object.assign(m.get(o.article_number), o) || m.set(o.article_number, o)), m), new Map).values()];
-//////////////////// JSON MERGE ////////////////////////
+query_services = json_data_sys;
 
-
-query_services = json_data_sys
+str_data =JSON.stringify(query_services);
+console.log(typeof str_data)
+var hidden_div = document.getElementById('service_part_content');
+hidden_div.innerHTML = str_data;
 
 // Find_parts 구현 onclick()
 function findParts(){
@@ -361,7 +359,7 @@ function findParts(){
     } else {
         if (i==0) {
           query_services = query_services.filter(function(e){
-        return e.subinventory_id === arr1[i];
+        return e.subinventory === arr1[i];
     })
         } else {
           query_services = query_services.filter(function(e){
@@ -449,26 +447,18 @@ observer.observe( target, { attributes: true } );
 
   function renderTable(get_json_db) {
         // db데이터받기
-    var data_sys = '{{ json_datas_sys|safe }}';
-    var json_data_sys = JSON.parse(data_sys);
-    var data_prods = '{{ json_datas_prods|safe }}';
-    var json_data_prods = JSON.parse(data_prods);
-
-    if (get_json_db != null) {
-      json_merged = get_json_db;
-    } else {
-      //////////////////// JSON MERGE ////////////////////////
-      var json_merged = [...[json_data_sys, json_data_prods].reduce((m, a) => (a.forEach(o => m.has(o.article_number) && Object.assign(m.get(o.article_number), o) || m.set(o.article_number, o)), m), new Map).values()];
-      //////////////////// JSON MERGE ////////////////////////
-    }
-
+    var data_ts = '{{ data_ts|safe }}';
+    var jons_ts = JSON.parse(data_ts)
+    if (get_json_db == null) {
+      get_json_db = jons_ts
+    };
 
     var ss_card = document.getElementById('service_stock_card');
-    ss_card.innerHTML = 'SERVICE STOCK' + ' 재고 기준 날짜 : '+ json_merged[0].std_day
+    ss_card.innerHTML = 'SERVICE STOCK' + ' 재고 기준 날짜 : '+ get_json_db[0].std_day
 
     // create html
     let result = '';
-    json_merged.filter((row, index) => {
+    get_json_db.filter((row, index) => {
           let start = (curPage-1)*pageSize;
           let end =curPage*pageSize;
           if(index >= start && index < end) return true;
@@ -478,10 +468,10 @@ observer.observe( target, { attributes: true } );
         <td class="text-center">${c.prod_group}</td>
         <td class="text-center">${c.article_number}</td>
         <td class="text-center">${c.description}</td>
-        <td class="text-center">${c.subinventory_id}</td>
+        <td class="text-center">${c.subinventory}</td>
         <td class="text-center">${c.quantity}</td>
         <td>
-          <input type="button" value="Choice" class="btn btn-fill btn-primary" id="parts_input_${c.ss_key}">  
+          <input type="button" value="Choice" class="btn btn-fill btn-primary" id="parts_input_${c.ts_key}">  
         </td>
         </tr>`;
     });
@@ -493,23 +483,23 @@ observer.observe( target, { attributes: true } );
     if(sortCol === thisSort) sortAsc = !sortAsc;
     sortCol = thisSort;
     console.log('sort dir is ', sortAsc);
-    json_merged.sort((a, b) => {
+    JSON.parse(hidden_div.innerHTML).sort((a, b) => {
       if(a[sortCol] < b[sortCol]) return sortAsc?1:-1;
       if(a[sortCol] > b[sortCol]) return sortAsc?-1:1;
       return 0;
 
     });
-    renderTable(query_services);
+    renderTable(JSON.parse(hidden_div.innerHTML));
   }
 
   function previousPage() {
     if(curPage > 1) curPage--;
-    renderTable(query_services);
+    renderTable(JSON.parse(hidden_div.innerHTML));
   }
 
   function nextPage() {
-    if((curPage * pageSize) < json_merged.length) curPage++;
-    renderTable(query_services);
+    if((curPage * pageSize) < JSON.parse(hidden_div.innerHTML).length) curPage++;
+    renderTable(JSON.parse(hidden_div.innerHTML));
   }
 </script>
 {% endblock javascripts %}
