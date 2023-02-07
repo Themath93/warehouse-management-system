@@ -1,3 +1,7 @@
+## xl_wings 절대경로 추가
+import sys, os
+sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
+
 
 from dicts_cy import return_dict
 from oracle_connect import DataWarehouse
@@ -5,7 +9,6 @@ from oracle_connect import DataWarehouse
 
 import xlwings as xw
 import pandas as pd
-import os
 from datetime import datetime
 from barcode import Code128
 from barcode.writer import ImageWriter
@@ -18,6 +21,9 @@ wb_cy = xw.Book.caller()
 def row_nm_check(xw_book_name=xw.books[0]):
     """
     Return Dict, get activated sheet's name(str), get selected row's number(list)
+
+    each_list는 연속된 row번호들을 전부 계산하여 리스트안에 전부 각각 위치하도록 한다.
+    each_list의 모든 값은 int
     """
     ## SpecialCells(12) 셀이 한개만 클릭됬을 경우에는 제대로 작동 불가
 
@@ -48,8 +54,21 @@ def row_nm_check(xw_book_name=xw.books[0]):
                 range_list.append(str(num_0) + ',' + str(num_1))
         else :
             range_list.append(rng.split("$")[-1])
+
+    fin_list = []
+    for rng_val in range_list:
+        if ',' in rng_val:
+            tmp_split = rng_val.split(',')
+            cnts = int(tmp_split[1])-int(tmp_split[0])
+            tmp_list = []
+            for i in range(cnts+1):
+                tmp_list.append(int(tmp_split[0])+i)
+                
+            fin_list = fin_list + tmp_list
+        else :
+            fin_list.append(int(rng_val))
             
-    dict_row_num_sheet_name = {"sheet_name":xw_book_name.selection.sheet.name,'selection_row_nm':range_list}
+    dict_row_num_sheet_name = {"sheet_name":xw_book_name.selection.sheet.name,'selection_row_nm':range_list,'each_list':fin_list}
     
     
     return dict_row_num_sheet_name
@@ -61,32 +80,46 @@ def get_row_list_to_string(seleted_row_list) :
 
 
 ## 출고 form 초기화 및 출고 대기상태로 변경
-def clear_form(sheet = wb_cy.selection.sheet):
-    current_sheet = sheet
+def clear_form(sel_sht = wb_cy.selection.sheet):
     
+    
+    protect_sht_pass = 'themath93'
     #통합제어 시트일 경우
-    if current_sheet.name == '통합제어' :
+    if sel_sht.name == '통합제어' :
 
         main_clear('SVC')
     else :
         try:
-            __xl_clear_values(current_sheet)
+            __xl_clear_values(sel_sht)
         except :
-            sht_protect(False)
-            sht_protect(True)
-            __xl_clear_values(current_sheet)
-            if current_sheet.name == 'Shipment information':
+            sel_sht.api.Unprotect(Password='themath93')
+            protect_sht(sel_sht,protect_sht_pass)
+            __xl_clear_values(sel_sht)
+            if sel_sht.name == 'Shipment information':
                 # si_index컬럼 기준으로 오름차순 정렬 -> so_out시 excel 내용 업데이트에 반드시필요
-                last_row = sheet.range("A1048576").end('up').row
-                sheet.range((9,'A'),(last_row,'R')).api.Sort(Key1=sheet.range((9,'A')).api, Order1=1, Header=1, Orientation=1)
+                last_row = sel_sht.range("A1048576").end('up').row
+                sel_sht.range((9,'A'),(last_row,'R')).api.Sort(Key1=sel_sht.range((9,'A')).api, Order1=1, Header=1, Orientation=1)
             
 
-def __xl_clear_values(current_sheet):
-    status_cel = current_sheet.range("AAA4").end('left')
-    current_sheet.range("C2:C7").clear_contents()
+def __xl_clear_values(sel_sht):
+    ws_db = wb_cy.sheets['Temp_DB']
+    tmp_last_row = get_empty_row(ws_db,"T")-1
+    k = ws_db.range((2,"T"),(tmp_last_row,"T")).value
+    # tmp_dict = dict(zip(k,v))
+    # wb_cy.app.alert(k[0])
+    for sht_name in k:
+        # wb_cy.app.alert(sht_name)
+        if sel_sht.name == sht_name :
+            k_idx = k.index(sel_sht.name)
+            # wb_cy.app.alert(str(k_idx))
+            k_row = 2+k_idx
+            ws_db.range((k_row,"U")).clear_contents()
+
+    status_cel = sel_sht.range("H4")
+    sel_sht.range("C2:C7").clear_contents()
     status_cel.color = None
     status_cel.value = "waiting_for_out"
-    current_sheet.range("C4").value = "=TODAY()+1"
+    sel_sht.range("C4").value = "=TODAY()+1"
 
 
 def main_clear(type=None):
@@ -158,7 +191,6 @@ def get_idx(sheet_name):
             idx_list_fin.append(val)
 
     fin_idx = fin_idx + '_'+'A'.join(idx_list_fin)
-
     return fin_idx
 
 
@@ -237,39 +269,42 @@ def get_out_info(sheet_name):
 def sht_protect(mode=True):
     """
     True 이면 시트보호모드, False 이면 시트보호해제
+    edit_mode 실행 매서드
     """
-    wb = xw.Book.caller()
-    act_sht=wb_cy.selection.sheet
-    status_col = act_sht.range("XFD4").end('left').column
-    status_cel = act_sht.range(4,status_col)
+    # wb = xw.Book.caller()
+    sel_sht=wb_cy.selection.sheet
+    status_cel = sel_sht.range("H4")
     password = 'themath93'
 
     if mode == True:
 
         if status_cel.value != 'edit_mode' :
             wb_cy.save()
-            act_sht.api.Unprotect(Password = password)
+            sel_sht.api.Unprotect(Password = password)
 
             # status창 변경
             status_cel.value = 'edit_mode'
 
         else : 
             clear_form()
-            protect_sht(act_sht,password)
-
-            # status창 변경
+            protect_sht(sel_sht,password)
+            # 필터 on 기능 edit_mode 해제후 필터링 할 때 다시 edit_mode로 돌아가 필터기능 켜기 방지
+            last_col = sel_sht.range("XFD9").end('left').column
+            filter_range = sel_sht.range((9,1),(9,last_col))
+            filter_range.api.AutoFilter(Field=1)
+           
 
 
 
     elif mode == False:
         wb_cy.save()
-        act_sht.api.Unprotect(Password='themath93')
+        sel_sht.api.Unprotect(Password='themath93')
 
         # status창 변경
         status_cel.value = 'edit_mode'
 
-def protect_sht(act_sht,password):
-    act_sht.api.Protect(Password=password, DrawingObjects=True, Contents=True, Scenarios=True,
+def protect_sht(sel_sht,password):
+    sel_sht.api.Protect(Password=password, DrawingObjects=True, Contents=True, Scenarios=True,
             UserInterfaceOnly=True, AllowFormattingCells=True, AllowFormattingColumns=True,
             AllowFormattingRows=True, AllowInsertingColumns=True, AllowInsertingRows=True,
             AllowInsertingHyperlinks=True, AllowDeletingColumns=True, AllowDeletingRows=True,
@@ -363,3 +398,208 @@ def get_each_index_num(get_idx_str):
         A_list = A_list+fin_C_list
             
     return {'out_sht_id':del_sht_id,'idx_list':A_list}
+
+
+    
+
+def get_xl_rng_for_ship_date(xl_selection = wb_cy.selection,  ship_date_col_num=str):
+    """
+    sheet.range(ship_date_col_xl_rng_list)
+    ship_date_col_num는 해당 시트의 ship_date컬럼의 알파벳 입력하면됨
+    range를 위한 str를 반환 객체를 반환하는 것은 아님
+    """
+
+    count_dollar = xl_selection.api.Address.count("$")
+    count_dollar
+    # 셀한개만 클릭할경우
+    if count_dollar == 2 :
+
+        rng_str = xl_selection.api.Address
+    else : 
+
+        rng_str = xl_selection.api.SpecialCells(12).Address
+
+    rng_str_1 = rng_str.replace('$','')
+    comma_spt = rng_str_1.split(',')
+
+    for idx, rng in enumerate(comma_spt):
+        if ':' in rng:
+            colon_idx = rng.index(':')
+            alpha_0 = rng[0]
+            alpha_1 = rng[colon_idx+1]
+            comma_spt[idx] = comma_spt[idx].replace(alpha_0,ship_date_col_num)
+            comma_spt[idx] = comma_spt[idx].replace(alpha_1,ship_date_col_num)
+        else:
+            alpha_0 = rng[0]
+            comma_spt[idx] = comma_spt[idx].replace(alpha_0,ship_date_col_num)
+    rng_fin = ','.join(comma_spt)
+    return rng_fin
+
+
+
+##### change_cell 모듈 ######################### cell한개의 내용 변경########
+def select_cell():
+    sel_cells = wb_cy.selection
+    sel_sht = wb_cy.selection.sheet
+    # 선택한 셀의 row번호가 10미만이면 종료 ==> table값은 row가 10부터 시작이기 때문
+    if wb_cy.selection.row < 10 :
+        wb_cy.app.alert("선택한 셀은 바꿀 수 없습니다. 매서드를 종료합니다.","Change Cell WARNING")
+        return None
+    address_cell = sel_sht.range("E3")
+    from_cell = sel_sht.range("E4")
+    # 선택한셀의 value가 list type 이면 두 개이상의 셀을 선택 했다는 것 ==> 종료
+    if type(sel_cells.value) is list :
+        wb_cy.app.alert("하나의 셀만 선택 후 진행해주세요. 두 개 이상은 불가합니다.","Change Cell WARNING")
+        return None
+    
+    address_cell.value = str(sel_cells.address)
+    from_cell.value = sel_cells.value
+
+def change_cell():
+    sel_sht = wb_cy.selection.sheet
+    address_cell = sel_sht.range("E3")
+    change_cell_list = sel_sht.range("E3:E4")
+    tb_name = sel_sht.range("D5").value
+    idx_col_name = sel_sht.range("A9").value
+    cur = DataWarehouse()
+    
+    # 셀주소가 빈값이면 중지한다.
+    if address_cell.value == None:
+        wb_cy.app.alert("바꿀 셀이 없습니다 매서드를 종료합니다","Change Cell WARNING")
+        return None
+    
+    xl_from_cell = sel_sht.range(address_cell.value)
+    to_cell = wb_cy.app.api.InputBox("바꿀 내용을 입력 해주세요", "Change Cell Input", Type=2)
+    # to_cell == False면 입력을 취소 했다는 뜻이므로 바꿀 뜻이 없는 것으로 간주하고 주소와 바뀔 값들의 form을 지운다.
+    if to_cell == False :
+        wb_cy.app.alert("취소를 선택하셨습니다. 셀 변경을 취소합니다.","Change Cell WARNING")
+        change_cell_list.clear_contents()
+        return None
+    
+    # DB UPDATE 진행
+    row_num = sel_sht.range(address_cell.value).row
+    col_mum = sel_sht.range(address_cell.value).column
+    idx_num = sel_sht.range(row_num,1).options(numbers=int).value
+    col_name = sel_sht.range(9,col_mum).options(numbers=int).value
+    query = f"UPDATE {tb_name} SET {col_name} = '{to_cell}' WHERE {idx_col_name} = {idx_num}"
+    cur.execute(query)
+    cur.execute("commit")
+    
+    # DB UPDATE 완료 후 xl_cell 내용 변경
+    xl_from_cell.value = to_cell
+    
+    # 모든게 완료 되면 change_cell_list 내용 모두삭제
+    change_cell_list.clear_contents()
+
+    # 변경 성공 메시지
+    wb_cy.app.alert("셀 내용 변경이 완료되었습니다.","Change Cell Done")
+##### change_cell 모듈 ######################### cell한개의 내용 변경########
+
+
+# data_insert 모드 및 data_input() 매서드로 실행
+def data_insert():
+    import sys, os
+    sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))))
+    from datajob.xlwings_dj.shipment_information import ShipmentInformation
+    """
+    입력받은 데이터를 맞는 db에 입력한다.
+    """
+    tmp_idx = [*range(1,1000)]
+    sel_sht = wb_cy.selection.sheet
+    status = sel_sht.range("H4")
+    cur= DataWarehouse()
+    if status.value == 'edit_mode':  # edit_mode에서만 data_input_mode() 사용 가능
+        last_row = sel_sht.range("A1048576").end('up').row
+        last_col = sel_sht.range("XFD9").end("left").column
+        xl_table = sel_sht.range((10,1),(last_row,last_col))
+        xl_table.clear_contents()
+        status.value = 'data_insert_mode'
+
+        sel_sht.range("A10").select() # 데이터 진입모드시 입력할 첫째 행으로 포인터 이동 필수..
+        sel_sht.range("A10").options(transpose=True).value = tmp_idx # index컬럼에 값이 없다면 매서드 진행 불가로 index에는 자동으로 값을 넣어주자 최대 999개
+        wb_cy.app.alert("data_insert_mode모드로 진입합니다. 데이터 입력 후 버튼을 다시한번 눌러주세요.","DATA Input Mode")
+        return None
+    elif status.value == 'data_insert_mode':  # data_insert_mode 상태면 다시 data_input기능을 마칠지 물어본다.
+        input_comfirm = wb_cy.app.alert("'AWB'컬럼은 빈칸이 없어야 정상작동 합니다. 입력한 DATA를 Confirm하시겠습니까?",
+                    "Input Confirm",buttons="yes_no_cancel")
+        if input_comfirm == 'yes': # data input 시작
+            # 입력한 값이 있는지는 확인해봐야함
+            last_row = sel_sht.range("B1048576").end('up').row
+            last_col = sel_sht.range("XFD9").end("left").column
+            # wb_cy.app.alert(str(last_row))
+            if last_row > 9: # 10번 행에 값이 있다는 뜻.. data_input실행가능
+                ShipmentInformation.data_input() # data db업로드 완료
+
+                # db에서 해당 테이블 모든 데이터 불러와서 xl_si_sht로 데이터 전송 및 서식 맞추기
+                __bring_tb_from_db_and_formatting_xltb(sel_sht, cur, last_col) 
+
+
+                # edit_mode로 돌아가기
+                sht_protect()
+                wb_cy.app.alert("DATA INPUT이 완료 되었습니다! (DB_반영완료).","Input COMPLETE")
+            else :
+                wb_cy.app.alert("Input할 값이 없습니다. 'AWB'컬럼에는 반드시 값이 있어야합니다.","Input WARNING")
+                return None
+
+
+        else : #False #취소이므로 매서드 중단
+            wb_cy.app.alert("DATA Input을 중단합니다.","Input Cancel")
+            return None
+        
+    else : 
+        wb_cy.app.alert("해당 기능은 'edit_mode'상태에서만 사용가능합니다.","WARNING")
+        return None
+
+def __bring_tb_from_db_and_formatting_xltb(sel_sht, cur, last_col):
+    sel_sht.api.AutoFilterMode = False # Filter가 걸려져있으면 데이터복사가 원활하게 되지 않는다. 필터해제 코드
+    df_si = pd.DataFrame(cur.execute('select * from shipment_information').fetchall())
+    col_names = sel_sht.range((9,1),(9,last_col)).value
+    df_si.columns=col_names
+    df_si = df_si.sort_values('SI_INDEX')
+    df_si.set_index('SI_INDEX',inplace=True)
+    df_si = df_si.replace('None','')
+    sel_sht.range("A9").value = df_si
+    last_row = sel_sht.range("B1048576").end('up').row
+    last_col = sel_sht.range("XFD9").end("left").column
+    xl_content = sel_sht.range((10,1),(last_row,last_col))
+    xl_content.api.Borders.LineStyle = 1 
+    xl_content.api.HorizontalAlignment = xw.constants.HAlign.xlHAlignLeft
+
+
+# db 테이블 데이터를 xl로 시트로 보여준다.
+def bring_data_from_db():
+    # sheet에 filter가 걸려져 있을경우 낭패를 본다. 반드시 필터해제후 진행
+    ## ShipmentInformation import용 경로
+    import sys, os
+    sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))))
+    from datajob.xlwings_dj.shipment_information import ShipmentInformation
+
+    """
+    해당 시트에 DB전체 table 데이터 불러오기
+    """
+    sel_sht = wb_cy.selection.sheet
+    status = sel_sht.range("H4").value
+
+    if status == 'edit_mode': # edit_mode에서만 지원
+
+        sel_sht.api.AutoFilterMode = False # Filter가 걸려져있으면 데이터복사가 원활하게 되지 않는다. 필터해제 코드
+        cur=DataWarehouse()
+        
+        db_table_name = sel_sht.range("D5").value
+        idx_col_name = sel_sht.range("A9").value
+        last_row = sel_sht.range("B1048576").end('up').row
+        last_col = sel_sht.range("XFD9").end("left").column
+
+        df = pd.DataFrame(cur.execute(f'select * from {db_table_name}').fetchall())
+        col_names = sel_sht.range((9,1),(9,last_col)).value
+        df.columns=col_names
+        df = df.sort_values(idx_col_name)
+        df.set_index(idx_col_name,inplace=True)
+        df = df.replace('None','')
+        sel_sht.range("A9").value = df
+        xl_content = sel_sht.range((10,1),(last_row,last_col))
+        xl_content.api.Borders.LineStyle = 1 
+        xl_content.api.HorizontalAlignment = xw.constants.HAlign.xlHAlignLeft
+
+    else:
+        wb_cy.app.alert("데이터 가져오기는 edit_mode에서만 사용 가능합니다.","Bring Data WARNING")

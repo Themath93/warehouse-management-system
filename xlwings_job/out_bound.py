@@ -1,15 +1,16 @@
 ## xl_wings 절대경로 추가
 import sys, os
+
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 
 
 from datajob.xlwings_dj.shipment_information import ShipmentInformation
-
+from datajob.xlwings_dj.local_list import LocalList
 
 ## 출고
 from datetime import datetime
 from datajob.xlwings_dj.so_out import SOOut
-from xlwings_job.xl_utils import clear_form, get_each_index_num, get_idx, get_out_info, get_row_list_to_string, row_nm_check
+from xlwings_job.xl_utils import clear_form, get_each_index_num, get_idx, get_out_info, get_row_list_to_string, get_xl_rng_for_ship_date, row_nm_check
 import xlwings as xw
 import pandas as pd
 
@@ -24,11 +25,9 @@ class ShipReady():
 
     STATUS = ['waiting_for_out', 'ship_is_ready', '_is_empty','local_out_row_input_required', 'edit_mode']
 
-    ACT_SEL = wb_cy.selection.sheet
+    SEL_SHT = wb_cy.selection.sheet
 
-    STATUS_COL = ACT_SEL.range('XFD4').end('left').column
-
-    STATUS_CELL = ACT_SEL.range(4,STATUS_COL)
+    STATUS_CELL = SEL_SHT.range("H4")
 
     WS_DB = wb_cy.sheets[SHEET_NAMES[0]]
     WS_SI = wb_cy.sheets[SHEET_NAMES[1]]
@@ -40,22 +39,43 @@ class ShipReady():
 
     @classmethod
     def ship_ready(self):
-        
+        # self.WS_DB.range("U2") ==> ws_si 시트를 위한 임시 값 저장소
+        tmp_si_address = self.WS_DB.range("U2")
         #edit_mode인 경우에는 출고 자체금지!
         if self.STATUS_CELL.value != self.STATUS[4] :
-
+            # ship_ready기능을 사용하기 위해선 기본적으로 선택한 out_rows의 ship_date 컬럼이 None 값
+            # 그리고 DB상의 ship_date 컬럼에서도 'None' 값이어야만한다.
             out_rows=get_row_list_to_string(row_nm_check(wb_cy)['selection_row_nm'])
+            
+            ### ws_si 시트상의 ship_date에 값이 없는지 확인 
+            out_rows_xl = get_xl_rng_for_ship_date(ship_date_col_num="L")
+            sel_rng = self.WS_SI.range(out_rows_xl)
+            if sel_rng is str:
+                sel_rng = [sel_rng]
 
-            # 출고행 번호에 값이 있을 경우
-            if self.WS_SI.range("C2").value == None:
+            try : 
+                cnt_none = sel_rng.value.count(None)
+                len_rng =len(sel_rng.value)
+            except:
+                cnt_none = sel_rng.value
+                len_rng = None
 
-                self.WS_SI.range("C2").value = out_rows
-                
-                self.check_local_empty()
-            else :
-            # 출고행 번호에 값이 없을 경우
+            if (cnt_none == len_rng) :
 
-                self.check_local_empty()
+                # 출고행 번호에 값이 없을 경우
+                if self.WS_SI.range("C2").value == None:
+
+                    self.WS_SI.range("C2").value = out_rows
+                    tmp_si_address.value = get_xl_rng_for_ship_date(ship_date_col_num="L")
+                    
+                    self.check_local_empty()
+                else :
+                # 출고행 번호에 값이 있을 경우
+
+                    self.check_local_empty()
+            #ship_date에 날짜 또는 값이 있을 경우
+            else:
+                wb_cy.app.alert("SHIP_DATE 컬럼에 값이 있습니다. 중복출고는 불가합니다." , "Mutiple Out WARNING")
         else :
             wb_cy.app.alert(self.STATUS_CELL.value+"에서는 출고기능 사용이 불가합니다.",'안내')
     
@@ -133,7 +153,8 @@ class ShipReady():
 
     @classmethod
     def local_ready(self):
-
+        # self.WS_DB.range("U2") ==> ws_si 시트를 위한 임시 값 저장소
+        tmp_lc_address = self.WS_DB.range("U3")
         local_row_nums = get_row_list_to_string(row_nm_check(wb_cy)['selection_row_nm'])
 
         ## yes == 1, no ==0
@@ -146,18 +167,20 @@ class ShipReady():
             # 로컬에서 먼저 로컬출고행을 고른다음 ws_si에서 이후 출고진행
             if self.WS_LC.range("C7").value == None :
                 self.WS_LC.range("C2").value = local_row_nums
-                self.WS_LC.range("E4").color = (0,255,255)
-                self.WS_LC.range("E4").value = self.STATUS[1]
+                self.WS_LC.range("H4").color = (0,255,255)
+                self.WS_LC.range("H4").value = self.STATUS[1]
                 self.WS_SI.activate()
                 self.WS_SI.range("C7").value = local_row_nums
                 self.WS_SI.range("C2").value = 'only_local'
+                tmp_lc_address.value = get_xl_rng_for_ship_date(ship_date_col_num="J")
                 self.check_local_empty()
 
             else : 
                 print("로컬 출고 확인")
                 self.WS_LC.range("C2").value = local_row_nums
-                self.WS_LC.range("E4").color = (0,255,255)
-                self.WS_LC.range("E4").value = self.STATUS[1]
+                tmp_lc_address.value = get_xl_rng_for_ship_date(ship_date_col_num="J")
+                self.WS_LC.range("H4").color = (0,255,255)
+                self.WS_LC.range("H4").value = self.STATUS[1]
                 self.WS_SI.activate()
                 self.WS_SI.range("C7").value = local_row_nums
                 self.WS_SI.range("H4").color = (0,255,255)
@@ -165,7 +188,7 @@ class ShipReady():
 
         elif confirm_local == 'no' :
             self.WS_LC.range("C2").clear_contents()
-            self.WS_LC.range("E4").value = self.STATUS[3]
+            self.WS_LC.range("H4").value = self.STATUS[3]
             print("로컬 출고 행 번호가 아님")
 
         elif confirm_local == 'cancel' :
@@ -203,9 +226,15 @@ class ShipConfirm():
     def ship_confirm(self):
         # SO 품목 출고 담당
 
+        # so,lc 임시 주소저장함 확인
+        tmp_si_address = self.WS_DB.range("U2")
+        tmp_lc_address = self.WS_DB.range("U3")
+
         # 선택한 시트 객체
-        sel_sht=wb_cy.selection.sheet
-        status_cel = sel_sht.range("AAA4").end('left')
+        sel_rng = wb_cy.selection
+        sel_sht = sel_rng.sheet
+
+        status_cel = sel_sht.range("H4")
 
 
         ## ship_is_ready 상태에서만 ship_confirm기능 사용가능
@@ -213,21 +242,41 @@ class ShipConfirm():
 
             tmp_idx = str(self.WS_DB.range("C500000").end('up').row + 1)
             tmp_list = get_out_info(sel_sht)
-
+            ship_date = tmp_list[3]
             # si 시트 출고 시 local품목이 있을 경우
             if (sel_sht.name == self.SHEET_NAMES[1]) and (tmp_list[-2] != 'no_local') :
                 self.__create_soout_index_insert_data_to_db(sel_sht, status_cel, tmp_idx)
-                tmp_list[-2] = 'lc_' + str(get_idx(self.WS_LC))
+                
+                
+                # xl_column date update ==>lc_sht
+                self.WS_LC.range(tmp_lc_address.value).value = ship_date
+                # xl_column date update ==> si_sht
+                sel_sht.range(tmp_si_address.value).value = ship_date
+                local_idx = self.WS_DB.range("I3").value
+                # ws_si 및 ws_lc 내용  db update
+                ShipmentInformation.update_data(get_each_index_num=get_each_index_num(tmp_list[1]),ship_date=ship_date)
+                
+                LocalList.update_data(get_each_index_num=get_each_index_num(local_idx),ship_date=ship_date)
 
+                tmp_si_address.clear_contents()
+                tmp_lc_address.clear_contents()
                 clear_form(self.WS_LC)
+                clear_form()
+                
 
             else :
-                self.__create_soout_index_insert_data_to_db(sel_sht, status_cel, tmp_idx)
-                clear_form(self.WS_LC)
+                # 로컬품목없이 ws_si 품목만 출고
 
-                # 
-                ShipmentInformation.update_data(self,get_each_index_num=get_each_index_num(tmp_list[1]),ship_date=tmp_list[3])
-            ## 입력후에는 excel_sheet내용 업데이트 및 db내용 수정도 필요하다.
+                self.__create_soout_index_insert_data_to_db(sel_sht, status_cel, tmp_idx)
+                
+                
+                # xl_column date update ==> si_sht
+                sel_sht.range(tmp_si_address.value).value = ship_date
+                # ws_si 내용 db update
+                ShipmentInformation.update_data(get_each_index_num=get_each_index_num(tmp_list[1]),ship_date=ship_date)
+                tmp_si_address.clear_contents()
+                clear_form(self.WS_LC)
+                clear_form()
         else  : 
             print("무응답")
 
@@ -246,12 +295,11 @@ class ShipConfirm():
         tmp_list = get_out_info(sel_sht)
         ## local 출고 품목이 있다면 local출고 index key화
         if (sel_sht.name == self.SHEET_NAMES[1]) and (tmp_list[-2] != 'no_local') :
-            tmp_list[-2] = 'lc_' + str(get_idx(self.WS_LC))
+            tmp_list[-2] = str(get_idx(self.WS_LC))
         
         self.WS_DB.range("C"+ tmp_idx).value = tmp_list
         SOOut.put_data(self,tmp_list)
         # 성공적으로 tmep_db에 저장이 된상태라면 출고양식들을 지워줄 필요가있다.
-        clear_form()
 
 
 
@@ -300,5 +348,5 @@ def local_act_ob(WS_SI,WS_LC) :
     
     WS_LC.activate()
 
-    WS_LC.range("E4").value = "local_out_row_input_required"
-    WS_LC.range("E4").color = (0,255,255)
+    WS_LC.range("H4").value = "local_out_row_input_required"
+    WS_LC.range("H4").color = (0,255,255)

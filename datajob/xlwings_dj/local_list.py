@@ -49,9 +49,17 @@ class LocalList:
             self.WB_CY.app.alert("'db_pass'가 맞지않아 매서드를 종료합니다.",'안내')
 
         # lc업데이트
+    @classmethod
     def update_data(self,get_each_index_num,ship_date):
         """
         so out시 db의 ship_date수정 및 pod완료시 pod_date 수정이 필요하다.
         # ws_lc 시트의 해당하는 db 값 수정
         """
+        cur = DataWarehouse()
+        idx_info=get_each_index_num
+        for val in idx_info['idx_list']:
+            query = f"UPDATE LOCAL_LIST SET SHIP_DATE = '{ship_date}' WHERE LC_INDEX = {val}"
+            cur.execute(query)
+        cur.execute("commit")
+
         return None
