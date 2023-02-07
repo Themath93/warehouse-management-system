@@ -448,16 +448,37 @@ function findParts(){
 
 //addpart 시작
 function addPart(input_id) {
-  // Select the table (well, tbody)
-  
-
-  
   //part부분
+  // Select the table (well, tbody)
+  var table_ap = document.querySelector('#add_part_table tbody')
+
+  // 파트 중복 선택확인
+  var children_ap = Array.from(table_ap.children)
+  var selected_list = [];
+  children_ap.forEach(e => {
+    selected_list.push(parseInt(e.id.split("_")[1]))
+  }); 
+  
   input_ts_key = parseInt(input_id.split("_")[2]); //ts_key 만 추출 string type change to int type
+
+  // 중복체크 구문 includes()
+  select_is_mutiple = selected_list.includes(input_ts_key)
+
+  if (select_is_mutiple === true) {
+    alert("이미 선택한 파트입니다. 중복선택 불가")
+    return;
+  }
+  
+  
+  
+  // 만족하는 json 행 찾기
   selected_ts_json = json_data_sys.filter(function(e){
         return e.ts_key === input_ts_key;  // djagno로 부터 받은 최초 table에서 해당 ts_key 조회로 행값 불러오기
   });
   
+
+
+
   // qty가 기존최대 값을 넘는지 확인해보기
   input_qty = document.getElementById('parts_qty_'+input_ts_key.toString()).value;
   if (input_qty > selected_ts_json[0].quantity) {
@@ -474,7 +495,7 @@ function addPart(input_id) {
 
 
   
-  var table_ap = document.querySelector('#add_part_table tbody')
+  
   var ss_card = document.getElementById('service_stock_card');
     ss_card.innerHTML = 'MY REQUEST';
   var f = selected_ts_json;
@@ -490,11 +511,7 @@ function addPart(input_id) {
         </tr>`;
   table_ap.innerHTML += result;
 
-  // 파트 중복 선택확인
-  var children_ap = Array.from(table_ap.children)
-  children_ap.forEach(e => {
-      alert(e.id.split("_")[1])
-  }); 
+ 
   
   //part 부분끝 
 }
