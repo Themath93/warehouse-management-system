@@ -49,6 +49,7 @@ class LocalList:
             self.WB_CY.app.alert("'db_pass'가 맞지않아 매서드를 종료합니다.",'안내')
 
         # lc업데이트
+    @classmethod
     def update_data(self,get_each_index_num,ship_date):
         """
         so out시 db의 ship_date수정 및 pod완료시 pod_date 수정이 필요하다.

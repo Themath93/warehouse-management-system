@@ -1,10 +1,11 @@
 ## xl_wings 절대경로 추가
 import sys, os
+
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 
 
 from datajob.xlwings_dj.shipment_information import ShipmentInformation
-
+from datajob.xlwings_dj.local_list import LocalList
 
 ## 출고
 from datetime import datetime
@@ -24,9 +25,9 @@ class ShipReady():
 
     STATUS = ['waiting_for_out', 'ship_is_ready', '_is_empty','local_out_row_input_required', 'edit_mode']
 
-    ACT_SEL = wb_cy.selection.sheet
+    SEL_SHT = wb_cy.selection.sheet
 
-    STATUS_CELL = ACT_SEL.range(4,ACT_SEL.range('XFD4').end('left').column)
+    STATUS_CELL = SEL_SHT.range("H4")
 
     WS_DB = wb_cy.sheets[SHEET_NAMES[0]]
     WS_SI = wb_cy.sheets[SHEET_NAMES[1]]
@@ -166,8 +167,8 @@ class ShipReady():
             # 로컬에서 먼저 로컬출고행을 고른다음 ws_si에서 이후 출고진행
             if self.WS_LC.range("C7").value == None :
                 self.WS_LC.range("C2").value = local_row_nums
-                self.WS_LC.range("E4").color = (0,255,255)
-                self.WS_LC.range("E4").value = self.STATUS[1]
+                self.WS_LC.range("H4").color = (0,255,255)
+                self.WS_LC.range("H4").value = self.STATUS[1]
                 self.WS_SI.activate()
                 self.WS_SI.range("C7").value = local_row_nums
                 self.WS_SI.range("C2").value = 'only_local'
@@ -178,8 +179,8 @@ class ShipReady():
                 print("로컬 출고 확인")
                 self.WS_LC.range("C2").value = local_row_nums
                 tmp_lc_address.value = get_xl_rng_for_ship_date(ship_date_col_num="J")
-                self.WS_LC.range("E4").color = (0,255,255)
-                self.WS_LC.range("E4").value = self.STATUS[1]
+                self.WS_LC.range("H4").color = (0,255,255)
+                self.WS_LC.range("H4").value = self.STATUS[1]
                 self.WS_SI.activate()
                 self.WS_SI.range("C7").value = local_row_nums
                 self.WS_SI.range("H4").color = (0,255,255)
@@ -187,7 +188,7 @@ class ShipReady():
 
         elif confirm_local == 'no' :
             self.WS_LC.range("C2").clear_contents()
-            self.WS_LC.range("E4").value = self.STATUS[3]
+            self.WS_LC.range("H4").value = self.STATUS[3]
             print("로컬 출고 행 번호가 아님")
 
         elif confirm_local == 'cancel' :
@@ -233,7 +234,7 @@ class ShipConfirm():
         sel_rng = wb_cy.selection
         sel_sht = sel_rng.sheet
 
-        status_cel = sel_sht.range("AAA4").end('left')
+        status_cel = sel_sht.range("H4")
 
 
         ## ship_is_ready 상태에서만 ship_confirm기능 사용가능
@@ -245,10 +246,20 @@ class ShipConfirm():
             # si 시트 출고 시 local품목이 있을 경우
             if (sel_sht.name == self.SHEET_NAMES[1]) and (tmp_list[-2] != 'no_local') :
                 self.__create_soout_index_insert_data_to_db(sel_sht, status_cel, tmp_idx)
-                tmp_list[-2] = 'lc_' + str(get_idx(self.WS_LC))
                 
                 
+                # xl_column date update ==>lc_sht
                 self.WS_LC.range(tmp_lc_address.value).value = ship_date
+                # xl_column date update ==> si_sht
+                sel_sht.range(tmp_si_address.value).value = ship_date
+                local_idx = self.WS_DB.range("I3").value
+                # ws_si 및 ws_lc 내용  db update
+                ShipmentInformation.update_data(get_each_index_num=get_each_index_num(tmp_list[1]),ship_date=ship_date)
+                
+                LocalList.update_data(get_each_index_num=get_each_index_num(local_idx),ship_date=ship_date)
+
+                tmp_si_address.clear_contents()
+                tmp_lc_address.clear_contents()
                 clear_form(self.WS_LC)
                 clear_form()
                 
@@ -259,10 +270,10 @@ class ShipConfirm():
                 self.__create_soout_index_insert_data_to_db(sel_sht, status_cel, tmp_idx)
                 
                 
-                # xl_column date update
+                # xl_column date update ==> si_sht
                 sel_sht.range(tmp_si_address.value).value = ship_date
                 # ws_si 내용 db update
-                ShipmentInformation.update_data(self,get_each_index_num=get_each_index_num(tmp_list[1]),ship_date=ship_date)
+                ShipmentInformation.update_data(get_each_index_num=get_each_index_num(tmp_list[1]),ship_date=ship_date)
                 tmp_si_address.clear_contents()
                 clear_form(self.WS_LC)
                 clear_form()
@@ -284,7 +295,7 @@ class ShipConfirm():
         tmp_list = get_out_info(sel_sht)
         ## local 출고 품목이 있다면 local출고 index key화
         if (sel_sht.name == self.SHEET_NAMES[1]) and (tmp_list[-2] != 'no_local') :
-            tmp_list[-2] = 'lc_' + str(get_idx(self.WS_LC))
+            tmp_list[-2] = str(get_idx(self.WS_LC))
         
         self.WS_DB.range("C"+ tmp_idx).value = tmp_list
         SOOut.put_data(self,tmp_list)
@@ -337,5 +348,5 @@ def local_act_ob(WS_SI,WS_LC) :
     
     WS_LC.activate()
 
-    WS_LC.range("E4").value = "local_out_row_input_required"
-    WS_LC.range("E4").color = (0,255,255)
+    WS_LC.range("H4").value = "local_out_row_input_required"
+    WS_LC.range("H4").color = (0,255,255)
