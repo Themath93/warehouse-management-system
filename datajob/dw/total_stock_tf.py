@@ -27,5 +27,6 @@ class TotalStockTransformer:
         df_fin = get_spark_session().createDataFrame(join_df)
         df_fin = df_fin.select("*").withColumn('STD_DAY',lit(cls.TODAY))
         df_fin = df_fin.withColumnRenamed('count','QUANTITY')
-        # print(df_fin.dtypes)
+        df_fin = df_fin.select("*").withColumn('STATE',lit('None'))
+        df_fin = df_fin.select("*").withColumn('STATE_TIME',lit('None'))
         save_data(WebDB, df_fin, 'TOTAL_STOCK')

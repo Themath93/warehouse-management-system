@@ -2,6 +2,7 @@ import sys, os
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))))
 
 import pandas as pd
+import datetime as dt
 import win32com.client as cli
 from datetime import datetime
 from xlwings_job.oracle_connect import DataWarehouse,insert_data
@@ -15,6 +16,7 @@ class LocalList:
     """
     WB_CY = xw.Book.caller()
     WS_LC = WB_CY.sheets['로컬리스트']
+    DataWarehouse_DB = DataWarehouse()
 
     @classmethod
     def put_data(self):
@@ -63,3 +65,22 @@ class LocalList:
         cur.execute("commit")
 
         return None
+
+    @classmethod
+    def data_input(self):
+        cur = self.DataWarehouse_DB
+        last_idx_db = pd.DataFrame(cur.execute('select max(lc_index) from local_list').fetchall())[0][0]
+        last_row = self.WS_LC.range("B1048576").end('up').row
+        last_col = self.WS_LC.range("XFD9").end("left").column
+        col_names = self.WS_LC.range((9,1),(9,last_col)).options(numbers=int,dates=dt.date).value
+        content = self.WS_LC.range((10,1),(last_row,last_col)).options(numbers=int,dates=dt.date).value
+        df = pd.DataFrame([content],columns=col_names)
+        df = df.astype('string')
+        df = df.astype({
+            'LC_INDEX':'int'
+        })
+        df = df.fillna('None')
+        df['LC_INDEX'] = None
+        df_len = len(df)
+        df['LC_INDEX'] = [*range(last_idx_db+1,last_idx_db+df_len+1)]
+        insert_data(self.DataWarehouse_DB,df,'LOCAL_LIST')

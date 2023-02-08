@@ -501,12 +501,15 @@ def data_insert():
     import sys, os
     sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))))
     from datajob.xlwings_dj.shipment_information import ShipmentInformation
+    from datajob.xlwings_dj.local_list import LocalList
     """
     입력받은 데이터를 맞는 db에 입력한다.
     """
+    tb_dict = {'LOCAL_LIST':LocalList, 'SHIPMENT_INFORMATION':ShipmentInformation}
     tmp_idx = [*range(1,1000)]
     sel_sht = wb_cy.selection.sheet
     status = sel_sht.range("H4")
+    db_table_name = sel_sht.range("D5").value
     cur= DataWarehouse()
     if status.value == 'edit_mode':  # edit_mode에서만 data_input_mode() 사용 가능
         last_row = sel_sht.range("A1048576").end('up').row
@@ -528,7 +531,8 @@ def data_insert():
             last_col = sel_sht.range("XFD9").end("left").column
             # wb_cy.app.alert(str(last_row))
             if last_row > 9: # 10번 행에 값이 있다는 뜻.. data_input실행가능
-                ShipmentInformation.data_input() # data db업로드 완료
+                tb_dict[db_table_name].data_input()
+                # ShipmentInformation.data_input() # data db업로드 완료
 
                 # db에서 해당 테이블 모든 데이터 불러와서 xl_si_sht로 데이터 전송 및 서식 맞추기
                 __bring_tb_from_db_and_formatting_xltb(sel_sht, cur, last_col) 
@@ -551,12 +555,14 @@ def data_insert():
         return None
 
 def __bring_tb_from_db_and_formatting_xltb(sel_sht, cur, last_col):
+    table_name = sel_sht.range("D5").value
+    sht_idx_col_name = sel_sht.range("A9").value
     sel_sht.api.AutoFilterMode = False # Filter가 걸려져있으면 데이터복사가 원활하게 되지 않는다. 필터해제 코드
-    df_si = pd.DataFrame(cur.execute('select * from shipment_information').fetchall())
+    df_si = pd.DataFrame(cur.execute(f'select * from {table_name}').fetchall())
     col_names = sel_sht.range((9,1),(9,last_col)).value
     df_si.columns=col_names
-    df_si = df_si.sort_values('SI_INDEX')
-    df_si.set_index('SI_INDEX',inplace=True)
+    df_si = df_si.sort_values(sht_idx_col_name)
+    df_si.set_index(sht_idx_col_name,inplace=True)
     df_si = df_si.replace('None','')
     sel_sht.range("A9").value = df_si
     last_row = sel_sht.range("B1048576").end('up').row
