@@ -1,3 +1,4 @@
+import json
 import cx_Oracle
 import os
 import pandas as pd
@@ -10,21 +11,18 @@ from xlwings_job.oracle_connect import DataWarehouse
 
 wb_cy = xw.Book('cytiva.xlsm')
 
-def warehousing_inspection(input_date=str):
+def warehousing_inspection(input_date=str,print_form_dir = "C:\\Users\\lms46\\Desktop\\fulfill\\xlwings_job\\print_form.xlsx"):
     """
     입고품목 검수지 출력
     """
     cur = DataWarehouse()
-    print_form_dir = "C:\\Users\\lms46\\Desktop\\fulfill\\xlwings_job\\print_form.xlsx"
+    
     wb_pf = xw.Book(print_form_dir)
     ws_wi = wb_pf.sheets['WAREHOUSING_INSPECTION']
-    
+    division_list = ['대리점','SVC', 'SO','특송']
     # 입고날짜 임시로정함
     tmp_in_date = '2022-10-06'
     input_date = tmp_in_date
-    print_form_dir = "C:\\Users\\lms46\\Desktop\\fulfill\\xlwings_job\\print_form.xlsx"
-    wb_pf = xw.Book(print_form_dir)
-    division_list = ['대리점','SVC', 'SO','특송']
     
     # 대리점리스트 가져오기 FROM DB
     branch_list = cur.execute('select branch_name from branch').fetchall()
@@ -78,12 +76,13 @@ def warehousing_inspection(input_date=str):
 
 
 
-def branch_receiving(input_date=str):
+def branch_receiving(input_date=str,print_form_dir = "C:\\Users\\lms46\\Desktop\\fulfill\\xlwings_job\\print_form.xlsx"):
     """
     대리점 입고예정메일
+    Return값으로 json 타입의 각대리점별 CI리스트를 반환한다.
+
     """
     cur = DataWarehouse()
-    print_form_dir = "C:\\Users\\lms46\\Desktop\\fulfill\\xlwings_job\\print_form.xlsx"
     wb_pf = xw.Book(print_form_dir)
     ws_br_in = wb_pf.sheets['BRANCH_RECEIVING']
     worker = '홍길동'
@@ -158,3 +157,4 @@ def branch_receiving(input_date=str):
 
         # 메일보내기 기능은 CI file을 첨부가 가능할 때 진행행
         # mail_obj.Send()
+    return json.dumps(ci_dict_list,ensure_ascii=False)
