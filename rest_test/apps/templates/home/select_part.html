@@ -13,7 +13,6 @@
         <div class="card">
 
           <div class="card-body">
-            <form>
               <div class="card-header">
                 <h5 class="title">Find Parts</h5>
               </div>
@@ -94,7 +93,7 @@
                 </div>
               </div>
               <div class="card-footer">
-                <button type="submit" class="btn btn-fill btn-primary"> Find Order </button>
+                <input type="button" class="btn btn-fill btn-primary" value=" Find Order"> 
               </div>
               <div class="card-header">
                 <h5 class="title">Find SVC TOOL</h5>
@@ -121,21 +120,8 @@
                 </div>
               </div>
               <div class="card-footer">
-                <button type="submit" class="btn btn-fill btn-primary"> Find TOOL </button>
-                <input type="button" onclick="sample5_execDaumPostcode()" value="주소 입력하기" class="btn btn-fill btn-primary">
+                <input type="button" class="btn btn-fill btn-primary" value="Find TOOL"> 
               </div>
-              <form action="/" method="post">
-              <!-- 주소입력 및 카카오MAP -->
-              <div class="col-md-3 px-md-1">
-                <div class="form-group">
-                  <input type="text" class="form-control" style="width: 400px;display:none" id="search_address" name="search_address" placeholder="주소 검색">
-                  <input type="text" class="form-control" style="width: 400px;display:none" id="specific_address" name="specific_address" placeholder="상세 주소를 입력해주세요.">
-                  <input id="req_date" class="form-control" name="req_date" type="date" style="display:none;" >
-                  <input id="req_time" class="form-control" name="req_time" type="time" style="display:none;" >
-              </div>
-                </div>
-              <p><input type="submit" class="btn btn-fill btn-primary" id="add_date_submit" name="add_date_submit" style="display:none;" value="출고요청"></p>
-                 </form>
           </div>
         </div>
       </div>
@@ -182,7 +168,10 @@
   </div>
 
 <!-- 선택품목 시작 -->
+
 <div class="content" style="display:none;" id="add_part">
+  <form action="{% url 'home:svc_process' %}" method="post">
+    {% csrf_token %}
   <div hidden id="add_part_content">
   </div>
   <div class="row">
@@ -223,10 +212,27 @@
               </tbody>
             </table>
             <div class="d-flex justify-content-right">
-                <button class="btn btn-fill btn-primary" id="post">제출하기</button> 
-                <button class="btn btn-fill btn-primary" id="tempSave">임시저장</button>
+                <input type="submit" class="btn btn-fill btn-primary" id="tempSave" value="임시저장">
+                <input type="button" onclick="sample5_execDaumPostcode()" value="주소 입력하기" class="btn btn-fill btn-primary">
             </div>
           </div>
+          
+            <!-- 주소입력 및 카카오MAP -->
+            <div class="col-md-3 px-md-1">
+              <div class="form-group" style="display:none;" id="input_address">
+                <label>주소</label>
+                <input type="text" class="form-control" style="width: 400px;" id="search_address" name="search_address" placeholder="주소 검색" readonly>
+                <label>상세주소</label>
+                <input type="text" class="form-control" style="width: 400px;" id="specific_address" name="specific_address" placeholder="상세 주소를 입력해주세요.">
+                <label>출고요청일</label>
+                <input id="req_date" class="form-control" name="req_date" type="date" >
+                <label>출고요청시간</label>
+                <input id="req_time" class="form-control" name="req_time" type="time" >
+                <div id="map" style="width:400px;height:400px;margin-top:10px;"></div>
+                <p><input type="submit" class="btn btn-fill btn-primary" id="add_date_submit" name="add_date_submit" value="출고요청"></p>
+              </div>
+            </div>
+            <!-- 주소입력 및 카카오MAP -->
         </div>
       </div>
     </div> 
@@ -304,11 +310,11 @@
             
             <!-- <input type="text" id="sample5_address" placeholder="주소"> -->
             
-            <form>
+
               <br>
-              <div id="map" style="width:400px;height:400px;margin-top:10px;display:none"></div>
+              <!-- <div id="map" style="width:400px;height:400px;margin-top:10px;display:none"></div> -->
               
-            </form>
+
           </div>
         </div>
       </div>
@@ -347,12 +353,13 @@
                 var addr = data.address; // 최종 주소 변수
 
                 // 주소 정보를 해당 필드에 넣는다.
+                var input_address = document.getElementById("input_address")
                 var search_address = document.getElementById("search_address")
-                var specific_address = document.getElementById("specific_address")
-                // 날짜 시간 입력받는 input tag
-                var req_date = document.getElementById("req_date")
-                var req_time = document.getElementById("req_time")
-                var add_date_submit = document.getElementById("add_date_submit") 
+                // var specific_address = document.getElementById("specific_address")
+                // // 날짜 시간 입력받는 input tag
+                // var req_date = document.getElementById("req_date")
+                // var req_time = document.getElementById("req_time")
+                // var add_date_submit = document.getElementById("add_date_submit") 
 
                 search_address.value = addr;
                 // 주소로 상세 정보를 검색
@@ -365,13 +372,11 @@
                         // 해당 주소에 대한 좌표를 받아서
                         var coords = new daum.maps.LatLng(result.y, result.x);
                         // 지도를 보여준다.
-                        mapContainer.style.display = "block";
+                        // mapContainer.style.display = "block";
                         // 상세주소 및, 날짜 시간 입력을 받는 태그 보여줌
-                        search_address.style.display = "block";
-                        specific_address.style.display = 'block';
-                        req_date.style.display ='block';
-                        req_time.style.display ='block';
-                        add_date_submit.style.display = 'block';
+                        input_address.style.display = "block";
+
+;
 
                         map.relayout();
                         // 지도 중심을 변경한다.
@@ -498,25 +503,43 @@ function addPart(input_id) {
   }
 
 
-  
+ 
   //to_stock은 입력받기
+  var f = selected_ts_json;
   // 로그인 된사람만 이용가능 -> eng일경우 본인의 trunckstock_id를 기본 value로 설정
   trunckstock_id = 'KR_SERV01';
   subinventory_dl = document.getElementById('datalistOptions_sub').innerHTML
-  subinventory_dl = `<input class="form-control" style="text-align:center;" list="datalistOptions_tosub" id="to_sub" name="to_sub"  value="${trunckstock_id}" placeholder="Transfer할 Stock입력">` +
+  subinventory_dl = `<input class="form-control" style="text-align:center;" list="datalistOptions_tosub" id="to_sub" name="to_sub_${f[0].ts_key}"  value="${trunckstock_id}" placeholder="Transfer할 Stock입력">` +
   '<datalist id="datalistOptions_tosub" name="subinventory_dl_tosub">' +
     subinventory_dl +  '</datalist>' 
 
   var ss_card = document.getElementById('add_part_card');
     ss_card.innerHTML = 'MY REQUEST';
-  var f = selected_ts_json;
-  result = `<tr id="tr_${f[0].ts_key}">
-        <td class="text-center">${f[0].prod_group}</td>
-        <td class="text-center">${f[0].article_number}</td>
-        <td class="text-center">${f[0].description}</td>
-        <td class="text-center">${f[0].subinventory}</td>
-        <td class="text-center">${subinventory_dl}</td>
-        <td class="text-center">${input_qty}</td>
+
+  result = `<tr id="tr_${f[0].ts_key}" name="tr_${f[0].ts_key}">
+        <td class="text-center">
+          ${f[0].prod_group}
+          <input type="hidden" name="prod_group${f[0].prod_group}" value="${f[0].prod_group}" >
+        </td>
+        <td class="text-center">
+          ${f[0].article_number}
+          <input type="hidden" name="article_number_${f[0].ts_key}" value="${f[0].article_number}">
+        </td>
+        <td class="text-center">
+          ${f[0].description}
+          <input type="hidden" name="description" value="${f[0].description}">
+        </td>
+        <td class="text-center">
+          ${f[0].subinventory}
+          <input type="hidden" name="subinventory" value="${f[0].subinventory}">
+        </td>
+        <td class="text-center">
+          ${subinventory_dl}
+        </td>
+        <td class="text-center">
+          ${input_qty}
+          <input type="hidden" name="input_qty_${f[0].ts_key}" value="${input_qty}">
+        </td>
         <td>
           <input type="button" value="Delete"  onClick="DeleteTr(this.id);" class="btn btn-fill btn-primary" id="parts_input_${f[0].ts_key}" name="parts_input_${f[0].ts_key}">  
         </td>
