@@ -45,6 +45,11 @@ class ShipmentInformation:
         content_2 = self.WS_SI.range((10,8),(last_row,9)).options(numbers=int,dates=dt.date).value
         col_names_3 = self.WS_SI.range((9,10),(9,last_col)).options(numbers=int,dates=dt.date).value
         content_3 = self.WS_SI.range((10,10),(last_row,last_col)).options(numbers=int,dates=dt.date).value
+
+        # col_names_4 = self.WS_SI.range((9,16),(9,last_col)).options(numbers=int,dates=dt.date).value
+        # content_4 = self.WS_SI.range((10,16),(last_row,last_col)).options(numbers=int,dates=dt.date).value
+
+
         df_1 = pd.DataFrame([content_1],columns=col_names_1)
         df_2 = pd.DataFrame([content_2],columns=col_names_2)
         df_3 = pd.DataFrame([content_3],columns=col_names_3)
@@ -58,17 +63,57 @@ class ShipmentInformation:
 
         # si업데이트
     @classmethod
-    def update_data(self,get_each_index_num,ship_date):
+    def update_shipdate(self,get_each_index_num,ship_date):
         """
         so out시 db의 ship_date수정 및 pod완료시 pod_date 수정이 필요하다.
         # ws_si 시트의 해당하는 db 값 수정
         """
         cur = self.DataWarehouse_DB
-        idx_info=get_each_index_num
-        for val in idx_info['idx_list']:
-            si_query = f"UPDATE SHIPMENT_INFORMATION SET SHIP_DATE = '{ship_date}' WHERE SI_INDEX = {val}"
-            cur.execute(si_query)
+        if type(get_each_index_num) is list:
+            idx_list = get_each_index_num
+        else:
+            idx_list=get_each_index_num['idx_list']
+        for val in idx_list:
+            query = f"UPDATE SHIPMENT_INFORMATION SET SHIP_DATE = '{ship_date}' WHERE SI_INDEX = {val}"
+            cur.execute(query)
         cur.execute("commit")
+
+    @classmethod
+    def update_arrival_date(self,get_each_index_num,arrival_date):
+        cur = self.DataWarehouse_DB
+        idx_list=get_each_index_num
+        for val in idx_list:
+            query = f"UPDATE SHIPMENT_INFORMATION SET ARRIVAL_DATE = '{arrival_date}' WHERE SI_INDEX = {val}"
+            cur.execute(query)
+        cur.execute("commit")
+
+    @classmethod
+    def update_pod_date(self,get_each_index_num,arrival_date):
+        cur = self.DataWarehouse_DB
+        idx_list=get_each_index_num
+        for val in idx_list:
+            query = f"UPDATE SHIPMENT_INFORMATION SET POD_DATE = '{arrival_date}' WHERE SI_INDEX = {val}"
+            cur.execute(query)
+        cur.execute("commit")
+
+    @classmethod
+    def update_status(self,get_each_index_num,status):
+        cur = self.DataWarehouse_DB
+        idx_list=get_each_index_num
+        for val in idx_list:
+            query = f"UPDATE SHIPMENT_INFORMATION SET STATUS = '{status}' WHERE SI_INDEX = {val}"
+            cur.execute(query)
+        cur.execute("commit")
+
+    @classmethod
+    def update_remark(self,get_each_index_num,status):
+        cur = self.DataWarehouse_DB
+        idx_list=get_each_index_num
+        for val in idx_list:
+            query = f"UPDATE SHIPMENT_INFORMATION SET REMARK = '{status}' WHERE SI_INDEX = {val}"
+            cur.execute(query)
+        cur.execute("commit")
+
     @classmethod
     def data_input(self):
         cur = self.DataWarehouse_DB

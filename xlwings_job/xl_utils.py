@@ -9,7 +9,7 @@ from oracle_connect import DataWarehouse
 
 import xlwings as xw
 import pandas as pd
-from datetime import datetime
+import datetime as dt
 from barcode import Code128
 from barcode.writer import ImageWriter
 
@@ -201,9 +201,9 @@ def get_out_table(sheet_name,index_row_number=9):
     list형태의 출고하는 시트의 index들을 반환한다.
     """
     out_row_nums = sheet_name.range("C2").options(numbers=int).value
-    col_count = sheet_name.range("XFD9").end('left').column
+    last_col = sheet_name.range("XFD9").end('left').column
     idx_row_num = index_row_number
-    col_names = sheet_name.range(sheet_name.range(int(idx_row_num),1),sheet_name.range(int(idx_row_num),col_count)).value
+    col_names = sheet_name.range(sheet_name.range(int(idx_row_num),1),sheet_name.range(int(idx_row_num),last_col)).value
     
     for idx ,i in enumerate(col_names):
         
@@ -225,12 +225,12 @@ def get_out_table(sheet_name,index_row_number=9):
         if '~' in str(row) :
             left_row =int(row.split('~')[0])
             right_row = int(row.split('~')[1])
-            rng = sheet_name.range(sheet_name.range(left_row,1),sheet_name.range(right_row,col_count))
+            rng = sheet_name.range(sheet_name.range(left_row,1),sheet_name.range(right_row,last_col))
             df_so = pd.concat([df_so,pd.DataFrame(sheet_name.range(rng).options(numbers=int).value)]) 
         else :
             left_row =int(row)
             right_row = int(row)
-            rng = sheet_name.range(sheet_name.range(left_row,1),sheet_name.range(right_row,col_count))
+            rng = sheet_name.range(sheet_name.range(left_row,1),sheet_name.range(right_row,last_col))
             df_so = pd.concat([df_so,pd.DataFrame(sheet_name.range(rng).options(numbers=int).value).T])
 
     
@@ -330,7 +330,7 @@ def get_current_time():
     """
     현재시간 년,월,일 시,분,초 반환
     """
-    now = str(datetime.now()).split('.')[0]
+    now = str(dt.datetime.now()).split('.')[0]
 
     return now
 

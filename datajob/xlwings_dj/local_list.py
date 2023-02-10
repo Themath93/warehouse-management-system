@@ -52,7 +52,7 @@ class LocalList:
 
         # lc업데이트
     @classmethod
-    def update_data(self,get_each_index_num,ship_date):
+    def update_shipdate(self,get_each_index_num,ship_date):
         """
         so out시 db의 ship_date수정 및 pod완료시 pod_date 수정이 필요하다.
         # ws_lc 시트의 해당하는 db 값 수정
@@ -64,6 +64,13 @@ class LocalList:
             cur.execute(query)
         cur.execute("commit")
 
+        return None
+    @classmethod
+    def update_arrival_date(self):
+        return None
+
+    @classmethod
+    def update_status(self):
         return None
 
     @classmethod

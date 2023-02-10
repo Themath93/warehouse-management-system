@@ -1,15 +1,165 @@
+## xl_wings 절대경로 추가
+import sys, os
+
+sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
+
+
+
+
 import json
 import cx_Oracle
-import os
 import pandas as pd
 import xlwings as xw
 import pandas as pd
 import datetime as dt
 import html
 import win32com.client as cli
+
 from xlwings_job.oracle_connect import DataWarehouse
+from xlwings_job.xl_utils import bring_data_from_db, clear_form, get_each_index_num, get_idx, get_xl_rng_for_ship_date, row_nm_check, sht_protect
 
 wb_cy = xw.Book('cytiva.xlsm')
+my_date_handler = lambda year, month, day, **kwargs: "%04i-%02i-%02i" % (year, month, day)
+
+def warehousing_ready(input_date=str):
+
+
+    sel_sht = wb_cy.selection.sheet
+
+    default_in_date = sel_sht.range("C4").options(dates=my_date_handler).value
+    check_in_date_ans = wb_cy.app.alert("입고일 :"+default_in_date+" 가 맞습니까? ","IN DATE CHECK",buttons='yes_no_cancel')
+
+    if check_in_date_ans == 'no':
+
+            month_ans = wb_cy.app.api.InputBox("아니라면 입고되는 월을 적어주세요 **숫자만 적어주세요**' ","IN DATE CHECK",Type=1)
+            if int(month_ans) < 10:
+                month_ans = "0"+str(int(month_ans))
+            elif int(month_ans) >= 10:
+                month_ans = str(int(month_ans))
+            else :
+                wb_cy.app.alert("취소하셨습니다. 메서드를 종료합니다.","EXIT")
+                return None
+            
+            day_ans = wb_cy.app.api.InputBox("입고되는 일수를 적어주세요 **숫자만 적어주세요**' ","IN DATE CHECK",Type=1)
+            if int(day_ans) < 10:
+                day_ans = "0"+str(int(day_ans))
+            elif int(day_ans) >= 10:
+                day_ans = str(int(day_ans))
+            else :
+                wb_cy.app.alert("취소하셨습니다. 메서드를 종료합니다.","EXIT")
+                return None
+            
+            current_year_str = str(dt.datetime.today().year)    
+            input_date =  current_year_str + "-" + month_ans  + "-" + day_ans
+
+    elif check_in_date_ans == 'cancel':
+        wb_cy.app.alert("취소하셨습니다. 메서드를 종료합니다.","EXIT")
+        return None
+    else :
+        input_date = default_in_date
+
+    # wating_for_out에서만 사용가능
+    cel_status = sel_sht.range("H4")
+    if cel_status.value != 'waiting_for_out':
+        wb_cy.app.alert("'waiting_for_out' 상태에서만 해당 기능 사용이 가능합니다. 매서드를 종료합니다.","WAREHOUSING WARNING")
+        return None
+
+    # ARRIVAL_DATE에 값이 있으면 사용 불가
+    arrv_col_add = get_xl_rng_for_ship_date(wb_cy.selection,ship_date_col_num="K")
+    arrv_val_rng = sel_sht.range(arrv_col_add).options(numbers=int,dates=my_date_handler,empty=None, ndim=1)
+    is_empty = [True for val in arrv_val_rng.value if type(val) is str]
+
+    if len(is_empty) > 0 : # 값이 있다는 이야기
+        wb_cy.app.alert("'ARRIVAL_DATE'컬럼에 이미 값이 있습니니다. 중북 입고는 불가합니다.. 매서드를 종료합니다.","WAREHOUSING WARNING")
+        return None
+
+    cel_in_row= sel_sht.range("C2")
+    cel_in_row.value = ' '.join(row_nm_check()['selection_row_nm']).replace(',','~').replace(' ', ', ')
+    idx_key = get_idx(sel_sht)
+
+
+    # DB 반영 및 sel_sht 내용 반영 arrvial_date, status ==> HOLDING
+    status = 'HOLDING'
+
+
+    # DB 업데이트
+    __update_db_content(input_date, sel_sht, idx_key, status)
+
+
+    # 검수지출력
+    warehousing_inspection(input_date)
+
+    # 대리점 입고예정메일 작성 
+    branch_receiving(input_date)
+
+    # form정리
+    clear_form()
+
+    # edit_mode로 이동
+    sht_protect()
+
+    # DB내용 excel에반영
+    bring_data_from_db()
+
+    # edit_mode 종료
+    sht_protect()
+
+def __update_db_content(input_date, sel_sht, idx_key, status):
+
+
+    sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))))
+    from datajob.xlwings_dj.shipment_information import ShipmentInformation
+    from datajob.xlwings_dj.local_list import LocalList
+
+    tb_dict = {'LOCAL_LIST':LocalList, 'SHIPMENT_INFORMATION':ShipmentInformation}
+    list_for_DB = get_each_index_num(idx_key)['idx_list']
+    db_tb_name = sel_sht.range("D5").value
+    db_obj = tb_dict[db_tb_name]
+    db_obj.update_arrival_date(list_for_DB,input_date)
+    db_obj.update_status(list_for_DB,status)
+
+    # 대리점리스트 가져오기 FROM DB
+    branch_list = DataWarehouse().execute('select branch_name from branch').fetchall()
+    branch_list = list(map(lambda e: str(e).replace("('","").replace("',)","")
+                        ,branch_list))
+
+    ## SHIPMENT_INFORMATION 컬럼명다가져오기
+    query = """
+        select column_name
+        from   user_tab_columns
+        where table_name = 'SHIPMENT_INFORMATION'
+    """
+    df_col = pd.DataFrame(DataWarehouse().execute(query).fetchall()).T
+    df_col[19] = "UP_TIME"
+    df_col = df_col.drop(0,axis=1)
+    si_col_list = list(df_col.loc[0])
+
+    # input_date가 적혀있는 db정보 가져오기 데이터프레임 타입으로
+    df_in = pd.DataFrame(DataWarehouse().execute(f"select * from SHIPMENT_INFORMATION where ARRIVAL_DATE = '{input_date}'"),columns=si_col_list)
+
+
+    # get_svc_or_branch_idx_list
+    svc_idx_list = []
+    branch_idx_list = []
+    for i in range(len(df_in)):
+        order_nm = df_in['ORDER_NM'].iloc[i]
+        ship_to = df_in['SHIP_TO'].iloc[i]
+        if 'IR-SM' in order_nm:
+            svc_idx_list.append(df_in['SI_INDEX'].iloc[i])
+        else:
+            for br_name in branch_list:
+                if br_name in ship_to:
+                    branch_idx_list.append(df_in['SI_INDEX'].iloc[i])
+    # 서비스 품목 ship_date, pod_date 수정 ==> "SVC"
+    if len(svc_idx_list) > 0 :
+        ShipmentInformation.update_shipdate(svc_idx_list,input_date)
+        ShipmentInformation.update_pod_date(svc_idx_list,"SVC")
+        
+    # 대리점 품목 Remark업데이트
+    if len(branch_idx_list) > 0 :
+        ShipmentInformation.update_remark(branch_idx_list,'대리점')
+
+
 
 def warehousing_inspection(input_date=str,print_form_dir = "C:\\Users\\lms46\\Desktop\\fulfill\\xlwings_job\\print_form.xlsx"):
     """
@@ -21,8 +171,8 @@ def warehousing_inspection(input_date=str,print_form_dir = "C:\\Users\\lms46\\De
     ws_wi = wb_pf.sheets['WAREHOUSING_INSPECTION']
     division_list = ['대리점','SVC', 'SO','특송']
     # 입고날짜 임시로정함
-    tmp_in_date = '2022-10-06'
-    input_date = tmp_in_date
+    # tmp_in_date = '2022-10-06'
+    # input_date = tmp_in_date
     
     # 대리점리스트 가져오기 FROM DB
     branch_list = cur.execute('select branch_name from branch').fetchall()
@@ -89,8 +239,8 @@ def branch_receiving(input_date=str,print_form_dir = "C:\\Users\\lms46\\Desktop\
     outlook_send=cli.Dispatch("Outlook.Application")
 
     # DB에서 값가져오기
-    tmp_in_date = '2022-10-06'
-    input_date = tmp_in_date
+    # tmp_in_date = '2022-10-06'
+    # input_date = tmp_in_date
 
     col_list = ['ARRIVAL_DATE', 'AWB_NO', 'TRIP_NO', 'NM_OF_PACKAGE', 'PARCELS_NO', 'ORDER_NM', 'SHIP_TO']
     join_col = ', '.join(col_list)

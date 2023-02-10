@@ -25,6 +25,8 @@ class ShipReady():
 
     STATUS = ['waiting_for_out', 'ship_is_ready', '_is_empty','local_out_row_input_required', 'edit_mode']
 
+    PRODUCT_STATUS = ['HOLDING']
+
     SEL_SHT = wb_cy.selection.sheet
 
     STATUS_CELL = SEL_SHT.range("H4")
@@ -46,19 +48,43 @@ class ShipReady():
             # ship_ready기능을 사용하기 위해선 기본적으로 선택한 out_rows의 ship_date 컬럼이 None 값
             # 그리고 DB상의 ship_date 컬럼에서도 'None' 값이어야만한다.
             out_rows=get_row_list_to_string(row_nm_check(wb_cy)['selection_row_nm'])
+
+            # status HOLDING 확인
+            out_rows_xl_status = get_xl_rng_for_ship_date(ship_date_col_num="R")
+            sel_rng_status = self.WS_SI.range(out_rows_xl_status).options(ndim=1)
+
+            hold_count = sel_rng_status.value.count("HOLDING")
+
+            # 선택한 행중 어느 하나라도 Status가 HOLDING 상태임
+            if hold_count > 0 : 
+                wb_cy.app.alert("해당 품목의 STATUS가 'HOLDING'이기 때문에 진행이 불가합니다. 매서드를 종료합니다.","Ship Ready WARNING")
+                return None
+
+            # arrval_date 입고안된 파트 출고인지 확인
+            out_rows_xl_ad = get_xl_rng_for_ship_date(ship_date_col_num="K")
+            sel_rng_ad = self.WS_SI.range(out_rows_xl_ad).options(ndim=1)
+
+            # None의개수가 1개이상이면 입고안된 품목에대해 ship_ready를 요청한 것
+            cnt_none_ad = sel_rng_ad.value.count(None)
+            if cnt_none_ad > 0 :
+                ready_answer = wb_cy.app.alert("아직 입고가 되지 않은 파트가 신청 되었습니다. 계속진행 하시겟습니까?","Ship Ready Confirm",buttons='yes_no_cancel')
+                if ready_answer != 'yes': #출고 안하겠다는말
+                    wb_cy.app.alert("Ship Ready를 종료합니다.","Ship Ready Confirm")
+                    return None
             
+            
+
             ### ws_si 시트상의 ship_date에 값이 없는지 확인 
             out_rows_xl = get_xl_rng_for_ship_date(ship_date_col_num="L")
-            sel_rng = self.WS_SI.range(out_rows_xl)
-            if sel_rng is str:
-                sel_rng = [sel_rng]
+            # ndim=1 => value가 하나일때도 list로 value 반환
+            sel_rng = self.WS_SI.range(out_rows_xl).options(ndim=1)
 
-            try : 
-                cnt_none = sel_rng.value.count(None)
-                len_rng =len(sel_rng.value)
-            except:
-                cnt_none = sel_rng.value
-                len_rng = None
+            # try : 
+            cnt_none = sel_rng.value.count(None)
+            len_rng =len(sel_rng.value)
+            # except :
+            #     cnt_none = sel_rng.value
+            #     len_rng = None
 
             if (cnt_none == len_rng) :
 
@@ -254,9 +280,9 @@ class ShipConfirm():
                 sel_sht.range(tmp_si_address.value).value = ship_date
                 local_idx = self.WS_DB.range("I3").value
                 # ws_si 및 ws_lc 내용  db update
-                ShipmentInformation.update_data(get_each_index_num=get_each_index_num(tmp_list[1]),ship_date=ship_date)
+                ShipmentInformation.update_shipdate(get_each_index_num=get_each_index_num(tmp_list[1]),ship_date=ship_date)
                 
-                LocalList.update_data(get_each_index_num=get_each_index_num(local_idx),ship_date=ship_date)
+                LocalList.update_shipdate(get_each_index_num=get_each_index_num(local_idx),ship_date=ship_date)
 
                 tmp_si_address.clear_contents()
                 tmp_lc_address.clear_contents()
@@ -273,7 +299,7 @@ class ShipConfirm():
                 # xl_column date update ==> si_sht
                 sel_sht.range(tmp_si_address.value).value = ship_date
                 # ws_si 내용 db update
-                ShipmentInformation.update_data(get_each_index_num=get_each_index_num(tmp_list[1]),ship_date=ship_date)
+                ShipmentInformation.update_shipdate(get_each_index_num=get_each_index_num(tmp_list[1]),ship_date=ship_date)
                 tmp_si_address.clear_contents()
                 clear_form(self.WS_LC)
                 clear_form()
