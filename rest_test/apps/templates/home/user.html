@@ -20,19 +20,19 @@
                 <div class="col-md-5 pr-md-1">
                   <div class="form-group">
                     <label>USER ID</label>
-                    <input type="text" class="form-control" disabled="" placeholder="USER_ID" value="{{ forms.username }}">
+                    <input type="text" class="form-control" placeholder="USER_ID" value="{{ forms.username }}" readonly>
                   </div>
                 </div>
                 <div class="col-md-3 px-md-1">
                   <div class="form-group">
                     <label>SUBINVENTORY</label>
-                    <input type="text" class="form-control" placeholder="SUBINVENTORY" value="{{ forms.subinventory}}">
+                    <input type="text" class="form-control" placeholder="SUBINVENTORY" value="{{ forms.userdetail.subinventory}}" readonly>
                   </div>
                 </div>
                 <div class="col-md-4 pl-md-1">
                   <div class="form-group">
                     <label for="exampleInputEmail1">Email address</label>
-                    <input type="email" class="form-control" placeholder="{{ forms.email }}">
+                    <input type="email" class="form-control" value="{{ forms.email }}">
                   </div>
                 </div>
               </div>
@@ -74,7 +74,7 @@
                 <div class="col-md-4 pl-md-1">
                   <div class="form-group">
                     <label>POST CODE</label>
-                    <input type="number" class="form-control" placeholder="postcode" value="{{ forms.userdetail.postcode }}">
+                    <input type="text" class="form-control" placeholder="postcode" value="{{ forms.userdetail.postcode }}">
                   </div>
                 </div>
               </div>

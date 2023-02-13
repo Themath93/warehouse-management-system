@@ -218,18 +218,71 @@
           </div>
           
             <!-- 주소입력 및 카카오MAP -->
-            <div class="col-md-3 px-md-1">
-              <div class="form-group" style="display:none;" id="input_address">
-                <label>주소</label>
-                <input type="text" class="form-control" style="width: 400px;" id="search_address" name="search_address" placeholder="주소 검색" readonly>
-                <label>상세주소</label>
+            <div class="form-group">
+              <div class="form-group mb-2" style="display:none;" id="input_address">
+                <div class="card-header">
+                  <h4 class="card-title" id="">Edit Deilvery Details </h4>
+                </div>
+                <div class="form-row">
+                  <div class="form-group col-md-4">
+                    <label for="search_address">주소</label>
+                    <input type="text" class="form-control" id="search_address" name="search_address" placeholder="" readonly>
+                  </div>
+                  <div class="form-group col-md-4">
+                    <label for="specific_address">상세주소</label>
+                    <input type="text" class="form-control" id="specific_address" placeholder="상세주소를 작성해주세요.">
+                  </div>
+                  <div class="form-group col-md-4">
+                    <label for="my_address_list">등록된 주소</label>
+                    <select id="my_address_list" name="my_address_list" class="form-control">
+                      <option>즐겨찾기된 주소 1</option>
+                      <option>...</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="form-row">
+                  <div class="form-group col-md-6">
+                    <label for="req_date">출고요청일</label>
+                    <input type="date" class="form-control" id="req_date" name="req_date">
+                  </div>
+                  <div class="form-group col-md-4">
+                    <label for="req_time">요청시간</label>
+                    <input type="time" class="form-control" id="req_time" name="req_time">
+                  </div>
+                  <div class="form-group col-md-2">
+                    <label for="inputZip">Zip</label>
+                    <input type="text" class="form-control" id="inputZip">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <div class="card-header">
+                    <h4 class="card-title" id="">Deilvery Options </h4>
+                  </div>
+                  <div class="form-row">
+                    <div class="custom-control custom-checkbox">
+                      <input type="checkbox" id="checkbox_is_urgent" name="checkbox_is_urgent" class="custom-control-input">
+                      <label class="custom-control-label" for="checkbox_is_urgent">긴급여부</label>
+                    </div>
+                    <div class="custom-control custom-checkbox">
+                      <input type="checkbox" id="checkbox_is_return" name="checkbox_is_return" class="custom-control-input">
+                      <label class="custom-control-label" for="checkbox_is_return">왕복여부 (회수파트)</label>
+                    </div>
+                  </div>
+                </div>
+                <!-- <label for="search_address" >주소</label>
+                <input type="text" readonly class="form-control-plaintext" style="width: 400px;" id="search_address" name="search_address">
+                <label for="specific_address">상세주소</label>
                 <input type="text" class="form-control" style="width: 400px;" id="specific_address" name="specific_address" placeholder="상세 주소를 입력해주세요.">
-                <label>출고요청일</label>
+                <label for="req_date">출고요청일</label>
                 <input id="req_date" class="form-control" name="req_date" type="date" >
-                <label>출고요청시간</label>
-                <input id="req_time" class="form-control" name="req_time" type="time" >
+                <label for="req_time">출고요청시간</label>
+                <input id="req_time" class="form-control" name="req_time" type="time" > -->
                 <div id="map" style="width:400px;height:400px;margin-top:10px;"></div>
-                <p><input type="submit" class="btn btn-fill btn-primary" id="add_date_submit" name="add_date_submit" value="출고요청"></p>
+                <div class="form-group">
+                  <div class="form-check">
+                    <input type="submit" class="btn btn-fill btn-primary" id="add_date_submit" name="add_date_submit" value="출고요청">
+                  </div>
+                </div>
               </div>
             </div>
             <!-- 주소입력 및 카카오MAP -->
@@ -450,7 +503,7 @@ function findParts(){
   hidden_div.innerHTML = str_data;
 
   // 없는 값일 경우 비우기
-  console.log(query_services)
+  // console.log(query_services)
 
 
   } //findPart 끝
@@ -507,7 +560,7 @@ function addPart(input_id) {
   //to_stock은 입력받기
   var f = selected_ts_json;
   // 로그인 된사람만 이용가능 -> eng일경우 본인의 trunckstock_id를 기본 value로 설정
-  trunckstock_id = 'KR_SERV01';
+  const trunckstock_id = "{{ user.userdetail.subinventory }}";
   subinventory_dl = document.getElementById('datalistOptions_sub').innerHTML
   subinventory_dl = `<input class="form-control" style="text-align:center;" list="datalistOptions_tosub" id="to_sub" name="to_sub_${f[0].ts_key}"  value="${trunckstock_id}" placeholder="Transfer할 Stock입력">` +
   '<datalist id="datalistOptions_tosub" name="subinventory_dl_tosub">' +
@@ -655,7 +708,7 @@ observer.observe( target, { attributes: true } );
     let thisSort = e.target.dataset.sort;
     if(sortCol === thisSort) sortAsc = !sortAsc;
     sortCol = thisSort;
-    console.log('sort dir is ', sortAsc);
+    // console.log('sort dir is ', sortAsc);
     JSON.parse(hidden_div.innerHTML).sort((a, b) => {
       if(a[sortCol] < b[sortCol]) return sortAsc?1:-1;
       if(a[sortCol] > b[sortCol]) return sortAsc?-1:1;

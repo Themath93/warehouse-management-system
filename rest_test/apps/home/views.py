@@ -11,6 +11,7 @@ from django.urls import reverse
 from django.shortcuts import render
 from apps.authentication.models import *
 from django.db.models import Q
+from django.core.mail import send_mail
 
 import json
 import pandas as pd
@@ -55,21 +56,25 @@ def pages(request):
 def req_parts(request):
     prod_pose = ProdPose.objects.all().using('dw')
     products = Products.objects.all().using('dw')
+
     # 매일 재고는 그날 그날 업데이트 분을 줘야 한다. 
     # 현재 개발단계에서는 그냥 특정일자 재고리스트를 참고하도록하자
     tmp_date = '2023-02-01'
     total_stock_db = list(TotalStock.objects.filter(Q(std_day=tmp_date)).values())
     json_ts = json.dumps(total_stock_db,ensure_ascii=False)
 
-    return render(request, 'home/select_part.html',{'data_ts':json_ts,'datas_pose':prod_pose,'datas_products':products})
+    return render(request, 'home/select_part.html',{'data_ts':json_ts,'datas_pose':prod_pose,'datas_products':products,'user':request.user})
 
 @login_required(login_url="/login/")
 def svc_process(request):
 
     if request.method =='POST':
+        user_info = request.user.userdetail
+        daily_count = 1
+        std_day = str(dt.datetime.today().date())
         req_user = request.user.username
-        fe_initial = 'KR_HGD'
-        contact = '010-1234-1234'
+        fe_initial = user_info.subinventory
+        contact = user_info.contact_number_1
         req_date = request.POST.get('req_date')
         print(req_date)
         req_time = request.POST.get('req_time')
@@ -119,13 +124,20 @@ def svc_process(request):
                     
 
                 },
-                'std_day':str(dt.datetime.today().date())
+                'std_day': std_day
             },
             'data':data
         }
         req_json = json.dumps(res,ensure_ascii=False)
-        print(req_json)
+        __sending_outlook_mail(request, daily_count, std_day, fe_initial, req_json)
         return HttpResponse("받았어요")
 
-
+def __sending_outlook_mail(request, daily_count, std_day, fe_initial, req_json):
+    send_mail(
+            'SVC_' +fe_initial.split('_')[1]+'_' +std_day.replace('-','')[2:]+str(daily_count),
+            req_json,
+            'deyoon@outlook.kr',
+            ['deyoon@outlook.kr',request.user.email],
+            fail_silently=False,
+        )
 

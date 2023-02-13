@@ -36,6 +36,15 @@ DEFAULT_AUTO_FIELD='django.db.models.AutoField'
 # AUTH_USER_MODEL = 'authentication.User'
 # Application definition
 
+# Email Setting
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_PORT = 587
+EMAIL_USE_TLS = True
+EMAIL_HOST = 'smtp-mail.outlook.com'
+EMAIL_HOST_USER = "deyoon@outlook.kr"
+EMAIL_HOST_PASSWORD = "as934285!@#"
+
+
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
