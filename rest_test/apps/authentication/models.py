@@ -6,7 +6,16 @@
 #   * Remove `managed = False` lines if you wish to allow Django to create, modify, and delete the table
 # Feel free to rename the models, but don't rename db_table values or field names.
 from django.db import models
+from django.contrib.auth.models import User
 
+
+class UserDetail(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE)
+    subinventory = models.CharField(max_length=150, blank=True)
+    contact_number_1 = models.CharField(max_length=150, blank=True)
+    contact_number_2 = models.CharField(max_length=150, blank=True)
+    address = models.CharField(max_length=255, blank=True)
+    postcode = models.CharField(max_length=150, blank=True)
 
 
 
@@ -22,10 +31,22 @@ class TotalStock(models.Model):
     prod_status_type = models.CharField(max_length=100, blank=True, null=True)
     bin_cur = models.CharField(max_length=100, blank=True, null=True)
     std_day = models.CharField(max_length=100, blank=True, null=True)
+    state = models.CharField(max_length=50, blank=True, null=True)
+    state_time = models.CharField(max_length=100, blank=True, null=True)
 
     class Meta:
         managed = False
         db_table = 'total_stock'
+
+
+class Branch(models.Model):
+    branch_name = models.CharField(primary_key=True, max_length=100)
+    address = models.CharField(max_length=500, blank=True, null=True)
+    emails = models.CharField(max_length=4000, blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'branch'
 
 
 class DeliveryMethod(models.Model):
@@ -140,6 +161,7 @@ class ShipmentInformation(models.Model):
     parcels_no = models.CharField(max_length=100, blank=True, null=True)
     comment = models.CharField(max_length=2000, blank=True, null=True)
     status = models.CharField(max_length=50, blank=True, null=True)
+    up_time = models.CharField(max_length=200, blank=True, null=True)
 
     class Meta:
         managed = False
@@ -178,3 +200,14 @@ class SystemStock(models.Model):
         managed = False
         db_table = 'system_stock'
         unique_together = (('ss_key', 'article_number', 'subinventory'),)
+
+
+class Test(models.Model):
+    test = models.CharField(primary_key=True, max_length=100)
+    address = models.CharField(max_length=500, blank=True, null=True)
+    emails = models.CharField(max_length=4000, blank=True, null=True)
+    up_time = models.CharField(max_length=100, blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'test'

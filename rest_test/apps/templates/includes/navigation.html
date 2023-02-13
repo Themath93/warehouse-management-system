@@ -64,11 +64,11 @@
                             </a>
                             <ul class="dropdown-menu dropdown-navbar">
                                 <li class="nav-link">
-                                    <a href="/user.html" class="nav-item dropdown-item">Profile</a>
+                                    <a href="{% url 'authentication:profile' %}" class="nav-item dropdown-item">Profile</a>
                                 </li>
                                 <li class="dropdown-divider"></li>
                                 <li class="nav-link">
-                                    <a href="{% url 'login' %}" 
+                                    <a href="{% url 'authentication:login' %}" 
                                        class="nav-item dropdown-item">Logout</a>
                                 </li>
                             </ul>

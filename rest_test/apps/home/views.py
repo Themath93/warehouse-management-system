@@ -126,3 +126,6 @@ def svc_process(request):
         req_json = json.dumps(res,ensure_ascii=False)
         print(req_json)
         return HttpResponse("받았어요")
+
+
+

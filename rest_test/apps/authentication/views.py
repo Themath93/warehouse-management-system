@@ -7,6 +7,9 @@ Copyright (c) 2019 - present AppSeed.us
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login
 from .forms import LoginForm, SignUpForm
+from django.contrib.auth.decorators import login_required
+from .models import *
+from django.contrib.auth.models import User
 
 
 def login_view(request):
@@ -54,3 +57,11 @@ def register_user(request):
         form = SignUpForm()
 
     return render(request, "accounts/register.html", {"form": form, "msg": msg, "success": success})
+
+@login_required(login_url="/login/")
+def profile(request):
+    #이름,이메일 데이터 보여주기
+    if request.user.is_authenticated:
+        user = User.objects.get(id=request.user.id)
+
+        return render(request,'home/user.html',{'forms':user})
