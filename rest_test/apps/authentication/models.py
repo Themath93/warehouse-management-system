@@ -211,3 +211,26 @@ class Test(models.Model):
     class Meta:
         managed = False
         db_table = 'test'
+
+class ServiceReqeust(models.Model):
+    svc_key = models.CharField(primary_key=True, max_length=100)
+    fe_name = models.CharField(max_length=100, blank=True, null=True)
+    fe_initial = models.CharField(max_length=100, blank=True, null=True)
+    req_day = models.CharField(max_length=100, blank=True, null=True)
+    req_time = models.CharField(max_length=100, blank=True, null=True)
+    address = models.CharField(max_length=200, blank=True, null=True)
+    del_met = models.CharField(max_length=100, blank=True, null=True)
+    is_return = models.CharField(max_length=50, blank=True, null=True)
+    is_urgent = models.CharField(max_length=50, blank=True, null=True)
+    recipient = models.CharField(max_length=50, blank=True, null=True)
+    contact = models.CharField(max_length=50, blank=True, null=True)
+    contact_sub = models.CharField(max_length=50, blank=True, null=True)
+    del_instruction = models.CharField(max_length=2000, blank=True, null=True)
+    parts = models.CharField(max_length=4000, blank=True, null=True)
+    std_day = models.CharField(max_length=100, blank=True, null=True)
+    timeline = models.CharField(max_length=4000, blank=True, null=True)
+    state = models.CharField(max_length=100, blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'service_reqeust'

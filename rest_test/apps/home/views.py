@@ -12,6 +12,7 @@ from django.shortcuts import render
 from apps.authentication.models import *
 from django.db.models import Q
 from django.core.mail import send_mail
+from core.infra import *
 
 import json
 import pandas as pd
@@ -70,15 +71,22 @@ def svc_process(request):
 
     if request.method =='POST':
         user_info = request.user.userdetail
-        daily_count = 1
         std_day = str(dt.datetime.today().date())
         req_user = request.user.username
         fe_initial = user_info.subinventory
         contact = user_info.contact_number_1
+        sub_contact = user_info.contact_number_2
         req_date = request.POST.get('req_date')
-        print(req_date)
+        del_method = request.POST.get('del_method')
         req_time = request.POST.get('req_time')
+        is_urgent = request.POST.get('is_urgent')
+        is_return = request.POST.get('is_return')
         address = request.POST.get('search_address') + " " + request.POST.get('specific_address')
+        recipient = 'need_fill'
+        del_instruction = 'need_fill'
+        state = 'requested'
+
+        ### JSON 생성 ###
         cols = ['part_no','serial_no','qty','currnet_stock','transfer_to','BIN']
         data = []
         for key, value in request.POST.items():
@@ -95,41 +103,89 @@ def svc_process(request):
                 tmp = dict(zip(cols,rows))
                 data.append(tmp)
 
-        res = {
-            'meta':{
-                'desc':'service_part_reqeust',
+        # 가장 먼저해야하는 것은 SYSTEM_STOCK에 내용 반영 및 내용 전송
+        # 임시사용 db 
+        sys_db = SystemStock.objects.filter(std_day='2023-02-01').using('dw')
+        # sys_db = SystemStock.objects.filter(std_day=std_day).using('dw')
+        print(data)
+        for d in data:
+            search_db = sys_db.filter(Q(article_number=d['part_no']) and Q(subinventory=d['currnet_stock']))
+            print(search_db.values('quantity'))
+            
 
-                'cols':{
-                    'fe_name':'fe_이름',
-                    'fe_initial':'trunkstock_id',
-                    'req_day':'요청일',
-                    'req_time':'요청시간',
-                    'address':'주소',
-                    'del_met':'배송방법',
-                    'is_return':'왕복배송여부',
-                    'recipient':'수령인',
-                    'is_urgent':'긴급여부',
-                    'parts':'요청파트',
-                    'del_instruction':'배송요청사항',
-                    'contact':'전화번호'
 
-                },
-                'req_info':{
-                    'fe_name':req_user,
-                    'fe_initial':fe_initial,
-                    'req_day':req_date,
-                    'req_time':req_time,
-                    'address':address,
-                    'contact':contact
+
+        # # SERVICE_REQUEST 파트요청 접수..
+        # key_contain = std_day.replace('-','')[2:]
+        # try:
+        #     key_count = len(list(ServiceReqeust.objects.filter(svc_key__icontains=key_contain).using('dw').values())) + 1 
+        # except:
+        #     key_count = 1
+
+        # req_db = ServiceReqeust(
+
+        #     svc_key='SVC_'+fe_initial.split('_')[1]+'_'+key_contain+str(key_count),
+        #     fe_name = request.user.first_name + request.user.last_name,
+        #     fe_initial = fe_initial,
+        #     req_day = req_date,
+        #     req_time = req_time,
+        #     address = address,
+        #     del_met = del_method,
+        #     is_return = is_return,
+        #     is_urgent = is_urgent,
+        #     recipient = recipient,
+        #     contact = contact,
+        #     contact_sub = sub_contact,
+        #     del_instruction = del_instruction,
+        #     parts = data,
+        #     std_day = std_day,
+        #     timeline = create_db_timeline(),
+        #     state = state
+
+        #     )
+        # req_db.save(using='dw')
+
+        # # 요청메일 전송
+        # res = {
+        #     'meta':{
+        #         'desc':'service_part_reqeust',
+
+        #         'cols':{
+        #             'fe_name':'fe_이름',
+        #             'fe_initial':'trunkstock_id',
+        #             'req_day':'요청일',
+        #             'req_time':'요청시간',
+        #             'address':'주소',
+        #             'del_met':'배송방법',
+        #             'is_return':'왕복배송여부',
+        #             'recipient':'수령인',
+        #             'is_urgent':'긴급여부',
+        #             'parts':'요청파트',
+        #             'del_instruction':'배송요청사항',
+        #             'contact':'전화번호'
+
+        #         },
+        #         'req_info':{
+        #             'fe_name':req_user,
+        #             'fe_initial':fe_initial,
+        #             'req_day':req_date,
+        #             'req_time':req_time,
+        #             'address':address,
+        #             'contact':contact,
+        #             'del_met':del_method,
+        #             'is_urgent':is_urgent,
+        #             'is_return':is_return,
+        #             'recipient':'need_update',
+        #             'del_instruction':'need_update'
                     
 
-                },
-                'std_day': std_day
-            },
-            'data':data
-        }
-        req_json = json.dumps(res,ensure_ascii=False)
-        __sending_outlook_mail(request, daily_count, std_day, fe_initial, req_json)
+        #         },
+        #         'std_day': std_day
+        #     },
+        #     'parts':data
+        # }
+        # req_json = json.dumps(res,ensure_ascii=False)
+        # __sending_outlook_mail(request, key_count, std_day, fe_initial, req_json)
         return HttpResponse("받았어요")
 
 def __sending_outlook_mail(request, daily_count, std_day, fe_initial, req_json):

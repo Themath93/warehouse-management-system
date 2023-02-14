@@ -178,10 +178,10 @@
     <div class="col-md-12">
       <div class="card ">
         <div class="card-header">
-          <h4 class="card-title" id="add_part_card"></h4>
+          <h4 class="card-title" id="add_part_card"><b>MY REQUEST</b></h4>
         </div>
         <div class="card-body">
-          <div class="table-responsive">
+          <div class="table">
             <table class="table tablesorter " id="add_part_table">
               <thead class=" text-primary">
                 <tr>
@@ -221,7 +221,7 @@
             <div class="form-group">
               <div class="form-group mb-2" style="display:none;" id="input_address">
                 <div class="card-header">
-                  <h4 class="card-title" id="">Edit Deilvery Details </h4>
+                  <h4 class="card-title" id=""><b>Edit Deilvery Details</b></h4>
                 </div>
                 <div class="form-row">
                   <div class="form-group col-md-4">
@@ -230,54 +230,63 @@
                   </div>
                   <div class="form-group col-md-4">
                     <label for="specific_address">상세주소</label>
-                    <input type="text" class="form-control" id="specific_address" placeholder="상세주소를 작성해주세요.">
+                    <input type="text" class="form-control" id="specific_address" name="specific_address" placeholder="상세주소를 작성해주세요." required>
+                    <div class="invalid-feedback">상세주소는 반드시 필요합니다.</div>
                   </div>
                   <div class="form-group col-md-4">
                     <label for="my_address_list">등록된 주소</label>
                     <select id="my_address_list" name="my_address_list" class="form-control">
-                      <option>즐겨찾기된 주소 1</option>
-                      <option>...</option>
+                      <option></option>
                     </select>
                   </div>
                 </div>
                 <div class="form-row">
                   <div class="form-group col-md-6">
                     <label for="req_date">출고요청일</label>
-                    <input type="date" class="form-control" id="req_date" name="req_date">
+                    <input type="date" class="form-control" id="req_date" name="req_date" required>
+                    <div class="invalid-feedback">출고요청일은 반드시 필요합니다.</div>
                   </div>
                   <div class="form-group col-md-4">
                     <label for="req_time">요청시간</label>
-                    <input type="time" class="form-control" id="req_time" name="req_time">
+                    <input type="time" class="form-control" id="req_time" name="req_time" required>
+                    <div class="invalid-feedback">출고요청시간은 반드시 필요합니다.</div>
                   </div>
                   <div class="form-group col-md-2">
-                    <label for="inputZip">Zip</label>
-                    <input type="text" class="form-control" id="inputZip">
+                    <label for="del_method">배송방법</label>
+                    <select name="del_method" id="del_method" class="form-control" required>
+                      <option>일반(퀵)</option>
+                      <option>택배</option>
+                      <option>직접수령</option>
+                      <option>특수차량</option>
+                      <div class="invalid-feedback">배송방법은 반드시 선택해주세요.</div>
+                    </select>
                   </div>
                 </div>
                 <div class="form-group">
                   <div class="card-header">
-                    <h4 class="card-title" id="">Deilvery Options </h4>
+                    <h4 class="card-title" id=""><b>Deilvery Details</b></h4>
                   </div>
                   <div class="form-row">
                     <div class="custom-control custom-checkbox">
-                      <input type="checkbox" id="checkbox_is_urgent" name="checkbox_is_urgent" class="custom-control-input">
-                      <label class="custom-control-label" for="checkbox_is_urgent">긴급여부</label>
+                      <div class="form-group" style="margin-right:50px;">
+                        <input type="checkbox" id="checkbox_is_urgent" name="checkbox_is_urgent" class="custom-control-input">
+                        <label class="custom-control-label" for="checkbox_is_urgent"><b style="color:red;">긴급여부</b></label>
+                      </div>
                     </div>
                     <div class="custom-control custom-checkbox">
-                      <input type="checkbox" id="checkbox_is_return" name="checkbox_is_return" class="custom-control-input">
-                      <label class="custom-control-label" for="checkbox_is_return">왕복여부 (회수파트)</label>
+                      <div class="form-group" style="margin-right:50px;">
+                        <input type="checkbox" id="checkbox_is_return" name="checkbox_is_return" class="custom-control-input" disabled>
+                        <label class="custom-control-label" for="checkbox_is_return">왕복여부 (파트회수) <b>추후 지원예정</b></label>
+                      </div>
                     </div>
                   </div>
                 </div>
-                <!-- <label for="search_address" >주소</label>
-                <input type="text" readonly class="form-control-plaintext" style="width: 400px;" id="search_address" name="search_address">
-                <label for="specific_address">상세주소</label>
-                <input type="text" class="form-control" style="width: 400px;" id="specific_address" name="specific_address" placeholder="상세 주소를 입력해주세요.">
-                <label for="req_date">출고요청일</label>
-                <input id="req_date" class="form-control" name="req_date" type="date" >
-                <label for="req_time">출고요청시간</label>
-                <input id="req_time" class="form-control" name="req_time" type="time" > -->
-                <div id="map" style="width:400px;height:400px;margin-top:10px;"></div>
+                <div class="form-group">
+                  <div class="card-header">
+                    <h4 class="card-title" id=""><b>KAKAO MAP</b></h4>
+                  </div>
+                  <div id="map" style="width:400px;height:400px;margin-top:10px;"></div>
+                </div>
                 <div class="form-group">
                   <div class="form-check">
                     <input type="submit" class="btn btn-fill btn-primary" id="add_date_submit" name="add_date_submit" value="출고요청">
@@ -307,7 +316,7 @@
             <h4 class="card-title" id="service_stock_card"></h4>
           </div>
           <div class="card-body">
-            <div class="table-responsive">
+            <div class="table">
               <table class="table tablesorter " id="service_parts_table">
                 <thead class=" text-primary">
                   <tr>
@@ -567,7 +576,6 @@ function addPart(input_id) {
     subinventory_dl +  '</datalist>' 
 
   var ss_card = document.getElementById('add_part_card');
-    ss_card.innerHTML = 'MY REQUEST';
 
   result = `<tr id="tr_${f[0].ts_key}" name="tr_${f[0].ts_key}">
         <td class="text-center">
