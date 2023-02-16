@@ -105,88 +105,118 @@ def svc_process(request):
 
         # 가장 먼저해야하는 것은 SYSTEM_STOCK에 내용 반영 및 내용 전송
         # 임시사용 db 
-        sys_db = SystemStock.objects.filter(std_day='2023-02-01').using('dw')
-        # sys_db = SystemStock.objects.filter(std_day=std_day).using('dw')
-        print(data)
+        total_db = TotalStock.objects.filter(std_day='2023-02-01')
+        # total_db = TotalStock.objects.filter(std_day=std_day).using('dw')
         for d in data:
-            search_db = sys_db.filter(Q(article_number=d['part_no']) and Q(subinventory=d['currnet_stock']))
-            print(search_db.values('quantity'))
-            
+            search_db = total_db.filter(article_number=d['part_no']).get(subinventory=d['currnet_stock'])
+            search_db_qty = search_db.quantity
+            update_qty = search_db_qty-d['qty']
+            if update_qty < 0 : # 이 경우는 중복출고가 이뤄지던 도중 이미 품목이 가로채기 당한경우
+                return HttpResponse(d['part_no']+'의 출고가능 수량은'+str(search_db_qty) + '개 입니다. 출고요청을 종료합니다.')
+            search_db.quantity=update_qty
+            if update_qty == 0: # 출고가능 개수가 0이면 db에서 삭제
+                search_db.delete()
+            else : 
+                search_db.save()
+            try : # 해당엔지니어에게 이미 파트가 있는 경우
+                search_db_fe = total_db.filter(article_number=d['part_no']).get(subinventory=d['transfer_to'])
+                search_db_qty_fe = search_db_fe.quantity
+                update_qty_fe = search_db_qty_fe + d['qty']
+                search_db_fe.quantity=update_qty_fe
+                search_db_fe.save()
+
+            except: # 해당 엔지니어가 해당 파트가 아예없는경우
+                TotalStock(
+                    article_number = d['part_no'],
+                    subinventory = d['transfer_to'],
+                    quantity = d['qty'],
+                    country = 'None',
+                    prod_centre = 'None',
+                    prod_group = 'None',
+                    description = 'Reqeusted Part',
+                    prod_status_type = 'None',
+                    bin_cur = 'None',
+                    std_day = std_day,
+                    state = 'Not Apply to System Yet',
+                    state_time = str(dt.datetime.now()).split('.')[0]
+               ).save()
 
 
 
-        # # SERVICE_REQUEST 파트요청 접수..
-        # key_contain = std_day.replace('-','')[2:]
-        # try:
-        #     key_count = len(list(ServiceReqeust.objects.filter(svc_key__icontains=key_contain).using('dw').values())) + 1 
-        # except:
-        #     key_count = 1
 
-        # req_db = ServiceReqeust(
 
-        #     svc_key='SVC_'+fe_initial.split('_')[1]+'_'+key_contain+str(key_count),
-        #     fe_name = request.user.first_name + request.user.last_name,
-        #     fe_initial = fe_initial,
-        #     req_day = req_date,
-        #     req_time = req_time,
-        #     address = address,
-        #     del_met = del_method,
-        #     is_return = is_return,
-        #     is_urgent = is_urgent,
-        #     recipient = recipient,
-        #     contact = contact,
-        #     contact_sub = sub_contact,
-        #     del_instruction = del_instruction,
-        #     parts = data,
-        #     std_day = std_day,
-        #     timeline = create_db_timeline(),
-        #     state = state
+        # SERVICE_REQUEST 파트요청 접수..
+        key_contain = std_day.replace('-','')[2:]
+        try:
+            key_count = len(list(ServiceReqeust.objects.filter(svc_key__icontains=key_contain).using('dw').values())) + 1 
+        except:
+            key_count = 1
 
-        #     )
-        # req_db.save(using='dw')
+        req_db = ServiceReqeust(
 
-        # # 요청메일 전송
-        # res = {
-        #     'meta':{
-        #         'desc':'service_part_reqeust',
+            svc_key='SVC_'+fe_initial.split('_')[1]+'_'+key_contain+str(key_count),
+            fe_name = request.user.first_name + request.user.last_name,
+            fe_initial = fe_initial,
+            req_day = req_date,
+            req_time = req_time,
+            address = address,
+            del_met = del_method,
+            is_return = is_return,
+            is_urgent = is_urgent,
+            recipient = recipient,
+            contact = contact,
+            contact_sub = sub_contact,
+            del_instruction = del_instruction,
+            parts = data,
+            std_day = std_day,
+            timeline = create_db_timeline(),
+            state = state
 
-        #         'cols':{
-        #             'fe_name':'fe_이름',
-        #             'fe_initial':'trunkstock_id',
-        #             'req_day':'요청일',
-        #             'req_time':'요청시간',
-        #             'address':'주소',
-        #             'del_met':'배송방법',
-        #             'is_return':'왕복배송여부',
-        #             'recipient':'수령인',
-        #             'is_urgent':'긴급여부',
-        #             'parts':'요청파트',
-        #             'del_instruction':'배송요청사항',
-        #             'contact':'전화번호'
+            )
+        req_db.save(using='dw')
 
-        #         },
-        #         'req_info':{
-        #             'fe_name':req_user,
-        #             'fe_initial':fe_initial,
-        #             'req_day':req_date,
-        #             'req_time':req_time,
-        #             'address':address,
-        #             'contact':contact,
-        #             'del_met':del_method,
-        #             'is_urgent':is_urgent,
-        #             'is_return':is_return,
-        #             'recipient':'need_update',
-        #             'del_instruction':'need_update'
+        # 요청메일 전송
+        res = {
+            'meta':{
+                'desc':'service_part_reqeust',
+
+                'cols':{
+                    'fe_name':'fe_이름',
+                    'fe_initial':'trunkstock_id',
+                    'req_day':'요청일',
+                    'req_time':'요청시간',
+                    'address':'주소',
+                    'del_met':'배송방법',
+                    'is_return':'왕복배송여부',
+                    'recipient':'수령인',
+                    'is_urgent':'긴급여부',
+                    'parts':'요청파트',
+                    'del_instruction':'배송요청사항',
+                    'contact':'전화번호'
+
+                },
+                'req_info':{
+                    'fe_name':req_user,
+                    'fe_initial':fe_initial,
+                    'req_day':req_date,
+                    'req_time':req_time,
+                    'address':address,
+                    'contact':contact,
+                    'del_met':del_method,
+                    'is_urgent':is_urgent,
+                    'is_return':is_return,
+                    'recipient':'need_update',
+                    'del_instruction':'need_update'
                     
 
-        #         },
-        #         'std_day': std_day
-        #     },
-        #     'parts':data
-        # }
-        # req_json = json.dumps(res,ensure_ascii=False)
-        # __sending_outlook_mail(request, key_count, std_day, fe_initial, req_json)
-        return HttpResponse("받았어요")
+                },
+                'std_day': std_day
+            },
+            'parts':data
+        }
+        req_json = json.dumps(res,ensure_ascii=False)
+        __sending_outlook_mail(request, key_count, std_day, fe_initial, req_json)
+        return HttpResponse('요청이 완료되었습니다.')
 
 def __sending_outlook_mail(request, daily_count, std_day, fe_initial, req_json):
     send_mail(
