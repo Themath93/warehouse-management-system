@@ -6,7 +6,7 @@ import pandas as pd
 import win32com.client as cli
 import datetime as dt
 from xlwings_job.oracle_connect import insert_data,DataWarehouse
-from xlwings_job.xl_utils import get_empty_row
+from xlwings_job.xl_utils import get_empty_row, create_db_timeline
 import xlwings as xw
 
 class ShipmentInformation:
@@ -40,25 +40,25 @@ class ShipmentInformation:
         last_row = self.WS_SI.range("A1048576").end('up').row
         last_col = self.WS_SI.range("XFD9").end('left').column
         col_names_1 = self.WS_SI.range((9,1),(9,7)).options(numbers=int,dates=dt.date).value
-        content_1 = self.WS_SI.range((10,1),(last_row,7)).options(numbers=int,dates=dt.date).value
+        content_1 = self.WS_SI.range((10,1),(last_row,7)).options(numbers=int).value
         col_names_2 = self.WS_SI.range((9,8),(9,9)).options(numbers=int,dates=dt.date).value
-        content_2 = self.WS_SI.range((10,8),(last_row,9)).options(numbers=int,dates=dt.date).value
+        content_2 = self.WS_SI.range((10,8),(last_row,9)).options(dates=dt.date).value
         col_names_3 = self.WS_SI.range((9,10),(9,last_col)).options(numbers=int,dates=dt.date).value
         content_3 = self.WS_SI.range((10,10),(last_row,last_col)).options(numbers=int,dates=dt.date).value
 
-        # col_names_4 = self.WS_SI.range((9,16),(9,last_col)).options(numbers=int,dates=dt.date).value
-        # content_4 = self.WS_SI.range((10,16),(last_row,last_col)).options(numbers=int,dates=dt.date).value
 
-
-        df_1 = pd.DataFrame([content_1],columns=col_names_1)
-        df_2 = pd.DataFrame([content_2],columns=col_names_2)
-        df_3 = pd.DataFrame([content_3],columns=col_names_3)
+        df_1 = pd.DataFrame(content_1,columns=col_names_1)
+        df_2 = pd.DataFrame(content_2,columns=col_names_2)
+        df_3 = pd.DataFrame(content_3,columns=col_names_3)
         df = pd.concat([df_1,df_2,df_3],axis=1)
         df = df.astype('string')
         df = df.astype({
                 'SI_INDEX':'int'
             })
-        df = df.fillna('None')
+        df = df.fillna('')
+        df['NM_OF_PACKAGE'] = df['NM_OF_PACKAGE'].replace('1.0','1')
+        df['TIMELINE'] = create_db_timeline()
+
         insert_data(self.DataWarehouse_DB,df,'SHIPMENT_INFORMATION')
 
         # si업데이트
@@ -76,6 +76,10 @@ class ShipmentInformation:
         for val in idx_list:
             query = f"UPDATE SHIPMENT_INFORMATION SET SHIP_DATE = '{ship_date}' WHERE SI_INDEX = {val}"
             cur.execute(query)
+            bring_tl_query = f"SELECT TIMELINE FROM SHIPMENT_INFORMATION WHERE SI_INDEX = {val}"
+            json_tl = cur.execute(bring_tl_query).fetchone()[0]
+            timeline_query = f"UPDATE SHIPMENT_INFORMATION SET TIMELINE = '{create_db_timeline(json_tl)}' WHERE SI_INDEX = {val}"
+            cur.execute(timeline_query)
         cur.execute("commit")
 
     @classmethod
@@ -123,7 +127,7 @@ class ShipmentInformation:
         col_names_1 = self.WS_SI.range((9,1),(9,7)).options(numbers=int,dates=dt.date).value
         content_1 = self.WS_SI.range((10,1),(last_row,7)).options(numbers=int,dates=dt.date).value
         col_names_2 = self.WS_SI.range((9,8),(9,9)).options(numbers=int,dates=dt.date).value
-        content_2 = self.WS_SI.range((10,8),(last_row,9)).options(numbers=int,dates=dt.date).value
+        content_2 = self.WS_SI.range((10,8),(last_row,9)).options(dates=dt.date).value
         col_names_3 = self.WS_SI.range((9,10),(9,last_col)).options(numbers=int,dates=dt.date).value
         content_3 = self.WS_SI.range((10,10),(last_row,last_col)).options(numbers=int,dates=dt.date).value
         df_1 = pd.DataFrame([content_1],columns=col_names_1)
@@ -134,7 +138,8 @@ class ShipmentInformation:
         df = df.astype({
             'SI_INDEX':'int'
         })
-        df = df.fillna('None')
+        df = df.fillna('')
+        df['NM_OF_PACKAGE'] = df['NM_OF_PACKAGE'].replace('1.0','1')
         df['SI_INDEX'] = None
         df_len = len(df)
         df['SI_INDEX'] = [*range(last_idx_db+1,last_idx_db+df_len+1)]
