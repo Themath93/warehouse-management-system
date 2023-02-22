@@ -63,5 +63,9 @@ def profile(request):
     #이름,이메일 데이터 보여주기
     if request.user.is_authenticated:
         user = User.objects.get(id=request.user.id)
+        uesr_detail = UserDetail.objects.filter(user_id=user.id)
+        user_stock_id = uesr_detail[0].subinventory
+        my_reqeusts = ServiceReqeust.objects.filter(fe_initial=user_stock_id).using('dw')
+        print(my_reqeusts)
 
-        return render(request,'home/user.html',{'forms':user})
+        return render(request,'home/user.html',{'forms':user,'my_requests':my_reqeusts})

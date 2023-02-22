@@ -9,9 +9,10 @@ from django.http import HttpResponse, HttpResponseRedirect
 from django.template import loader
 from django.urls import reverse
 from django.shortcuts import render
-from apps.authentication.models import *
 from django.db.models import Q
 from django.core.mail import send_mail
+
+from apps.authentication.models import *
 from core.infra import *
 
 import json
@@ -225,14 +226,34 @@ def svc_process(request):
         return HttpResponse('요청이 완료되었습니다.')
 
 def __sending_outlook_mail(request, daily_count, std_day, fe_initial, req_json):
-    send_mail(
-            'SVC_' +fe_initial.split('_')[1]+'_' +std_day.replace('-','')[2:]+str(daily_count),
-            req_json,
-            'deyoon@outlook.kr',
-            ['deyoon@outlook.kr',request.user.email],
-            fail_silently=False,
-        )
+    req_json = json.loads(req_json)
+    # parts_df = pd.DataFrame(req_json['parts'])
+    # parts_df.index = parts_df.index +1
+    # parts_df = parts_df.drop(columns='BIN')
+    # parts_html = parts_df.to_html()
+    info_dict = req_json['meta']['req_info']
+    info_dict['parts'] = req_json['parts']
 
+    html_message = loader.render_to_string(
+        'home/request_detail.html',
+        context=info_dict
+
+    )
+
+    # send_mail(
+    #         subject='SVC_' +fe_initial.split('_')[1]+'_' +std_day.replace('-','')[2:]+str(daily_count),
+    #         html_message = parts_df.to_html(),
+    #         from_email='deyoon@outlook.kr',
+    #         recipient_list=['deyoon@outlook.kr',request.user.email],
+    #         fail_silently=False,
+    #     )
+
+    subject='SVC_' +fe_initial.split('_')[1]+'_' +std_day.replace('-','')[2:]+str(daily_count)
+    message = "test"
+    from_email='deyoon@outlook.kr'
+    to_list=['deyoon@outlook.kr',request.user.email]
+
+    send_mail(subject,message,from_email,to_list,fail_silently=True,html_message=html_message)
 
 
 

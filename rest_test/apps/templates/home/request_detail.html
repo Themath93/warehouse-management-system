@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+    <head>
+    </head>
+    <body>
+
+        <h3>Requestor ID : {{ fe_name }} </h3>
+        <h3>Request Day : {{ req_day }} {{ req_time }}</h3>
+        <h3>Address : {{ address }} </h3>
+        <h3>Contact : {{ contact }} </h3>
+        <h3>Deilvery Method :  {{ del_met }}</h3>
+        <h3>Is Urgent : {{ is_urgent }} </h3>
+        <h3>Is Return : {{ is_return }}</h3>
+        <h3>Recipient : {{ recipient }}</h3>
+        <h3>Deilvery Instructions : {{ del_instruction }} </h3>
+        <table style="border:1;" >
+            <thead>
+                <tr>
+                    <th>
+                        Article Number
+                    </th>
+                    <th>
+                        Serial Number / IR Order Number
+                    </th>
+                    <th>
+                        Quantity
+                    </th>
+                    <th>
+                        Current Stock
+                    </th>
+                    <th>
+                        Transfer To
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for part in parts %}
+                <tr>
+                    <td>
+                        {{part.part_no}}
+                    </td>
+                    <td>
+                        {{part.serial_no}}
+                    </td>
+                    <td>
+                        {{part.qty}}
+                    </td>
+                    <td>
+                        {{part.currnet_stock}}
+                    </td>
+                    <td>
+                        {{part.transfer_to}}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+
+        <div> 
+
+        </div>
+    </body>
+    
+    <div>
+        Signature Here
+
+    </div>
+
+    <div>
+        Please Don't Answer This Mail. This is just mail BOT.
+    </div>
+</html>
