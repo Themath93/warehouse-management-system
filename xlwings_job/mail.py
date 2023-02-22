@@ -494,7 +494,7 @@ def get_mail_status(ml_sub):
     db_obj = cur.execute(query, name1= ml_sub)
     df_status = pd.DataFrame(db_obj.fetchall())
     # 최신 날짜로 업데이트된 부분만 가져오기 MAIL_STATUS의 detail 부분은 제거
-    # UP_TIME 컬럼 datetime 객체로 변환 후 내림차순으로 최신 업데이트 내역을 위에서 볼 수 있도록함
+    # TIMELINE 컬럼 datetime 객체로 변환 후 내림차순으로 최신 업데이트 내역을 위에서 볼 수 있도록함
     df_status[3] = pd.to_datetime(df_status[3], format='%Y-%m-%d %H:%M:%S', errors='raise')
     df_status = df_status.sort_values(3,ascending=False).iloc[[0]].reset_index(drop=True)
     return df_status
