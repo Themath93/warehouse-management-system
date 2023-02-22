@@ -12,6 +12,7 @@ urlpatterns = [
 
     # The home page
     path('', views.index, name='home'),
+    path('kakao_test', views.kakao_test, name='kakao'),
     path('request_parts/', views.req_parts, name='req_parts'),
     path('request_parts/proceess', views.svc_process, name='svc_process'),
     # Matches any html file

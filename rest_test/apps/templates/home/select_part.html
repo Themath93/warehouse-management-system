@@ -464,6 +464,8 @@ var service_stock = document.getElementById('service_stock');
 var std_day = json_data_sys[0].std_day
 query_services = json_data_sys;
 
+
+
 str_data =JSON.stringify(query_services);
 hidden_div.innerHTML = str_data;
 
@@ -525,12 +527,14 @@ function addPart(input_id) {
 
   // 파트 중복 선택확인
   var children_ap = Array.from(table_ap.children)
-  var selected_list = [];
+  selected_list = [];
   children_ap.forEach(e => {
-    selected_list.push(parseInt(e.id.split("_")[1]))
+    selected_list.push(parseInt(e.id.split("_")[2]))
   }); 
   
   input_ts_key = parseInt(input_id.split("_")[2]); //ts_key 만 추출 string type change to int type
+
+  console.log(selected_list)
 
   // 중복체크 구문 includes()
   select_is_mutiple = selected_list.includes(input_ts_key)
@@ -577,7 +581,7 @@ function addPart(input_id) {
 
   var ss_card = document.getElementById('add_part_card');
 
-  result = `<tr id="tr_${f[0].ts_key}" name="tr_${f[0].ts_key}">
+  result = `<tr id="tr_selected_${f[0].ts_key}" name="tr_selected_${f[0].ts_key}">
         <td class="text-center">
           ${f[0].prod_group}
           <input type="hidden" name="prod_group${f[0].prod_group}" value="${f[0].prod_group}" >
@@ -735,5 +739,30 @@ observer.observe( target, { attributes: true } );
     if((curPage * pageSize) < JSON.parse(hidden_div.innerHTML).length) curPage++;
     renderTable_Part(JSON.parse(hidden_div.innerHTML));
   }
+
+
+
+// Delete 선택항목삭제
+
+function DeleteTr(td_id){
+
+    // 삭제 
+    var id_num = td_id.split("_")[2]
+    var sel_tr_id = "tr_selected_" + id_num
+    var selected_tr = document.getElementById(sel_tr_id)
+		while(selected_tr.hasChildNodes()){
+			selected_tr.removeChild(selected_tr.firstChild);
+		}
+
+    // selected_list에서 제거해줘야 다시 선택 가능
+
+
+
+
+    selected_list = selected_list.filter((element) => element !== parseInt(id_num));
+
+    console.log(selected_list); 
+
+	}
 </script>
 {% endblock javascripts %}
