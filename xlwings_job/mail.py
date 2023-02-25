@@ -1,10 +1,14 @@
 import sys, os
+
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 
 
 
-from datetime import datetime
+
+import datetime as dt
 from oracle_connect import DataWarehouse
+
+from datajob.xlwings_dj.service_request import ServiceRequest
 from datajob.xlwings_dj.mail_detail import MailDetail
 from datajob.xlwings_dj.mail_status import MailStatus
 from xlwings_job.xl_utils import get_current_time, get_empty_row, save_barcode_loc
@@ -127,7 +131,7 @@ class Email():
             
 
                 # 출고까지남은시간 P
-                left_time = self.WS_MAIN.range('M'+str(get_empty_row(self.WS_MAIN,'M')-1)).value - datetime.today()
+                left_time = self.WS_MAIN.range('M'+str(get_empty_row(self.WS_MAIN,'M')-1)).value - dt.datetime.today()
                 # 시간
                 left_hour = round(left_time.total_seconds()/60 //60)
                 # 분
@@ -494,7 +498,297 @@ def get_mail_status(ml_sub):
     db_obj = cur.execute(query, name1= ml_sub)
     df_status = pd.DataFrame(db_obj.fetchall())
     # 최신 날짜로 업데이트된 부분만 가져오기 MAIL_STATUS의 detail 부분은 제거
-    # TIMELINE 컬럼 datetime 객체로 변환 후 내림차순으로 최신 업데이트 내역을 위에서 볼 수 있도록함
-    df_status[3] = pd.to_datetime(df_status[3], format='%Y-%m-%d %H:%M:%S', errors='raise')
+    # TIMELINE 컬럼 dt.datetime 객체로 변환 후 내림차순으로 최신 업데이트 내역을 위에서 볼 수 있도록함
+    df_status[3] = pd.to_dt.datetime(df_status[3], format='%Y-%m-%d %H:%M:%S', errors='raise')
     df_status = df_status.sort_values(3,ascending=False).iloc[[0]].reset_index(drop=True)
     return df_status
+
+
+
+class MainControl:
+    """
+    Request에 대한 모든 것을 관리하는 클래스
+    """
+    SEL_STH = wb_cy.selection.sheet
+    FORM_ADD = ['$M$7:$M$9', '$O$7']
+    STATUS = ['requested', 'pick/pack', 'dispathed', 'complete']
+    COL_LIST =['ML_INDEX','REQ_TYPE','CREATE_DATE','REQ_DATE','PIC','IS_URGENT','LEFT_TIME','STATUS','DEL_MED','REGION']
+    BASE_QRY = 'select * from SERVICE_REQEUST '
+
+    @classmethod
+    def bring_reuests(self):
+        qry_condition = self.SEL_STH.range(self.FORM_ADD[0]).options(ndim=1).value + self.SEL_STH.range(self.FORM_ADD[1]).options(ndim=1).value
+        json_data = []
+
+
+        # 시작하기전에 sht 클리닝
+        last_row = self.SEL_STH.range("J1048576").end('up').row
+        if last_row < 12 :
+            last_row = 12
+        req_rng = self.SEL_STH.range((12,"I"),(last_row,"S"))
+        selected_cel = self.SEL_STH.range("Q8")
+        selected_cel.clear_contents()
+
+        # REQ_TYPE
+        if qry_condition[2] == 'ALL' :
+            qry = self.BASE_QRY
+        else :
+            qry = self.BASE_QRY + f'WHERE svc_key LIKE \'%{qry_condition[2]}%\' '
+
+        # STATUS
+        if qry_condition[3] == 'ALL' :
+            qry = qry
+        else:
+            qry = qry + "AND STATE = " +  f"'{qry_condition[3]}'"
+
+        df_req = pd.DataFrame(DataWarehouse().execute(qry))
+        for i in df_req:
+            row_req = df_req.loc[i]
+
+            rows = []
+            # ML_INDEX
+            rows.append(row_req[0])
+            # REQ_TYPE
+            rows.append(row_req[0].split("_")[0])
+            # CREATE_DATE
+            req_tl = json.loads(row_req[15])['data']
+            for tl in req_tl :
+                if tl['a'] == 'create' :
+                    rows.append(tl['c'])
+            # REQ_DATE
+            req_date = row_req[3] + " "+ row_req[4]
+            rows.append(req_date)
+            # PIC
+            rows.append(row_req[1])
+            # IS_URGENT
+            rows.append(row_req[8])
+            # LEFT_TIME
+            now = str(dt.datetime.now()).split('.')[0]
+            now_obj = dt.datetime.strptime(now, '%Y-%m-%d %H:%M:%S')
+            req_date_obj = dt.datetime.strptime(req_date, '%Y-%m-%d %H:%M')
+            cal_time = req_date_obj-now_obj
+            rows.append(cal_time.days*24 +cal_time.seconds//60)
+            # STATUS 
+            rows.append(row_req[16])
+            # DEL_MED
+            rows.append(row_req[6])
+            # REGION
+            tmp_sp = row_req[5].split(" ")
+            region = tmp_sp[0]+" " + tmp_sp[1]
+            rows.append(region)
+            tmp = dict(zip(self.COL_LIST,rows))
+            json_data.append(tmp)
+
+        df_fin = pd.DataFrame(json_data)
+        # from_to
+        if qry_condition[0] == None:
+            qry_condition[0] = dt.datetime(1999, 1, 1)
+        if qry_condition[1] == None:
+            qry_condition[1] = dt.datetime(2199, 1, 1)
+
+        df_fin['CREATE_DATE'] = df_fin['CREATE_DATE'].astype('datetime64[ns]')
+        df_fin = df_fin[df_fin['CREATE_DATE'].between(str(qry_condition[0]),str(qry_condition[1]))]
+        df_fin.reset_index(drop=True,inplace=True)
+        df_fin.index = df_fin.index +1
+        self.SEL_STH.range('I11').value = df_fin
+
+        # # 
+        last_row = self.SEL_STH.range("J1048576").end('up').row
+        if last_row < 12 :
+            last_row = 12
+        req_rng = self.SEL_STH.range((12,"I"),(last_row,"S"))
+        req_rng.font.bold = True
+
+
+    @classmethod
+    def select_reqeust(self):
+        selected_cel = self.SEL_STH.range("Q8")
+        last_row = self.SEL_STH.range("J1048576").end('up').row
+        if last_row < 12 :
+            last_row = 12
+
+        sel_cel = wb_cy.selection.address
+        cel_row = wb_cy.selection.row
+        idx_cel_val = self.SEL_STH.range(sel_cel).value
+        if ':' in sel_cel or ',' in sel_cel :  
+            wb_cy.app.alert("ML_INDEX 컬럼에서 원하는 한 개의 셀만 선택해주세요")
+            return None
+        if "J" not in sel_cel : 
+            wb_cy.app.alert("ML_INDEX 컬럼에서 원하는 한 개의 셀만 선택해주세요")
+            return None
+        if cel_row < 12 : 
+            wb_cy.app.alert("ML_INDEX 컬럼에서 값이 있는 선택해주세요")
+            return None
+        if idx_cel_val == None : 
+            wb_cy.app.alert("ML_INDEX 컬럼에서 값이 있는 선택해주세요")
+            return None
+        selected_cel.value = idx_cel_val
+
+    @classmethod
+    def oepn_mail(self):
+        selected_cel = self.SEL_STH.range("Q8")
+        if selected_cel.value == None:
+            wb_cy.app.alert("선택한 요청이 없습니다. 매서드를 종료합니다.")
+            return None
+
+        req_type = selected_cel.value.split('_')[0]
+        outlook = cli.Dispatch("Outlook.Application").GetNamespace("MAPI") # 아웃룩
+
+
+
+        msg_list = outlook.GetDefaultFolder(6).Parent.Folders(req_type).Items
+        for ms in msg_list:
+            if ms.Subject == selected_cel.value:
+                ms.Display()
+    
+    @classmethod
+    def print_svc(self):
+        selected_cel = self.SEL_STH.range("Q8")
+        if selected_cel.value == None:
+            wb_cy.app.alert("선택한 요청이 없습니다. 매서드를 종료합니다.","Quit")
+            return None
+        req_confirm = wb_cy.app.alert('Pick/Pack Form을 출력하시겠습니까? STATUS는 pick/pack으로 변경됩니다.','Print Request',buttons ='yes_no_cancel')
+        if req_confirm != 'yes':
+            wb_cy.app.alert('종료합니다.','Quit')
+            return None
+        col_list =['ML_INDEX','REQ_TYPE','CREATE_DATE','REQ_DATE','PIC','IS_URGENT','LEFT_TIME',
+                'STATUS','DEL_MED','ADDRESS','IS_RETURN','RECIPIENT', 'DEL_INSTRUCTION','CONTACT','PARTS']
+        print_form_dir = "C:\\Users\\lms46\\Desktop\\fulfill\\xlwings_job\\print_form.xlsx"
+        selected_cel = self.SEL_STH.range("Q8")
+        svc_key = selected_cel.value
+        qry = self.BASE_QRY + 'where svc_key =' +  f"'{svc_key}'"
+        sel_data = pd.DataFrame([DataWarehouse().execute(qry).fetchone()])
+        
+        # 선택한 svc_key값으로 df 만들기
+        json_data=[]
+        row_req = sel_data.loc[0]
+        rows = []
+        rows.append(row_req[0]) # ML_INDEX
+        rows.append(row_req[0].split("_")[0]) # REQ_TYPE
+        # CREATE_DATE
+        req_tl = json.loads(row_req[15])['data']
+        for tl in req_tl :
+            if tl['a'] == 'create' :
+                rows.append(tl['c'])
+        # REQ_DATE
+        req_date = row_req[3] + " "+ row_req[4]
+        rows.append(req_date)
+        rows.append(row_req[1]) # PIC
+        rows.append(row_req[8]) # IS_URGENT
+        # LEFT_TIME
+        now = str(dt.datetime.now()).split('.')[0]
+        now_obj = dt.datetime.strptime(now, '%Y-%m-%d %H:%M:%S')
+        req_date_obj = dt.datetime.strptime(req_date, '%Y-%m-%d %H:%M')
+        cal_time = req_date_obj-now_obj
+
+        rows.append(cal_time.days*24 +cal_time.seconds//60)
+        rows.append(row_req[16])  # STATUS 
+        rows.append(row_req[6])  # DEL_MED
+        rows.append(row_req[5])  # ADDRESS
+        rows.append(row_req[7]) # IS_RETURN 7   
+        rows.append(row_req[9])  # RECIPIENT 9      
+        rows.append(row_req[12]) # DEL_INSTRUCTION 12     
+        rows.append(row_req[10]) # CONTACT  10 
+        # PARTS
+        parts_dict = json.loads(row_req[13].replace("'",'"'))
+        df_parts = pd.DataFrame(parts_dict)
+        df_parts.index = df_parts.index+1
+        rows.append(df_parts) 
+        # json화
+        tmp = dict(zip(col_list,rows))
+        json_data.append(tmp)
+        df_fin = pd.DataFrame(json_data)
+        ## prin_form 채우기
+        
+        try:
+            ws_svc= xw.Book('print_form.xlsx').sheets['SVC']
+        except :
+            ws_svc= xw.Book(print_form_dir).sheets['SVC']
+
+        ws_svc.range('B21:H40').clear_contents()
+
+        ws_svc.range('E2').value = df_fin.loc[0]['ML_INDEX']
+            # Printed Day E3
+        ws_svc.range('E3').value = get_current_time()
+            # Delievery Type E5
+        ws_svc.range('E5').value = df_fin.loc[0]['DEL_MED']
+
+        is_return = None
+
+        if is_return != None:
+            is_return = '왕복'
+
+            # Recipient B6
+        ws_svc.range('B6').value = df_fin.loc[0]['RECIPIENT']
+            # Contact E6
+        ws_svc.range('E6').value = df_fin.loc[0]['CONTACT']
+            # Request day A10
+        ws_svc.range('A10').value  = df_fin.loc[0]['REQ_DATE']
+            # IS_RETURN A11
+        ws_svc.range('A11').value  = df_fin.loc[0]['IS_RETURN']
+            # Address D10
+        ws_svc.range('D10').value = df_fin.loc[0]['ADDRESS']
+            # Deilevery Instructions A14
+        ws_svc.range('A14').value = df_fin.loc[0]['DEL_INSTRUCTION']
+            # parts_info A20
+        ws_svc.range('A20').value = df_fin.loc[0]['PARTS']
+            # Depart From B41
+        ws_svc.range('B41').value = '서울시 강서구 하늘길 247 3층 C구역'
+            # TEL B42
+        ws_svc.range('B42').value = '02-2660-3767'
+            # Phone B43
+        ws_svc.range('B43').value = '담당자 폰번호'
+            # URGENT E41
+        is_urgent = df_fin.loc[0]['IS_URGENT']
+        if is_urgent != None:
+            is_urgent = '긴급' 
+
+        ws_svc.range('E41').value = is_urgent
+
+        # 바코드 생성
+        pic = save_barcode_loc(svc_key)
+        top = ws_svc.range('E41').top
+        left = ws_svc.range('E41').left
+        ws_svc.pictures.add(pic, name='barcode',update=True,
+                            top=top,left=left,scale=0.55)
+        os.remove(pic)
+        ws_svc.pictures[-1].lock_aspect_ratio =False
+        ws_svc.pictures[-1].width = 262
+        ws_svc.pictures[-1].height = 51
+
+        # 서비스요청사항 프린트하기
+        ws_svc.range("A1:H43").api.PrintPreview()
+        # DB적용
+        up_time_content = pd.DataFrame([DataWarehouse().execute(qry).fetchone()])[15][0]
+        status= self.STATUS[1] # pick pack
+        ServiceRequest.update_status(svc_key,up_time_content,status)
+        # 메일리스트 다시불러오기
+        self.bring_reuests()
+
+
+    @classmethod
+    def req_dispath(self):
+        selected_cel = self.SEL_STH.range("Q8")
+        svc_key = selected_cel.value
+        qry = self.BASE_QRY + 'where svc_key =' +  f"'{svc_key}'"
+        pick_pack_status = self.STATUS[1] # pick/pack
+        dispatch_status = self.STATUS[2] # dispatched
+        if selected_cel.value == None:
+            wb_cy.app.alert("선택한 요청이 없습니다. 매서드를 종료합니다.",'Quit')
+            return None
+        req_confirm = wb_cy.app.alert('출고하시겠습니까? STATUS는 dispatched로 변경됩니다.','Ship Confirm Request',buttons ='yes_no_cancel')
+        if req_confirm != 'yes':
+            wb_cy.app.alert('종료합니다.','Quit')
+            return None
+        req_df = pd.DataFrame([DataWarehouse().execute(qry).fetchone()])
+        current_status = req_df[16][0]
+        up_time_content = req_df[15][0]
+        if current_status != pick_pack_status:
+            wb_cy.app.alert(current_status+ " 상태에서는 dispatch가 불가합니다. STATUS를 확인해주세요. 매서드를 종료합니다.",'Quit')
+            return None
+        
+        # DB업데이트
+        ServiceRequest.update_status(svc_key,up_time_content,dispatch_status)
+
+         # 메일리스트 다시불러오기
+        self.bring_reuests()
