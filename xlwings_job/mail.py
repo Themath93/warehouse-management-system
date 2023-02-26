@@ -611,16 +611,16 @@ class MainControl:
         cel_row = wb_cy.selection.row
         idx_cel_val = self.SEL_STH.range(sel_cel).value
         if ':' in sel_cel or ',' in sel_cel :  
-            wb_cy.app.alert("ML_INDEX 컬럼에서 원하는 한 개의 셀만 선택해주세요")
+            wb_cy.app.alert("ML_INDEX 컬럼에서 원하는 한 개의 셀만 선택해주세요","Quit")
             return None
         if "J" not in sel_cel : 
-            wb_cy.app.alert("ML_INDEX 컬럼에서 원하는 한 개의 셀만 선택해주세요")
+            wb_cy.app.alert("ML_INDEX 컬럼에서 원하는 한 개의 셀만 선택해주세요","Quit")
             return None
         if cel_row < 12 : 
-            wb_cy.app.alert("ML_INDEX 컬럼에서 값이 있는 선택해주세요")
+            wb_cy.app.alert("ML_INDEX 컬럼에서 값이 있는 선택해주세요","Quit")
             return None
         if idx_cel_val == None : 
-            wb_cy.app.alert("ML_INDEX 컬럼에서 값이 있는 선택해주세요")
+            wb_cy.app.alert("ML_INDEX 컬럼에서 값이 있는 선택해주세요","Quit")
             return None
         selected_cel.value = idx_cel_val
 
@@ -628,7 +628,7 @@ class MainControl:
     def oepn_mail(self):
         selected_cel = self.SEL_STH.range("Q8")
         if selected_cel.value == None:
-            wb_cy.app.alert("선택한 요청이 없습니다. 매서드를 종료합니다.")
+            wb_cy.app.alert("선택한 요청이 없습니다. 매서드를 종료합니다.","Quit")
             return None
 
         req_type = selected_cel.value.split('_')[0]
@@ -642,18 +642,21 @@ class MainControl:
                 ms.Display()
     
     @classmethod
-    def print_svc(self):
+    def print_svc(self,print_only=None):
+        # Detail을 안보고 print_only만 사용하는 경우는 pick/pack이후에만 가능
         selected_cel = self.SEL_STH.range("Q8")
         if selected_cel.value == None:
             wb_cy.app.alert("선택한 요청이 없습니다. 매서드를 종료합니다.","Quit")
             return None
-        req_confirm = wb_cy.app.alert('Pick/Pack Form을 출력하시겠습니까? STATUS는 pick/pack으로 변경됩니다.','Print Request',buttons ='yes_no_cancel')
+        req_confirm = wb_cy.app.alert('Pick/Pack Form을 출력하시겠습니까? STATUS는 pick/pack으로 변경됩니다. PRINT ONLY의 경우 Form출력만 진행됩니다.','Print Request',buttons ='yes_no_cancel')
+
         if req_confirm != 'yes':
             wb_cy.app.alert('종료합니다.','Quit')
             return None
+        
         col_list =['ML_INDEX','REQ_TYPE','CREATE_DATE','REQ_DATE','PIC','IS_URGENT','LEFT_TIME',
                 'STATUS','DEL_MED','ADDRESS','IS_RETURN','RECIPIENT', 'DEL_INSTRUCTION','CONTACT','PARTS']
-        print_form_dir = "C:\\Users\\lms46\\Desktop\\fulfill\\xlwings_job\\print_form.xlsx"
+        print_form_dir = os.path.dirname(os.path.abspath(__file__)) +"\\print_form.xlsx"
         selected_cel = self.SEL_STH.range("Q8")
         svc_key = selected_cel.value
         qry = self.BASE_QRY + 'where svc_key =' +  f"'{svc_key}'"
@@ -662,6 +665,18 @@ class MainControl:
         # 선택한 svc_key값으로 df 만들기
         json_data=[]
         row_req = sel_data.loc[0]
+
+        current_status = row_req[16]
+        if print_only == None :
+            if current_status != self.STATUS[0]:
+                wb_cy.app.alert(self.STATUS[0] + ' STATUS에서만 진행가능 합니다. 프린트 기능만 원하실 경우 왼쪽의 ONLY PRINT 버튼을 눌러주세요. 매서드를 종료합니다.','Quit')
+                return None
+        else :
+            if current_status == self.STATUS[0]:
+                wb_cy.app.alert(self.STATUS[0] + ' STATUS에서는 진행이 불가합니다. 세부내용만 원하실 경우 DETAILS기능으로 참고해주세요. 매서드를 종료합니다.','Quit')
+                return None
+
+
         rows = []
         rows.append(row_req[0]) # ML_INDEX
         rows.append(row_req[0].split("_")[0]) # REQ_TYPE
@@ -698,6 +713,9 @@ class MainControl:
         tmp = dict(zip(col_list,rows))
         json_data.append(tmp)
         df_fin = pd.DataFrame(json_data)
+
+
+
         ## prin_form 채우기
         
         try:
@@ -758,10 +776,13 @@ class MainControl:
 
         # 서비스요청사항 프린트하기
         ws_svc.range("A1:H43").api.PrintPreview()
-        # DB적용
-        up_time_content = pd.DataFrame([DataWarehouse().execute(qry).fetchone()])[15][0]
-        status= self.STATUS[1] # pick pack
-        ServiceRequest.update_status(svc_key,up_time_content,status)
+        
+        # ONLY PRINT 버튼을 눌렀을 때에는 DB Update 진행 X
+        if print_only == None:
+            # DB적용
+            up_time_content = pd.DataFrame([DataWarehouse().execute(qry).fetchone()])[15][0]
+            status= self.STATUS[1] # pick pack
+            ServiceRequest.update_status(svc_key,up_time_content,status)
         # 메일리스트 다시불러오기
         self.bring_reuests()
 
