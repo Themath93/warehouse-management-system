@@ -10,7 +10,7 @@ from datajob.xlwings_dj.local_list import LocalList
 ## 출고
 from datetime import datetime
 from datajob.xlwings_dj.so_out import SOOut
-from xlwings_job.xl_utils import clear_form, get_each_index_num, get_idx, get_out_info, get_row_list_to_string, get_xl_rng_for_ship_date, row_nm_check
+from xlwings_job.xl_utils import bring_data_from_db, clear_form, get_each_index_num, get_idx, get_out_info, get_row_list_to_string, get_xl_rng_for_ship_date, row_nm_check, sht_protect
 import xlwings as xw
 import pandas as pd
 
@@ -60,17 +60,18 @@ class ShipReady():
                 wb_cy.app.alert("해당 품목의 STATUS가 'HOLDING'이기 때문에 진행이 불가합니다. 매서드를 종료합니다.","Ship Ready WARNING")
                 return None
 
-            # arrval_date 입고안된 파트 출고인지 확인
-            out_rows_xl_ad = get_xl_rng_for_ship_date(ship_date_col_num="K")
-            sel_rng_ad = self.WS_SI.range(out_rows_xl_ad).options(ndim=1)
+            # # arrval_date 입고안된 파트 출고인지 확인
+            # out_rows_xl_ad = get_xl_rng_for_ship_date(ship_date_col_num="K")
+            # sel_rng_ad = self.WS_SI.range(out_rows_xl_ad).options(ndim=1)
+            # wb_cy.app.alert(str(sel_rng_ad))
+            # # None의개수가 1개이상이면 입고안된 품목에대해 ship_ready를 요청한 것
+            # cnt_none_ad = sel_rng_ad.value.count(None)
 
-            # None의개수가 1개이상이면 입고안된 품목에대해 ship_ready를 요청한 것
-            cnt_none_ad = sel_rng_ad.value.count(None)
-            if cnt_none_ad > 0 :
-                ready_answer = wb_cy.app.alert("아직 입고가 되지 않은 파트가 신청 되었습니다. 계속진행 하시겟습니까?","Ship Ready Confirm",buttons='yes_no_cancel')
-                if ready_answer != 'yes': #출고 안하겠다는말
-                    wb_cy.app.alert("Ship Ready를 종료합니다.","Ship Ready Confirm")
-                    return None
+            # if cnt_none_ad > 0 :
+            #     ready_answer = wb_cy.app.alert("아직 입고가 되지 않은 파트가 신청 되었습니다. 계속진행 하시겟습니까?","Ship Ready Confirm",buttons='yes_no_cancel')
+            #     if ready_answer != 'yes': #출고 안하겠다는말
+            #         wb_cy.app.alert("Ship Ready를 종료합니다.","Ship Ready Confirm")
+            #         return None
             
             
 
@@ -92,7 +93,20 @@ class ShipReady():
                 if self.WS_SI.range("C2").value == None:
 
                     self.WS_SI.range("C2").value = out_rows
+                    
                     tmp_si_address.value = get_xl_rng_for_ship_date(ship_date_col_num="L")
+                                # arrval_date 입고안된 파트 출고인지 확인
+                    out_rows_xl_ad = get_xl_rng_for_ship_date(ship_date_col_num="K")
+                    sel_rng_ad = self.WS_SI.range(out_rows_xl_ad).options(ndim=1)
+                    wb_cy.app.alert(str(sel_rng_ad))
+                    # None의개수가 1개이상이면 입고안된 품목에대해 ship_ready를 요청한 것
+                    cnt_none_ad = sel_rng_ad.value.count(None)
+
+                    if cnt_none_ad > 0 :
+                        ready_answer = wb_cy.app.alert("아직 입고가 되지 않은 파트가 신청 되었습니다. 계속진행 하시겟습니까?","Ship Ready Confirm",buttons='yes_no_cancel')
+                        if ready_answer != 'yes': #출고 안하겠다는말
+                            wb_cy.app.alert("Ship Ready를 종료합니다.","Ship Ready Confirm")
+                            return None
                     
                     self.check_local_empty()
                 else :
@@ -303,6 +317,10 @@ class ShipConfirm():
                 tmp_si_address.clear_contents()
                 clear_form(self.WS_LC)
                 clear_form()
+            
+            sht_protect(False)
+            bring_data_from_db()
+            sht_protect()
         else  : 
             print("무응답")
 

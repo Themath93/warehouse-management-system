@@ -2,6 +2,7 @@ import sys, os
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))))
 
 import os
+import json
 import pandas as pd
 import win32com.client as cli
 import datetime as dt
@@ -56,6 +57,8 @@ class ShipmentInformation:
                 'SI_INDEX':'int'
             })
         df = df.fillna('')
+        df['TRIP_NO'] = df['TRIP_NO'].replace('.0','')
+        df['SHIPMENT_NM'] = df['SHIPMENT_NM'].replace('.0','')
         df['NM_OF_PACKAGE'] = df['NM_OF_PACKAGE'].replace('1.0','1')
         df['TIMELINE'] = create_db_timeline()
 
@@ -63,7 +66,7 @@ class ShipmentInformation:
 
         # si업데이트
     @classmethod
-    def update_shipdate(self,get_each_index_num,ship_date):
+    def update_shipdate(self,get_each_index_num,ship_date,status='SHIP_CONFIRM'):
         """
         so out시 db의 ship_date수정 및 pod완료시 pod_date 수정이 필요하다.
         # ws_si 시트의 해당하는 db 값 수정
@@ -76,8 +79,17 @@ class ShipmentInformation:
         for val in idx_list:
             query = f"UPDATE SHIPMENT_INFORMATION SET SHIP_DATE = '{ship_date}' WHERE SI_INDEX = {val}"
             cur.execute(query)
+            
             bring_tl_query = f"SELECT TIMELINE FROM SHIPMENT_INFORMATION WHERE SI_INDEX = {val}"
-            json_tl = cur.execute(bring_tl_query).fetchone()[0]
+            try:
+                json_tl = cur.execute(bring_tl_query).fetchone()[0]
+            except:
+                self.WB_CY.app.alert(f" SI_INDEX : {val} 해당 INDEX는 DB에 등록되지 않은 INDEX입니다. Data는 DataInput기능으로만 저장 가능합니다. 종료합니다.","Quit")
+                return 
+            
+            update_state_query = f"UPDATE SHIPMENT_INFORMATION SET STATE = '{status}' WHERE SI_INDEX = {val}"
+            cur.execute(update_state_query)
+            cur.execute(bring_tl_query).fetchone()[0]
             timeline_query = f"UPDATE SHIPMENT_INFORMATION SET TIMELINE = '{create_db_timeline(json_tl)}' WHERE SI_INDEX = {val}"
             cur.execute(timeline_query)
         cur.execute("commit")
@@ -89,6 +101,15 @@ class ShipmentInformation:
         for val in idx_list:
             query = f"UPDATE SHIPMENT_INFORMATION SET ARRIVAL_DATE = '{arrival_date}' WHERE SI_INDEX = {val}"
             cur.execute(query)
+            bring_tl_query = f"SELECT TIMELINE FROM SHIPMENT_INFORMATION WHERE SI_INDEX = {val}"
+            try:
+                json_tl = cur.execute(bring_tl_query).fetchone()[0]
+            except:
+                self.WB_CY.app.alert(f" SI_INDEX : {val} 해당 INDEX는 DB에 등록되지 않은 INDEX입니다. Data는 DataInput기능으로만 저장 가능합니다. 종료합니다.","Quit")
+                return 
+            
+            timeline_query = f"UPDATE SHIPMENT_INFORMATION SET TIMELINE = '{create_db_timeline(json_tl)}' WHERE SI_INDEX = {val}"
+            cur.execute(timeline_query)
         cur.execute("commit")
 
     @classmethod
@@ -97,6 +118,14 @@ class ShipmentInformation:
         idx_list=get_each_index_num
         for val in idx_list:
             query = f"UPDATE SHIPMENT_INFORMATION SET POD_DATE = '{arrival_date}' WHERE SI_INDEX = {val}"
+            bring_tl_query = f"SELECT TIMELINE FROM SHIPMENT_INFORMATION WHERE SI_INDEX = {val}"
+            try:
+                json_tl = cur.execute(bring_tl_query).fetchone()[0]
+            except:
+                self.WB_CY.app.alert(f" SI_INDEX : {val} 해당 INDEX는 DB에 등록되지 않은 INDEX입니다. Data는 DataInput기능으로만 저장 가능합니다. 종료합니다.","Quit")
+                return 
+            timeline_query = f"UPDATE SHIPMENT_INFORMATION SET TIMELINE = '{create_db_timeline(json_tl)}' WHERE SI_INDEX = {val}"
+            cur.execute(timeline_query)
             cur.execute(query)
         cur.execute("commit")
 
@@ -105,7 +134,15 @@ class ShipmentInformation:
         cur = self.DataWarehouse_DB
         idx_list=get_each_index_num
         for val in idx_list:
-            query = f"UPDATE SHIPMENT_INFORMATION SET STATUS = '{status}' WHERE SI_INDEX = {val}"
+            query = f"UPDATE SHIPMENT_INFORMATION SET STATE = '{status}' WHERE SI_INDEX = {val}"
+            bring_tl_query = f"SELECT TIMELINE FROM SHIPMENT_INFORMATION WHERE SI_INDEX = {val}"
+            try:
+                json_tl = cur.execute(bring_tl_query).fetchone()[0]
+            except:
+                self.WB_CY.app.alert(f" SI_INDEX : {val} 해당 INDEX는 DB에 등록되지 않은 INDEX입니다. Data는 DataInput기능으로만 저장 가능합니다. 종료합니다.","Quit")
+                return 
+            timeline_query = f"UPDATE SHIPMENT_INFORMATION SET TIMELINE = '{create_db_timeline(json_tl)}' WHERE SI_INDEX = {val}"
+            cur.execute(timeline_query)
             cur.execute(query)
         cur.execute("commit")
 
@@ -115,6 +152,14 @@ class ShipmentInformation:
         idx_list=get_each_index_num
         for val in idx_list:
             query = f"UPDATE SHIPMENT_INFORMATION SET REMARK = '{status}' WHERE SI_INDEX = {val}"
+            bring_tl_query = f"SELECT TIMELINE FROM SHIPMENT_INFORMATION WHERE SI_INDEX = {val}"
+            try:
+                json_tl = cur.execute(bring_tl_query).fetchone()[0]
+            except:
+                self.WB_CY.app.alert(f" SI_INDEX : {val} 해당 INDEX는 DB에 등록되지 않은 INDEX입니다. Data는 DataInput기능으로만 저장 가능합니다. 종료합니다.","Quit")
+                return 
+            timeline_query = f"UPDATE SHIPMENT_INFORMATION SET TIMELINE = '{create_db_timeline(json_tl)}' WHERE SI_INDEX = {val}"
+            cur.execute(timeline_query)
             cur.execute(query)
         cur.execute("commit")
 
@@ -139,8 +184,13 @@ class ShipmentInformation:
             'SI_INDEX':'int'
         })
         df = df.fillna('')
+        df['TRIP_NO'] = df['TRIP_NO'].replace('.0','')
+        df['SHIPMENT_NM'] = df['SHIPMENT_NM'].replace('.0','')
         df['NM_OF_PACKAGE'] = df['NM_OF_PACKAGE'].replace('1.0','1')
+        df['STATE'] = 'SCHEDULED'
+        df['TIMELINE'] = create_db_timeline()
         df['SI_INDEX'] = None
         df_len = len(df)
         df['SI_INDEX'] = [*range(last_idx_db+1,last_idx_db+df_len+1)]
+        self.WB_CY.app.alert(df.to_string())
         insert_data(self.DataWarehouse_DB,df,'SHIPMENT_INFORMATION')

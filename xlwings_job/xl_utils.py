@@ -10,6 +10,7 @@ from oracle_connect import DataWarehouse
 import xlwings as xw
 import pandas as pd
 import datetime as dt
+import json
 from barcode import Code128
 from barcode.writer import ImageWriter
 
@@ -564,6 +565,8 @@ def __bring_tb_from_db_and_formatting_xltb(sel_sht, cur, last_col):
     df_si = df_si.sort_values(sht_idx_col_name)
     df_si.set_index(sht_idx_col_name,inplace=True)
     df_si = df_si.replace('None','')
+    if table_name == 'SHIPMENT_INFORMATION':
+        df_si['TIMELINE'] = df_si['TIMELINE'].map(lambda e: json.loads(e)['data'][-1]['c'])
     sel_sht.range("A9").value = df_si
     last_row = sel_sht.range("B1048576").end('up').row
     last_col = sel_sht.range("XFD9").end("left").column
@@ -590,7 +593,6 @@ def bring_data_from_db():
 
         sel_sht.api.AutoFilterMode = False # Filter가 걸려져있으면 데이터복사가 원활하게 되지 않는다. 필터해제 코드
         cur=DataWarehouse()
-        
         db_table_name = sel_sht.range("D5").value
         idx_col_name = sel_sht.range("A9").value
         last_row = sel_sht.range("B1048576").end('up').row
@@ -599,6 +601,8 @@ def bring_data_from_db():
         df = pd.DataFrame(cur.execute(f'select * from {db_table_name}').fetchall())
         col_names = sel_sht.range((9,1),(9,last_col)).value
         df.columns=col_names
+        if db_table_name == 'SHIPMENT_INFORMATION':
+            df['TIMELINE'] = df['TIMELINE'].map(lambda e: json.loads(e)['data'][-1]['c'])
         df = df.sort_values(idx_col_name)
         df.set_index(idx_col_name,inplace=True)
         df = df.replace('None','')

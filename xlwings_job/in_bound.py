@@ -1,6 +1,7 @@
 ## xl_wings 절대경로 추가
 import sys, os
 
+
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 
 
@@ -17,7 +18,7 @@ import win32com.client as cli
 
 from xlwings_job.oracle_connect import DataWarehouse
 from xlwings_job.xl_utils import bring_data_from_db, clear_form, get_each_index_num, get_idx, get_xl_rng_for_ship_date, row_nm_check, sht_protect
-
+from datajob.xlwings_dj.shipment_information import ShipmentInformation
 wb_cy = xw.Book('cytiva.xlsm')
 my_date_handler = lambda year, month, day, **kwargs: "%04i-%02i-%02i" % (year, month, day)
 
@@ -119,10 +120,10 @@ def __update_db_content(input_date, sel_sht, idx_key, status):
     db_obj.update_status(list_for_DB,status)
 
     # 대리점리스트 가져오기 FROM DB
-    branch_list = DataWarehouse().execute('select branch_name from branch').fetchall()
-    branch_list = list(map(lambda e: str(e).replace("('","").replace("',)","")
-                        ,branch_list))
-
+    # branch_list = DataWarehouse().execute('select branch_name from branch').fetchall()
+    # branch_list = list(map(lambda e: str(e).replace("('","").replace("',)","")
+    #                     ,branch_list))
+    branch_list = list(pd.DataFrame(DataWarehouse().execute('select * from branch').fetchall())[0])
     ## SHIPMENT_INFORMATION 컬럼명다가져오기
     query = """
         select column_name
@@ -130,13 +131,15 @@ def __update_db_content(input_date, sel_sht, idx_key, status):
         where table_name = 'SHIPMENT_INFORMATION'
     """
     df_col = pd.DataFrame(DataWarehouse().execute(query).fetchall()).T
-    df_col[19] = "UP_TIME"
+
+    df_col[19] = "TIMELINE"
     df_col = df_col.drop(0,axis=1)
     si_col_list = list(df_col.loc[0])
 
     # input_date가 적혀있는 db정보 가져오기 데이터프레임 타입으로
     df_in = pd.DataFrame(DataWarehouse().execute(f"select * from SHIPMENT_INFORMATION where ARRIVAL_DATE = '{input_date}'"),columns=si_col_list)
 
+    wb_cy.app.alert(df_in.to_string())
 
     # get_svc_or_branch_idx_list
     svc_idx_list = []
@@ -144,6 +147,10 @@ def __update_db_content(input_date, sel_sht, idx_key, status):
     for i in range(len(df_in)):
         order_nm = df_in['ORDER_NM'].iloc[i]
         ship_to = df_in['SHIP_TO'].iloc[i]
+        if order_nm == None :
+            order_nm = 'None'
+        if ship_to == None:
+            ship_to = 'None'
         if 'IR-SM' in order_nm:
             svc_idx_list.append(df_in['SI_INDEX'].iloc[i])
         else:
@@ -161,7 +168,7 @@ def __update_db_content(input_date, sel_sht, idx_key, status):
 
 
 
-def warehousing_inspection(input_date=str,print_form_dir = "C:\\Users\\lms46\\Desktop\\fulfill\\xlwings_job\\print_form.xlsx"):
+def warehousing_inspection(input_date=str,print_form_dir = os.path.dirname(os.path.abspath(__file__)) +"\\print_form.xlsx"):
     """
     입고품목 검수지 출력
     """
@@ -308,3 +315,90 @@ def branch_receiving(input_date=str,print_form_dir = "C:\\Users\\lms46\\Desktop\
         # 메일보내기 기능은 CI file을 첨부가 가능할 때 진행행
         # mail_obj.Send()
     return json.dumps(ci_dict_list,ensure_ascii=False)
+
+
+
+
+def select_cells_for_inspection():
+    # edit_mode에서만 사용 가능
+    cursor = DataWarehouse()
+    sel_sht = wb_cy.selection.sheet
+    status_cel = sel_sht.range("H4").value
+    selected_cel_one = wb_cy.selection.address
+    selected_cel_visible = wb_cy.selection.api.SpecialCells(12).Address
+
+    if selected_cel_one.count(':') == 0:
+        selected_cel = selected_cel_one
+    else :
+        selected_cel = selected_cel_visible
+
+    if status_cel != 'edit_mode':
+        wb_cy.app.alert("edimt_mode에서만 진행 가능합니다. Mode STATUS를 확인해주세요.","WARNING")
+        return
+    sel_sht.range("U3").select()
+    wb_cy.app.alert("검수완료할 품목의 STATE 컬럼을 선택하여 진행해주세요.","INFO")
+    dollar_cnt = selected_cel.count("$")
+    R_count = selected_cel.count("R")
+    is_R_selected = dollar_cnt/2 == R_count
+    if is_R_selected == False :
+        wb_cy.app.alert("STATE컬럼 이외의 다른 셀이 선택되어있습니다. 다시 선택해주세요.","WARNING")
+        return
+    si_idx_address = selected_cel.replace("R",'A').split(',')
+    tmp_list = []
+    si_idx_list=[]
+    if type(si_idx_address ) is list :
+        for adds in si_idx_address:
+            tmp_val = sel_sht.range(adds).options(ndim=1,numbers=int).value
+            tmp_list.append(tmp_val)
+    for i in range(len(tmp_list)):
+        if tmp_list[i] == None:
+            wb_cy.app.alert("SI_INDEX값이 없는 품목이 선택되어있습니다. 선택행을 확인해주세요","Quit")
+            return
+
+        si_idx_list = si_idx_list + tmp_list[i]
+
+    for idx in si_idx_list:
+        each_state = cursor.execute(f"select state from shipment_information where si_index = {idx}").fetchone()[0]
+        if each_state != 'HOLDING':
+            wb_cy.app.alert(f"SI_INDEX : {idx} STATE : {each_state}, STATE는 HOLDING 상태에서만 진행 가능합니다. 매서드를 종료합니다.","Quit")
+            return
+
+    selected_cell_in_xl = sel_sht.range("V3")
+    to_status = sel_sht.range("V4")
+    selected_cell_in_xl.clear_contents()
+    to_status.clear_contents()
+    to_status.api.Validation.Delete()
+    selected_cell_in_xl.value = selected_cel
+
+    state_list = list(pd.DataFrame(cursor.execute('select * from INSPECTION_CODE').fetchall())[0])[2:-2]
+    state_list = ','.join(state_list)
+
+    to_status.font.size = 16
+    to_status.api.Borders.LineStyle = 1 
+    to_status.api.Validation.Add(Type=3, Formula1=state_list)
+
+
+def inpection_done():
+    answer = wb_cy.app.alert("선택하신 상태로 검수를 완료하시겠습니까","CONFIRM",buttons="yes_no_cancel")
+    if answer != "yes":
+        wb_cy.app.alert("종료합니다.","Quit")
+        return
+    sel_sht = wb_cy.selection.sheet
+    selected_cell_in_xl = sel_sht.range("V3")
+    to_status = sel_sht.range("V4")
+    si_idx_address = selected_cell_in_xl.value.replace("R",'A').split(',')
+    tmp_list=[]
+    si_idx_list=[]
+    for adds in si_idx_address:
+        tmp_val = sel_sht.range(adds).options(ndim=1,numbers=int).value
+        tmp_list.append(tmp_val)
+    for i in range(len(tmp_list)):
+        if tmp_list[i] == None:
+            wb_cy.app.alert("SI_INDEX값이 없는 품목이 선택되어있습니다. 선택행을 확인해주세요","Quit")
+            return
+
+        si_idx_list = si_idx_list + tmp_list[i]
+
+    ShipmentInformation.update_status(si_idx_list,to_status.value)
+
+    bring_data_from_db()
