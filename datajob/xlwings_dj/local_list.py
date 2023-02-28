@@ -8,7 +8,7 @@ from datetime import datetime
 from xlwings_job.oracle_connect import DataWarehouse,insert_data
 
 import xlwings as xw
-from xlwings_job.xl_utils import get_empty_row
+from xlwings_job.xl_utils import create_db_timeline, get_empty_row
 
 class LocalList:
     """
@@ -44,24 +44,46 @@ class LocalList:
                 'LC_INDEX':'int',
                 'QUANTITY':'int'
             })
-            df = df.fillna('None')
-            # self.WB_CY.sheets['Temp_DB'].range("T4").value = str(df.dtypes)
+            df['STATE'] = 'GOOD_WR'
+            df['TIMELINE'] = create_db_timeline()
+            df = df.fillna('')
             insert_data(DataWarehouse(),df,'LOCAL_LIST')
         else :
             self.WB_CY.app.alert("'db_pass'가 맞지않아 매서드를 종료합니다.",'안내')
 
         # lc업데이트
     @classmethod
-    def update_shipdate(self,get_each_index_num,ship_date):
+    def update_shipdate(self,get_each_index_num,ship_date,status='SHIP_CONFIRM'):
         """
         so out시 db의 ship_date수정 및 pod완료시 pod_date 수정이 필요하다.
         # ws_lc 시트의 해당하는 db 값 수정
         """
         cur = DataWarehouse()
-        idx_info=get_each_index_num
-        for val in idx_info['idx_list']:
+        if type(get_each_index_num) is list:
+            idx_list = get_each_index_num
+        elif type(get_each_index_num) is dict:
+            idx_list=get_each_index_num['idx_list']
+        else:
+            idx_list = [get_each_index_num]
+
+        for val in idx_list:
+            # shipdate 
             query = f"UPDATE LOCAL_LIST SET SHIP_DATE = '{ship_date}' WHERE LC_INDEX = {val}"
             cur.execute(query)
+            # timeline
+            bring_tl_query = f"SELECT TIMELINE FROM LOCAL_LIST WHERE LC_INDEX = {val}"
+            try:
+                json_tl = cur.execute(bring_tl_query).fetchone()[0]
+            except:
+                self.WB_CY.app.alert(f" LC_INDEX : {val} 해당 INDEX는 DB에 등록되지 않은 INDEX입니다. Data는 DataInput기능으로만 저장 가능합니다. 종료합니다.","Quit")
+                return 
+            cur.execute(bring_tl_query).fetchone()[0]
+            timeline_query = f"UPDATE LOCAL_LIST SET TIMELINE = '{create_db_timeline(json_tl)}' WHERE LC_INDEX = {val}"
+            cur.execute(timeline_query)
+            # state
+            update_state_query = f"UPDATE LOCAL_LIST SET STATE = '{status}' WHERE LC_INDEX = {val}"
+            cur.execute(update_state_query)
+            
         cur.execute("commit")
 
         return None

@@ -74,24 +74,29 @@ class ShipmentInformation:
         cur = self.DataWarehouse_DB
         if type(get_each_index_num) is list:
             idx_list = get_each_index_num
-        else:
+        elif type(get_each_index_num) is dict:
             idx_list=get_each_index_num['idx_list']
+        else:
+            idx_list = [get_each_index_num]
         for val in idx_list:
+            # ship_date
             query = f"UPDATE SHIPMENT_INFORMATION SET SHIP_DATE = '{ship_date}' WHERE SI_INDEX = {val}"
             cur.execute(query)
-            
+            # timeline
             bring_tl_query = f"SELECT TIMELINE FROM SHIPMENT_INFORMATION WHERE SI_INDEX = {val}"
             try:
                 json_tl = cur.execute(bring_tl_query).fetchone()[0]
             except:
                 self.WB_CY.app.alert(f" SI_INDEX : {val} 해당 INDEX는 DB에 등록되지 않은 INDEX입니다. Data는 DataInput기능으로만 저장 가능합니다. 종료합니다.","Quit")
                 return 
-            
-            update_state_query = f"UPDATE SHIPMENT_INFORMATION SET STATE = '{status}' WHERE SI_INDEX = {val}"
-            cur.execute(update_state_query)
             cur.execute(bring_tl_query).fetchone()[0]
             timeline_query = f"UPDATE SHIPMENT_INFORMATION SET TIMELINE = '{create_db_timeline(json_tl)}' WHERE SI_INDEX = {val}"
             cur.execute(timeline_query)
+            # state
+            update_state_query = f"UPDATE SHIPMENT_INFORMATION SET STATE = '{status}' WHERE SI_INDEX = {val}"
+            cur.execute(update_state_query)
+            
+
         cur.execute("commit")
 
     @classmethod
@@ -192,5 +197,5 @@ class ShipmentInformation:
         df['SI_INDEX'] = None
         df_len = len(df)
         df['SI_INDEX'] = [*range(last_idx_db+1,last_idx_db+df_len+1)]
-        self.WB_CY.app.alert(df.to_string())
+        # self.WB_CY.app.alert(df.to_string())
         insert_data(self.DataWarehouse_DB,df,'SHIPMENT_INFORMATION')

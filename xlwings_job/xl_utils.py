@@ -1,5 +1,6 @@
 ## xl_wings 절대경로 추가
 import sys, os
+
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 
 
@@ -215,13 +216,13 @@ def get_out_table(sheet_name,index_row_number=9):
     
     df_so = pd.DataFrame()
     
+    # wb_cy.app.alert(out_row_nums)
     try :
         row_list = out_row_nums.replace(' ','').split(',')
     except:
         row_list = [out_row_nums]
-    
     for row in row_list :
-
+        
         # 연속된 행인 경우
         if '~' in str(row) :
             left_row =int(row.split('~')[0])
@@ -229,6 +230,7 @@ def get_out_table(sheet_name,index_row_number=9):
             rng = sheet_name.range(sheet_name.range(left_row,1),sheet_name.range(right_row,last_col))
             df_so = pd.concat([df_so,pd.DataFrame(sheet_name.range(rng).options(numbers=int).value)]) 
         else :
+            
             left_row =int(row)
             right_row = int(row)
             rng = sheet_name.range(sheet_name.range(left_row,1),sheet_name.range(right_row,last_col))
@@ -241,7 +243,7 @@ def get_out_table(sheet_name,index_row_number=9):
 
 # 
 def get_out_info(sheet_name):
-    
+
     #2 배송방법 3 인수증방식
     info_list = sheet_name.range("C3:C7").value
     info_list[1]=str(info_list[1].date().isoformat())
@@ -249,8 +251,10 @@ def get_out_info(sheet_name):
     info_list[2] = get_tb_idx('DELIVERY_METHOD',info_list[2])
     info_list[3] = get_tb_idx('POD_METHOD',info_list[3])
 
-    now= str(get_current_time())
-    info_list.append(now)
+    #POD_DATE 컬럼필요
+    info_list.append(None)
+    timeline= create_db_timeline()
+    info_list.append(timeline)
     # tmp_idx = str(wb_cy.sheets['temp_db'].range("C500000").end('up').row -1 )
     out_idx = None
     
@@ -578,17 +582,11 @@ def __bring_tb_from_db_and_formatting_xltb(sel_sht, cur, last_col):
 # db 테이블 데이터를 xl로 시트로 보여준다.
 def bring_data_from_db():
     # sheet에 filter가 걸려져 있을경우 낭패를 본다. 반드시 필터해제후 진행
-    ## ShipmentInformation import용 경로
-    import sys, os
-    sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))))
-    from datajob.xlwings_dj.shipment_information import ShipmentInformation
-
     """
     해당 시트에 DB전체 table 데이터 불러오기
     """
     sel_sht = wb_cy.selection.sheet
     status = sel_sht.range("H4").value
-
     if status == 'edit_mode': # edit_mode에서만 지원
 
         sel_sht.api.AutoFilterMode = False # Filter가 걸려져있으면 데이터복사가 원활하게 되지 않는다. 필터해제 코드
@@ -601,7 +599,7 @@ def bring_data_from_db():
         df = pd.DataFrame(cur.execute(f'select * from {db_table_name}').fetchall())
         col_names = sel_sht.range((9,1),(9,last_col)).value
         df.columns=col_names
-        if db_table_name == 'SHIPMENT_INFORMATION':
+        if col_names.count('TIMELINE') > 0 :
             df['TIMELINE'] = df['TIMELINE'].map(lambda e: json.loads(e)['data'][-1]['c'])
         df = df.sort_values(idx_col_name)
         df.set_index(idx_col_name,inplace=True)

@@ -98,7 +98,6 @@ class ShipReady():
                                 # arrval_date 입고안된 파트 출고인지 확인
                     out_rows_xl_ad = get_xl_rng_for_ship_date(ship_date_col_num="K")
                     sel_rng_ad = self.WS_SI.range(out_rows_xl_ad).options(ndim=1)
-                    wb_cy.app.alert(str(sel_rng_ad))
                     # None의개수가 1개이상이면 입고안된 품목에대해 ship_ready를 요청한 것
                     cnt_none_ad = sel_rng_ad.value.count(None)
 
@@ -279,34 +278,35 @@ class ShipConfirm():
 
         ## ship_is_ready 상태에서만 ship_confirm기능 사용가능
         if status_cel.value == self.STATUS[1] :
-
             tmp_idx = str(self.WS_DB.range("C500000").end('up').row + 1)
             tmp_list = get_out_info(sel_sht)
             ship_date = tmp_list[3]
             # si 시트 출고 시 local품목이 있을 경우
-            if (sel_sht.name == self.SHEET_NAMES[1]) and (tmp_list[-2] != 'no_local') :
+            if (sel_sht.name == self.SHEET_NAMES[1]) and (tmp_list[-3] != 'no_local') :
                 self.__create_soout_index_insert_data_to_db(sel_sht, status_cel, tmp_idx)
-                
-                
-                # xl_column date update ==>lc_sht
-                self.WS_LC.range(tmp_lc_address.value).value = ship_date
-                # xl_column date update ==> si_sht
-                sel_sht.range(tmp_si_address.value).value = ship_date
+
                 local_idx = self.WS_DB.range("I3").value
                 # ws_si 및 ws_lc 내용  db update
-                ShipmentInformation.update_shipdate(get_each_index_num=get_each_index_num(tmp_list[1]),ship_date=ship_date)
+
+                
+                if tmp_list.count('only_local') == 0 : #only_local일 경우에는 shipment update는필요없음
+                    ShipmentInformation.update_shipdate(get_each_index_num=get_each_index_num(tmp_list[1]),ship_date=ship_date)
                 
                 LocalList.update_shipdate(get_each_index_num=get_each_index_num(local_idx),ship_date=ship_date)
-
+                
                 tmp_si_address.clear_contents()
                 tmp_lc_address.clear_contents()
                 clear_form(self.WS_LC)
                 clear_form()
                 
+                self.WS_LC.select()
+                sht_protect(False)
+                bring_data_from_db()
+                sht_protect()
+                self.WS_SI.select()
 
             else :
                 # 로컬품목없이 ws_si 품목만 출고
-
                 self.__create_soout_index_insert_data_to_db(sel_sht, status_cel, tmp_idx)
                 
                 
@@ -317,7 +317,8 @@ class ShipConfirm():
                 tmp_si_address.clear_contents()
                 clear_form(self.WS_LC)
                 clear_form()
-            
+
+
             sht_protect(False)
             bring_data_from_db()
             sht_protect()
@@ -338,8 +339,8 @@ class ShipConfirm():
     def __create_soout_index_insert_data_to_db(self, sel_sht, status_cel, tmp_idx):
         tmp_list = get_out_info(sel_sht)
         ## local 출고 품목이 있다면 local출고 index key화
-        if (sel_sht.name == self.SHEET_NAMES[1]) and (tmp_list[-2] != 'no_local') :
-            tmp_list[-2] = str(get_idx(self.WS_LC))
+        if (sel_sht.name == self.SHEET_NAMES[1]) and (tmp_list[-3] != 'no_local') :
+            tmp_list[-3] = str(get_idx(self.WS_LC))
         
         self.WS_DB.range("C"+ tmp_idx).value = tmp_list
         SOOut.put_data(self,tmp_list)
