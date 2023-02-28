@@ -118,11 +118,11 @@ class ShipmentInformation:
         cur.execute("commit")
 
     @classmethod
-    def update_pod_date(self,get_each_index_num,arrival_date):
+    def update_pod_date(self,get_each_index_num,date,status='POD_DONE'):
         cur = self.DataWarehouse_DB
         idx_list=get_each_index_num
         for val in idx_list:
-            query = f"UPDATE SHIPMENT_INFORMATION SET POD_DATE = '{arrival_date}' WHERE SI_INDEX = {val}"
+            query = f"UPDATE SHIPMENT_INFORMATION SET POD_DATE = '{date}' WHERE SI_INDEX = {val}"
             bring_tl_query = f"SELECT TIMELINE FROM SHIPMENT_INFORMATION WHERE SI_INDEX = {val}"
             try:
                 json_tl = cur.execute(bring_tl_query).fetchone()[0]
@@ -132,6 +132,9 @@ class ShipmentInformation:
             timeline_query = f"UPDATE SHIPMENT_INFORMATION SET TIMELINE = '{create_db_timeline(json_tl)}' WHERE SI_INDEX = {val}"
             cur.execute(timeline_query)
             cur.execute(query)
+            # state
+            update_state_query = f"UPDATE SHIPMENT_INFORMATION SET STATE = '{status}' WHERE SI_INDEX = {val}"
+            cur.execute(update_state_query)
         cur.execute("commit")
 
     @classmethod

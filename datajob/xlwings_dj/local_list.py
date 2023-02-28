@@ -94,6 +94,26 @@ class LocalList:
     @classmethod
     def update_status(self):
         return None
+    
+    @classmethod
+    def update_pod_date(self,get_each_index_num,date,status='POD_DONE'):
+        cur = self.DataWarehouse_DB
+        idx_list=get_each_index_num
+        for val in idx_list:
+            query = f"UPDATE LOCAL_LIST SET POD_DATE = '{date}' WHERE LC_INDEX = {val}"
+            bring_tl_query = f"SELECT TIMELINE FROM LOCAL_LIST WHERE LC_INDEX = {val}"
+            try:
+                json_tl = cur.execute(bring_tl_query).fetchone()[0]
+            except:
+                self.WB_CY.app.alert(f" LC_INDEX : {val} 해당 INDEX는 DB에 등록되지 않은 INDEX입니다. Data는 DataInput기능으로만 저장 가능합니다. 종료합니다.","Quit")
+                return 
+            timeline_query = f"UPDATE LOCAL_LIST SET TIMELINE = '{create_db_timeline(json_tl)}' WHERE LC_INDEX = {val}"
+            cur.execute(timeline_query)
+            cur.execute(query)
+            # state
+            update_state_query = f"UPDATE LOCAL_LIST SET STATE = '{status}' WHERE LC_INDEX = {val}"
+            cur.execute(update_state_query)
+        cur.execute("commit")
 
     @classmethod
     def data_input(self):

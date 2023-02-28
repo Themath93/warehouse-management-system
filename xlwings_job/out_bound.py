@@ -263,6 +263,7 @@ class ShipConfirm():
 
     @classmethod
     def ship_confirm(self):
+        wb_cy.app.screen_updating = False
         # SO 품목 출고 담당
 
         # so,lc 임시 주소저장함 확인
@@ -322,9 +323,10 @@ class ShipConfirm():
             sht_protect(False)
             bring_data_from_db()
             sht_protect()
+            wb_cy.app.screen_updating = True
         else  : 
             print("무응답")
-
+            wb_cy.app.screen_updating = True
 
 
 
