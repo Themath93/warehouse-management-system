@@ -8,16 +8,16 @@ sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 
 
 import json
-import cx_Oracle
 import pandas as pd
 import xlwings as xw
 import pandas as pd
 import datetime as dt
 import html
 import win32com.client as cli
+import string
 
 from xlwings_job.oracle_connect import DataWarehouse
-from xlwings_job.xl_utils import bring_data_from_db, clear_form, get_each_index_num, get_idx, get_xl_rng_for_ship_date, row_nm_check, sht_protect
+from xlwings_job.xl_utils import bring_data_from_db, clear_form, create_db_timeline, get_each_index_num, get_idx, get_xl_rng_for_ship_date, row_nm_check, sht_protect
 from datajob.xlwings_dj.shipment_information import ShipmentInformation
 wb_cy = xw.Book('cytiva.xlsm')
 my_date_handler = lambda year, month, day, **kwargs: "%04i-%02i-%02i" % (year, month, day)
@@ -327,41 +327,52 @@ def select_cells_for_inspection():
     selected_cel_one = wb_cy.selection.address
     selected_cel_visible = wb_cy.selection.api.SpecialCells(12).Address
 
+    last_col = sel_sht.range('XFD9').end('left').column
+    col_names = sel_sht.range((9,1),(9,last_col)).value
+    idx_state=col_names.index('STATE')
+    pk_name = sel_sht.range("A9").value
+    state_alpha = string.ascii_uppercase[idx_state] # STATE에 해당하는 대문자알파벳 반환
+
     if selected_cel_one.count(':') == 0:
         selected_cel = selected_cel_one
     else :
         selected_cel = selected_cel_visible
 
     if status_cel != 'edit_mode':
-        wb_cy.app.alert("edimt_mode에서만 진행 가능합니다. Mode STATUS를 확인해주세요.","WARNING")
+        wb_cy.app.alert("edit_mode에서만 진행 가능합니다. Mode STATUS를 확인해주세요.","WARNING")
         return
     sel_sht.range("U3").select()
     wb_cy.app.alert("검수완료할 품목의 STATE 컬럼을 선택하여 진행해주세요.","INFO")
+
+
+
+    
+
     dollar_cnt = selected_cel.count("$")
-    R_count = selected_cel.count("R")
-    is_R_selected = dollar_cnt/2 == R_count
-    if is_R_selected == False :
+    alphabet_count = selected_cel.count(state_alpha)
+    is_alphabet_selected = dollar_cnt/2 == alphabet_count
+    if is_alphabet_selected == False :
         wb_cy.app.alert("STATE컬럼 이외의 다른 셀이 선택되어있습니다. 다시 선택해주세요.","WARNING")
         return
-    si_idx_address = selected_cel.replace("R",'A').split(',')
+    pk_idx_address = selected_cel.replace(state_alpha,'A').split(',')
     tmp_list = []
-    si_idx_list=[]
-    if type(si_idx_address ) is list :
-        for adds in si_idx_address:
+    pk_idx_list=[]
+    if type(pk_idx_address ) is list :
+        for adds in pk_idx_address:
             tmp_val = sel_sht.range(adds).options(ndim=1,numbers=int).value
             tmp_list.append(tmp_val)
     for i in range(len(tmp_list)):
         if tmp_list[i] == None:
-            wb_cy.app.alert("SI_INDEX값이 없는 품목이 선택되어있습니다. 선택행을 확인해주세요","Quit")
+            wb_cy.app.alert(f"{pk_name}값이 없는 품목이 선택되어있습니다. 선택행을 확인해주세요","Quit")
             return
 
-        si_idx_list = si_idx_list + tmp_list[i]
+        pk_idx_list = pk_idx_list + tmp_list[i]
 
-    for idx in si_idx_list:
-        each_state = cursor.execute(f"select state from shipment_information where si_index = {idx}").fetchone()[0]
-        if each_state != 'HOLDING':
-            wb_cy.app.alert(f"SI_INDEX : {idx} STATE : {each_state}, STATE는 HOLDING 상태에서만 진행 가능합니다. 매서드를 종료합니다.","Quit")
-            return
+    # for idx in pk_idx_list:
+    #     each_state = cursor.execute(f"select state from {db_table_name} where {pk_name} = {idx}").fetchone()[0]
+    #     if each_state != 'HOLDING':
+    #         wb_cy.app.alert(f"{pk_name} : {idx} STATE : {each_state}, STATE는 HOLDING 상태에서만 진행 가능합니다. 매서드를 종료합니다.","Quit")
+    #         return
 
     selected_cell_in_xl = sel_sht.range("V3")
     to_status = sel_sht.range("V4")
@@ -379,26 +390,49 @@ def select_cells_for_inspection():
 
 
 def inpection_done():
-    answer = wb_cy.app.alert("선택하신 상태로 검수를 완료하시겠습니까","CONFIRM",buttons="yes_no_cancel")
+    
+    cur = DataWarehouse()
+    answer = wb_cy.app.alert("선택하신 상태로 STATE를 변경하시겠습니까","CONFIRM",buttons="yes_no_cancel")
     if answer != "yes":
         wb_cy.app.alert("종료합니다.","Quit")
         return
+    wb_cy.app.screen_updating = False
+
     sel_sht = wb_cy.selection.sheet
+    
+    last_col = sel_sht.range('XFD9').end('left').column
+    col_names = sel_sht.range((9,1),(9,last_col)).value
+    idx_state=col_names.index('STATE')
+    pk_name = sel_sht.range("A9").value
+    db_table_name = sel_sht.range("D5").value
+    state_alpha = string.ascii_uppercase[idx_state] # STATE에 해당하는 대문자알파벳 반환
+
     selected_cell_in_xl = sel_sht.range("V3")
-    to_status = sel_sht.range("V4")
-    si_idx_address = selected_cell_in_xl.value.replace("R",'A').split(',')
+    to_status = sel_sht.range("V4").value
+    pk_idx_address = selected_cell_in_xl.value.replace(state_alpha,'A').split(',')
     tmp_list=[]
-    si_idx_list=[]
-    for adds in si_idx_address:
+    pk_idx_list=[]
+    for adds in pk_idx_address:
         tmp_val = sel_sht.range(adds).options(ndim=1,numbers=int).value
         tmp_list.append(tmp_val)
     for i in range(len(tmp_list)):
         if tmp_list[i] == None:
-            wb_cy.app.alert("SI_INDEX값이 없는 품목이 선택되어있습니다. 선택행을 확인해주세요","Quit")
+            wb_cy.app.alert(f"{pk_name} 값이 없는 품목이 선택되어있습니다. 선택행을 확인해주세요","Quit")
             return
 
-        si_idx_list = si_idx_list + tmp_list[i]
+        pk_idx_list = pk_idx_list + tmp_list[i]
 
-    ShipmentInformation.update_status(si_idx_list,to_status.value)
-
+    for val in pk_idx_list:
+        query = f"UPDATE {db_table_name} SET STATE = '{to_status}' WHERE {pk_name} = {val}"
+        bring_tl_query = f"SELECT TIMELINE FROM {db_table_name} WHERE {pk_name} = {val}"
+        try:
+            json_tl = cur.execute(bring_tl_query).fetchone()[0]
+        except:
+            wb_cy.app.alert(f" {pk_name} : {val} 해당 INDEX는 DB에 등록되지 않은 INDEX입니다. Data는 DataInput기능으로만 저장 가능합니다. 종료합니다.","Quit")
+            return 
+        timeline_query = f"UPDATE {db_table_name} SET TIMELINE = '{create_db_timeline(json_tl)}' WHERE {pk_name} = {val}"
+        cur.execute(timeline_query)
+        cur.execute(query)
+    cur.execute("commit")
     bring_data_from_db()
+    wb_cy.app.screen_updating = True

@@ -27,7 +27,7 @@ wb_cy = xw.Book.caller()
 
 class Email():
     SHEET_NAMES =  ['Temp_DB', 'Shipment information', '인수증', 
-    '대리점송장', '대리점 출고대기', '로컬리스트', 'In-Transit part report', '기타리스트',
+    '대리점송장', '대리점 출고대기', '로컬리스트', 'IR_SVC', '기타리스트',
      '출고리스트', 'Cytiva Inventory BIN','통합제어']
 
     STATUS = ['waiting_for_out', 'ship_is_ready', '_is_empty','local_out_row_input_required']

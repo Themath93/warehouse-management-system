@@ -126,10 +126,13 @@ class LocalList:
         df = pd.DataFrame([content],columns=col_names)
         df = df.astype('string')
         df = df.astype({
-            'LC_INDEX':'int'
+            'LC_INDEX':'int',
+            'QUANTITY':'int'
         })
-        df = df.fillna('None')
+        df = df.fillna('')
         df['LC_INDEX'] = None
+        df['STATE'] = 'SCHEDULED'
+        df['TIMELINE'] = create_db_timeline()
         df_len = len(df)
         df['LC_INDEX'] = [*range(last_idx_db+1,last_idx_db+df_len+1)]
         insert_data(self.DataWarehouse_DB,df,'LOCAL_LIST')

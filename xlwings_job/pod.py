@@ -9,7 +9,7 @@ from datajob.xlwings_dj.so_out import SOOut
 from datajob.xlwings_dj.local_list import LocalList
 from datajob.xlwings_dj.shipment_information import ShipmentInformation
 from xlwings_job.oracle_connect import DataWarehouse
-from xlwings_job.xl_utils import bring_data_from_db, get_each_index_num, sht_protect
+from xlwings_job.xl_utils import bring_data_from_db, clear_form, get_each_index_num, sht_protect
 import pandas as pd
 import xlwings as xw
 import json
@@ -29,15 +29,15 @@ def bring_pod_sht_data():
         return
     wb_cy.app.screen_updating = False
     soout_col_names = ['SO_INDEX', 'SHT_ROW_IDX', 'PERSON_IN_CHARGE', 'SHIP_DATE', 'DM_KEY', 'POD_KEY', 'IS_LOCAL','POD_DATE', 'TIMELINE']
-    sel_sth = wb_cy.selection.sheet
-    idx_cel =  sel_sth.range("C2")
+    sel_sht = wb_cy.selection.sheet
+    idx_cel =  sel_sht.range("C2")
     idx_cel.clear_contents()
     idx_cel.api.Validation.Delete()
 
-    last_row = sel_sth.range('A1048576').end('up').row
+    last_row = sel_sht.range('A1048576').end('up').row
     if last_row < 10 :
         last_row = 10
-    tb_rng = sel_sth.range((10,"A"),(last_row,"J"))
+    tb_rng = sel_sht.range((10,"A"),(last_row,"J"))
     tb_rng.clear_contents()
 
     df_soout = pd.DataFrame(DataWarehouse().execute("select * from so_out where pod_date is null").fetchall())
@@ -126,23 +126,23 @@ def bring_pod_sht_data():
     df_soout= df_soout[['POD_KEY','SHIP_DATE','ORDER_NO', 'SHIP_TO','PERSON_IN_CHARGE','IS_LOCAL', 'POD_DATE',  'DM_KEY',
             'TIMELINE']]
 
-    sel_sth.range("A9").value = df_soout
-    last_row = sel_sth.range('A1048576').end('up').row
+    sel_sht.range("A9").value = df_soout
+    last_row = sel_sht.range('A1048576').end('up').row
     if last_row < 10 :
         last_row = 10
-    so_idx_list = sel_sth.range("A10:A"+str(last_row)).options(numbers=lambda x: str(int(x))).value
+    so_idx_list = sel_sht.range("A10:A"+str(last_row)).options(numbers=lambda x: str(int(x))).value
     idx_list = ",".join(so_idx_list)
     idx_cel.api.Validation.Add(Type=3, Formula1=idx_list)
     
-    tb_rng = sel_sth.range((9,"A"),(last_row,"J"))
+    tb_rng = sel_sht.range((9,"A"),(last_row,"J"))
     tb_rng.api.Borders.LineStyle = 1 
 
     wb_cy.app.screen_updating = True
 
 def see_detail_pod_sht():
     
-    sel_sth = wb_cy.selection.sheet
-    call_index =  sel_sth.range("C2").options(numbers=lambda x: str(int(x))).value
+    sel_sht = wb_cy.selection.sheet
+    call_index =  sel_sht.range("C2").options(numbers=lambda x: str(int(x))).value
     if call_index == None:
         wb_cy.app.alert("SO_INDEX를 DropDownList에서 하나 선택한 후 버튼을 눌러주세요. 종료합니다.",'Quit')
         return
@@ -216,8 +216,8 @@ def see_detail_pod_sht():
         None
 
 def pod_done():
-    sel_sth = wb_cy.selection.sheet
-    date_cell = sel_sth.range("C3").options(dates=my_date_handler)
+    sel_sht = wb_cy.selection.sheet
+    date_cell = sel_sht.range("C3").options(dates=my_date_handler)
     date_answer = wb_cy.app.alert(date_cell.value + " 의 날짜로 POD진행하시겠습니까?","POD Confirm",buttons='yes_no_cancel')
     if date_answer != 'yes':
         wb_cy.app.alert("DATE를 입력하시고 다시 진행해주세요. 종료합니다..","Quit")
@@ -228,7 +228,7 @@ def pod_done():
         wb_cy.app.alert("종료합니다.","Quit")
         return
 
-    call_index =  sel_sth.range("C2").options(numbers=lambda x: str(int(x))).value
+    call_index =  sel_sht.range("C2").options(numbers=lambda x: str(int(x))).value
     if call_index == None:
         wb_cy.app.alert("SO_INDEX를 DropDownList에서 하나 선택한 후 버튼을 눌러주세요. 종료합니다.",'Quit')
         return
@@ -307,3 +307,62 @@ def pod_done():
     bring_pod_sht_data()
     wb_cy.app.screen_updating = True
     wb_cy.app.display_alerts = True
+
+
+def bring_condition_data_pod():
+    
+    sel_sht = wb_cy.selection.sheet
+    answer = wb_cy.app.alert("해당 조건으로 데이터를 가져오시겠습니까?","Confirm",buttons='yes_no_cancel')
+    if answer != 'yes':
+        wb_cy.app.alert("종료합니다.","Quit")
+        return
+    
+    wb_cy.app.screen_updating = False
+    
+    #셀정보받기
+    last_row = sel_sht.range('A1048576').end('up').row
+    if last_row < 10 : last_row=10
+    last_col = sel_sht.range('XFD9').end('left').column
+    sel_sht.range((10,1),(last_row,last_col)).delete() # 기존 데이터 삭제
+    col_names = sel_sht.range((9,1),(9,last_col)).value
+
+    # 검색조건 받기
+    conditions= []
+    for i in range(2,8):
+        conditions.append(sel_sht.range((i,"C")).options(numbers=lambda e : str(int(e)), dates=my_date_handler).value)
+        j=i-2
+        if conditions[j] is None:
+            if j == 0:
+                conditions[j] = 'ARRIVAL_DATE'
+            else:
+                conditions[j] = 'ALL'
+                
+    #조건값 가져오기
+    base_query = "SELECT * FROM IR_ORDER "
+
+    if conditions[1] == 'ALL': conditions[1] = '1999-01-01'
+    if conditions[2] ==  'ALL': conditions[2] = '2199-12-31'
+
+    query = base_query + f"WHERE {conditions[0]} BETWEEN '{conditions[1]}' AND '{conditions[2]}' "
+    query = query if conditions[3] == 'ALL' else query + f"AND STATE = '{conditions[3]}' "
+    query = query if conditions[4] ==  'ALL' else query + f"AND ARTICLE_NUMBER = '{conditions[4]}' "
+    query = query if conditions[5] ==  'ALL' else query + f"AND SUBINVENTORY = '{conditions[5]}'"
+
+    # 데이터프레임 형식에 맞게 조정
+    df_ir = pd.DataFrame(DataWarehouse().execute(query).fetchall(),columns=col_names)
+    df_ir['TIMELINE'] = df_ir['TIMELINE'].map(lambda e: json.loads(e)['data'][-1]['c'])
+    df_ir = df_ir.sort_values('IR_INDEX')
+    df_ir.set_index('IR_INDEX',inplace=True)
+    
+    # 데이터 엑셀로 전송
+    sel_sht.range("A9").value = df_ir
+    
+    # 서식조정
+    last_row = sel_sht.range("B1048576").end('up').row
+    last_col = sel_sht.range("XFD9").end("left").column
+    xl_content = sel_sht.range((10,1),(last_row,last_col))
+    xl_content.api.Borders.LineStyle = 1 
+    
+    clear_form()
+
+    wb_cy.app.screen_updating = True

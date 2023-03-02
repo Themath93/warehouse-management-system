@@ -29,7 +29,7 @@ class SOOut:
         try:
             json_tl = cur.execute(bring_tl_query).fetchone()[0]
         except:
-            self.WB_CY.app.alert(f" SO_INDEX : {val} 해당 INDEX는 DB에 등록되지 않은 INDEX입니다. Data는 DataInput기능으로만 저장 가능합니다. 종료합니다.","Quit")
+            self.WB_CY.app.alert(f" SO_INDEX : {so_index} 해당 INDEX는 DB에 등록되지 않은 INDEX입니다. Data는 DataInput기능으로만 저장 가능합니다. 종료합니다.","Quit")
             return 
         timeline_query = f"UPDATE SO_OUT SET TIMELINE = '{create_db_timeline(json_tl)}' WHERE SO_INDEX = {so_index}"
         cur.execute(timeline_query)

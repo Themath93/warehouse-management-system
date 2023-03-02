@@ -1,6 +1,7 @@
 ## xl_wings 절대경로 추가
 import sys, os
 
+
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 
 
@@ -86,11 +87,23 @@ def clear_form(sel_sht = wb_cy.selection.sheet):
     
     
     protect_sht_pass = 'themath93'
+    wb_cy.app.screen_updating = False
     #통합제어 시트일 경우
     if sel_sht.name == '통합제어' :
 
         main_clear('SVC')
     else :
+        if sel_sht.name == 'IR_SVC' :
+            # DATE_TYPE
+            str_dt = 'ALL,ARRIVAL_DATE,SHIP_DATE'
+            rng_dt = sel_sht.range((2,"C"))
+            rng_dt.api.Validation.Delete()
+            rng_dt.api.Validation.Add(Type=3, Formula1=str_dt)
+            # STATE
+            str_state = "ALL," + ",".join(pd.DataFrame(DataWarehouse().execute("select * from inspection_code").fetchall())[0])
+            rng_state = sel_sht.range((5,"C"))
+            rng_state.api.Validation.Delete()
+            rng_state.api.Validation.Add(Type=3, Formula1=str_state)
         try:
             __xl_clear_values(sel_sht)
         except :
@@ -101,8 +114,9 @@ def clear_form(sel_sht = wb_cy.selection.sheet):
                 # si_index컬럼 기준으로 오름차순 정렬 -> so_out시 excel 내용 업데이트에 반드시필요
                 last_row = sel_sht.range("A1048576").end('up').row
                 sel_sht.range((9,'A'),(last_row,'R')).api.Sort(Key1=sel_sht.range((9,'A')).api, Order1=1, Header=1, Orientation=1)
-            
-
+        
+    wb_cy.app.screen_updating = True
+    
 def __xl_clear_values(sel_sht):
     ws_db = wb_cy.sheets['Temp_DB']
     tmp_last_row = get_empty_row(ws_db,"T")-1
@@ -119,10 +133,12 @@ def __xl_clear_values(sel_sht):
 
     status_cel = sel_sht.range("H4")
     sel_sht.range("C2:C7").clear_contents()
+    sel_sht.range('V3:V4').clear_contents()
+    sel_sht.range('P4:P7').clear_contents()
     status_cel.color = None
     status_cel.value = "waiting_for_out"
     sel_sht.range("C4").value = "=TODAY()+1"
-
+    
 
 def main_clear(type=None):
     """
@@ -507,10 +523,11 @@ def data_insert():
     sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))))
     from datajob.xlwings_dj.shipment_information import ShipmentInformation
     from datajob.xlwings_dj.local_list import LocalList
+    from datajob.xlwings_dj.ir_order import IROrder
     """
     입력받은 데이터를 맞는 db에 입력한다.
     """
-    tb_dict = {'LOCAL_LIST':LocalList, 'SHIPMENT_INFORMATION':ShipmentInformation}
+    tb_dict = {'LOCAL_LIST':LocalList, 'SHIPMENT_INFORMATION':ShipmentInformation,'IR_ORDER':IROrder}
     tmp_idx = [*range(1,1000)]
     sel_sht = wb_cy.selection.sheet
     status = sel_sht.range("H4")
@@ -528,7 +545,7 @@ def data_insert():
         wb_cy.app.alert("data_insert_mode모드로 진입합니다. 데이터 입력 후 버튼을 다시한번 눌러주세요.","DATA Input Mode")
         return None
     elif status.value == 'data_insert_mode':  # data_insert_mode 상태면 다시 data_input기능을 마칠지 물어본다.
-        input_comfirm = wb_cy.app.alert("'AWB'컬럼은 빈칸이 없어야 정상작동 합니다. 입력한 DATA를 Confirm하시겠습니까?",
+        input_comfirm = wb_cy.app.alert(" B 컬럼은 빈칸이 없어야 정상작동 합니다. 입력한 DATA를 Confirm하시겠습니까?",
                     "Input Confirm",buttons="yes_no_cancel")
         if input_comfirm == 'yes': # data input 시작
             # 입력한 값이 있는지는 확인해봐야함
@@ -547,7 +564,7 @@ def data_insert():
                 sht_protect()
                 wb_cy.app.alert("DATA INPUT이 완료 되었습니다! (DB_반영완료).","Input COMPLETE")
             else :
-                wb_cy.app.alert("Input할 값이 없습니다. 'AWB'컬럼에는 반드시 값이 있어야합니다.","Input WARNING")
+                wb_cy.app.alert("Input할 값이 없습니다. 'B'컬럼에는 반드시 값이 있어야합니다.","Input WARNING")
                 return None
 
 
@@ -569,8 +586,9 @@ def __bring_tb_from_db_and_formatting_xltb(sel_sht, cur, last_col):
     df_si = df_si.sort_values(sht_idx_col_name)
     df_si.set_index(sht_idx_col_name,inplace=True)
     df_si = df_si.replace('None','')
-    if table_name == 'SHIPMENT_INFORMATION':
-        df_si['TIMELINE'] = df_si['TIMELINE'].map(lambda e: json.loads(e)['data'][-1]['c'])
+    # if table_name == 'SHIPMENT_INFORMATION':
+    #     df_si['TIMELINE'] = df_si['TIMELINE'].map(lambda e: json.loads(e)['data'][-1]['c'])
+    df_si['TIMELINE'] = df_si['TIMELINE'].map(lambda e: json.loads(e)['data'][-1]['c'])
     sel_sht.range("A9").value = df_si
     last_row = sel_sht.range("B1048576").end('up').row
     last_col = sel_sht.range("XFD9").end("left").column
