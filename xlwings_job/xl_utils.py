@@ -693,3 +693,13 @@ def create_db_timeline(up_time_content=None):
         }
         
         return json.dumps(res,ensure_ascii=False)
+    
+
+def recall_col_names():
+    """
+    작업 중 실수로 컬럼명을 바꿀 경우 원활한 작업이 불가할 수 있어 해당 기능을 사용하여 컬럼이름을 복구한다.
+    """
+    sel_sht = wb_cy.selection.sheet
+    table_name_cel = sel_sht.range("D5").value
+    col_names_from_db = list(pd.DataFrame(DataWarehouse().execute(f"select column_name from user_tab_columns where table_name = upper('{table_name_cel}')").fetchall())[0])
+    sel_sht.range("A9").value = col_names_from_db

@@ -25,6 +25,10 @@ def clear_form_bin():
 def change_mode_bin():
     sel_sht = wb_cy.selection.sheet
     mode_cel = sel_sht.range("C2")
+    table_name_cel = sel_sht.range("D5")
+    status_cel = sel_sht.range("H4")
+    table_name_cel.value = 'SVC_BIN'
+    status_cel.value = 'edit_mode'
     if mode_cel.value == "CHANGE_BIN":
         mode_cel.value = 'REGIST_BIN'
         wb_cy.app.alert("'REGIST_BIN' 모드에서는 ARTICLE_NUMBER, NEW_BIN 만 입력해도 등록이 가능합니다.")
