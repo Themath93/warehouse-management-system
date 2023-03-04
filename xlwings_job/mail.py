@@ -537,13 +537,14 @@ class MainControl:
         else :
             qry = self.BASE_QRY + f'WHERE svc_key LIKE \'%{qry_condition[2]}%\' '
 
+        queried_db = DataWarehouse().execute(qry)
         # STATUS
         if qry_condition[3] == 'ALL' :
-            qry = qry
+            qry = self.BASE_QRY
         else:
-            qry = qry + "AND STATE = " +  f"'{qry_condition[3]}'"
+            qry = self.BASE_QRY + f"WHERE STATE = '{qry_condition[3]}' "
 
-        df_req = pd.DataFrame(DataWarehouse().execute(qry))
+        df_req = pd.DataFrame(queried_db.execute(qry))
 
         for i in range(len(df_req)):
             row_req = df_req.loc[i]
@@ -594,10 +595,11 @@ class MainControl:
         if qry_condition[1] == None:
             qry_condition[1] = dt.datetime(2199, 1, 1)
 
-        df_fin['CREATE_DATE'] = df_fin['CREATE_DATE'].astype('datetime64[ns]')
-        df_fin = df_fin[df_fin['CREATE_DATE'].between(str(qry_condition[0]),str(qry_condition[1]))]
-        df_fin.reset_index(drop=True,inplace=True)
-        df_fin.index = df_fin.index +1
+        if df_fin.empty != True:
+            df_fin['CREATE_DATE'] = df_fin['CREATE_DATE'].astype('datetime64[ns]')
+            df_fin = df_fin[df_fin['CREATE_DATE'].between(str(qry_condition[0]),str(qry_condition[1]))]
+            df_fin.reset_index(drop=True,inplace=True)
+            df_fin.index = df_fin.index +1
         self.SEL_SHT.range('I11').value = df_fin
 
         # # 
