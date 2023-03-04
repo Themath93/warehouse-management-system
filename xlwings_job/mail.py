@@ -509,25 +509,27 @@ class MainControl:
     """
     Request에 대한 모든 것을 관리하는 클래스
     """
-    SEL_STH = wb_cy.selection.sheet
+    SEL_SHT = wb_cy.selection.sheet
     FORM_ADD = ['$M$7:$M$9', '$O$7']
-    STATUS = ['requested', 'pick/pack', 'dispatched', 'complete']
+    STATUS = ['requested', 'pick/pack', 'dispathed', 'complete']
     COL_LIST =['ML_INDEX','REQ_TYPE','CREATE_DATE','REQ_DATE','PIC','IS_URGENT','LEFT_TIME','STATUS','DEL_MED','REGION']
     BASE_QRY = 'select * from SERVICE_REQEUST '
 
     @classmethod
     def bring_reuests(self):
-        qry_condition = self.SEL_STH.range(self.FORM_ADD[0]).options(ndim=1).value + self.SEL_STH.range(self.FORM_ADD[1]).options(ndim=1).value
+        qry_condition = self.SEL_SHT.range(self.FORM_ADD[0]).options(ndim=1).value + self.SEL_SHT.range(self.FORM_ADD[1]).options(ndim=1).value
         json_data = []
 
 
         # 시작하기전에 sht 클리닝
-        last_row = self.SEL_STH.range("J1048576").end('up').row
+        last_row = self.SEL_SHT.range("J1048576").end('up').row
         if last_row < 12 :
             last_row = 12
-        req_rng = self.SEL_STH.range((12,"I"),(last_row,"S"))
-        selected_cel = self.SEL_STH.range("Q8")
+        req_rng = self.SEL_SHT.range((12,"I"),(last_row,"S"))
+        selected_cel = self.SEL_SHT.range("Q8")
         selected_cel.clear_contents()
+        req_rng.clear_contents()
+        req_rng.api.Borders.LineStyle = -4142
 
         # REQ_TYPE
         if qry_condition[2] == 'ALL' :
@@ -542,9 +544,9 @@ class MainControl:
             qry = qry + "AND STATE = " +  f"'{qry_condition[3]}'"
 
         df_req = pd.DataFrame(DataWarehouse().execute(qry))
-        for i in df_req:
-            row_req = df_req.loc[i]
 
+        for i in range(len(df_req)):
+            row_req = df_req.loc[i]
             rows = []
             # ML_INDEX
             rows.append(row_req[0])
@@ -565,9 +567,15 @@ class MainControl:
             # LEFT_TIME
             now = str(dt.datetime.now()).split('.')[0]
             now_obj = dt.datetime.strptime(now, '%Y-%m-%d %H:%M:%S')
-            req_date_obj = dt.datetime.strptime(req_date, '%Y-%m-%d %H:%M')
+            try : 
+                req_date_obj = dt.datetime.strptime(req_date, '%Y-%m-%d %H:%M')
+            except:
+                req_date_obj = dt.datetime.strptime(req_date, '%Y-%m-%d %H:%M:%S')
             cal_time = req_date_obj-now_obj
-            rows.append(cal_time.days*24 +cal_time.seconds//60)
+            if cal_time.days < 0 : #시간초과
+                rows.append((abs(cal_time.days*24*60) + cal_time.seconds//60)*-1)
+            else:
+                rows.append((abs(cal_time.days*24*60) + cal_time.seconds//60))
             # STATUS 
             rows.append(row_req[16])
             # DEL_MED
@@ -590,26 +598,31 @@ class MainControl:
         df_fin = df_fin[df_fin['CREATE_DATE'].between(str(qry_condition[0]),str(qry_condition[1]))]
         df_fin.reset_index(drop=True,inplace=True)
         df_fin.index = df_fin.index +1
-        self.SEL_STH.range('I11').value = df_fin
+        self.SEL_SHT.range('I11').value = df_fin
 
         # # 
-        last_row = self.SEL_STH.range("J1048576").end('up').row
+        last_row = self.SEL_SHT.range("J1048576").end('up').row
         if last_row < 12 :
             last_row = 12
-        req_rng = self.SEL_STH.range((12,"I"),(last_row,"S"))
+        req_rng = self.SEL_SHT.range((12,"I"),(last_row,"S"))
         req_rng.font.bold = True
 
+        last_row = self.SEL_SHT.range("J1048576").end('up').row
+        if last_row < 12 :
+            last_row = 12
+        req_rng = self.SEL_SHT.range((12,"I"),(last_row,"S"))
+        req_rng.api.BorderAround(LineStyle=1, Weight=4)
 
     @classmethod
     def select_reqeust(self):
-        selected_cel = self.SEL_STH.range("Q8")
-        last_row = self.SEL_STH.range("J1048576").end('up').row
+        selected_cel = self.SEL_SHT.range("Q8")
+        last_row = self.SEL_SHT.range("J1048576").end('up').row
         if last_row < 12 :
             last_row = 12
 
         sel_cel = wb_cy.selection.address
         cel_row = wb_cy.selection.row
-        idx_cel_val = self.SEL_STH.range(sel_cel).value
+        idx_cel_val = self.SEL_SHT.range(sel_cel).value
         if ':' in sel_cel or ',' in sel_cel :  
             wb_cy.app.alert("ML_INDEX 컬럼에서 원하는 한 개의 셀만 선택해주세요","Quit")
             return None
@@ -626,7 +639,7 @@ class MainControl:
 
     @classmethod
     def oepn_mail(self):
-        selected_cel = self.SEL_STH.range("Q8")
+        selected_cel = self.SEL_SHT.range("Q8")
         if selected_cel.value == None:
             wb_cy.app.alert("선택한 요청이 없습니다. 매서드를 종료합니다.","Quit")
             return None
@@ -644,7 +657,7 @@ class MainControl:
     @classmethod
     def print_svc(self,print_only=None):
         # Detail을 안보고 print_only만 사용하는 경우는 pick/pack이후에만 가능
-        selected_cel = self.SEL_STH.range("Q8")
+        selected_cel = self.SEL_SHT.range("Q8")
         if selected_cel.value == None:
             wb_cy.app.alert("선택한 요청이 없습니다. 매서드를 종료합니다.","Quit")
             return None
@@ -657,7 +670,7 @@ class MainControl:
         col_list =['ML_INDEX','REQ_TYPE','CREATE_DATE','REQ_DATE','PIC','IS_URGENT','LEFT_TIME',
                 'STATUS','DEL_MED','ADDRESS','IS_RETURN','RECIPIENT', 'DEL_INSTRUCTION','CONTACT','PARTS']
         print_form_dir = os.path.dirname(os.path.abspath(__file__)) +"\\print_form.xlsx"
-        selected_cel = self.SEL_STH.range("Q8")
+        selected_cel = self.SEL_SHT.range("Q8")
         svc_key = selected_cel.value
         qry = self.BASE_QRY + 'where svc_key =' +  f"'{svc_key}'"
         sel_data = pd.DataFrame([DataWarehouse().execute(qry).fetchone()])
@@ -693,10 +706,15 @@ class MainControl:
         # LEFT_TIME
         now = str(dt.datetime.now()).split('.')[0]
         now_obj = dt.datetime.strptime(now, '%Y-%m-%d %H:%M:%S')
-        req_date_obj = dt.datetime.strptime(req_date, '%Y-%m-%d %H:%M')
+        try : 
+            req_date_obj = dt.datetime.strptime(req_date, '%Y-%m-%d %H:%M')
+        except:
+            req_date_obj = dt.datetime.strptime(req_date, '%Y-%m-%d %H:%M:%S')
         cal_time = req_date_obj-now_obj
-
-        rows.append(cal_time.days*24 +cal_time.seconds//60)
+        if cal_time.days < 0 : #시간초과
+            rows.append((abs(cal_time.days*24*60) + cal_time.seconds//60)*-1)
+        else:
+            rows.append((abs(cal_time.days*24*60) + cal_time.seconds//60))
         rows.append(row_req[16])  # STATUS 
         rows.append(row_req[6])  # DEL_MED
         rows.append(row_req[5])  # ADDRESS
@@ -758,10 +776,7 @@ class MainControl:
         ws_svc.range('B43').value = '담당자 폰번호'
             # URGENT E41
         is_urgent = df_fin.loc[0]['IS_URGENT']
-        if is_urgent != None:
-            is_urgent = '긴급' 
-
-        ws_svc.range('E41').value = is_urgent
+        ws_svc.range('A11').value = is_urgent
 
         # 바코드 생성
         pic = save_barcode_loc(svc_key)
@@ -789,7 +804,7 @@ class MainControl:
 
     @classmethod
     def req_dispath(self):
-        selected_cel = self.SEL_STH.range("Q8")
+        selected_cel = self.SEL_SHT.range("Q8")
         svc_key = selected_cel.value
         qry = self.BASE_QRY + 'where svc_key =' +  f"'{svc_key}'"
         pick_pack_status = self.STATUS[1] # pick/pack
