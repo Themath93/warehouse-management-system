@@ -511,7 +511,7 @@ class MainControl:
     """
     SEL_SHT = wb_cy.selection.sheet
     FORM_ADD = ['$M$7:$M$9', '$O$7']
-    STATUS = ['requested', 'pick/pack', 'dispathed', 'complete']
+    STATUS = ['requested', 'pick/pack', 'dispatched', 'complete']
     COL_LIST =['ML_INDEX','REQ_TYPE','CREATE_DATE','REQ_DATE','PIC','IS_URGENT','LEFT_TIME','STATUS','DEL_MED','REGION']
     BASE_QRY = 'select * from SERVICE_REQEUST '
 
