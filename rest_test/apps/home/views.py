@@ -317,8 +317,8 @@ def svc_process(request):
                     'del_met':del_method,
                     'is_urgent':is_urgent,
                     'is_return':is_return,
-                    'recipient':'need_update',
-                    'del_instruction':'need_update'
+                    'recipient':recipient,
+                    'del_instruction':del_instruction
                     
 
                 },
@@ -349,7 +349,6 @@ def __sending_outlook_mail(request, daily_count, std_day, fe_initial, req_json):
     message = "test"
     from_email='deyoon@outlook.kr'
     to_list=['deyoon@outlook.kr',request.user.email]
-    print("메일 보내기 완료 ")
     send_mail(subject,message,from_email,to_list,fail_silently=True,html_message=html_message)
 
 
