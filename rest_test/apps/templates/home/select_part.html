@@ -798,7 +798,7 @@ function addPart(input_id) {
         </td>
         <td class="text-center">
           ${input_qty_svc}
-          <input type="hidden" name="input_qty_${f[0].ts_key}" value="${input_qty_svc}">
+          <input type="hidden" name="input_qty_svc_${f[0].ts_key}" value="${input_qty_svc}">
         </td>
         <td>
           <input type="button" value="Delete"  onClick="DeleteTr(this.id);" class="btn btn-fill btn-primary" id="parts_input_${f[0].ts_key}" name="parts_input_${f[0].ts_key}">  
