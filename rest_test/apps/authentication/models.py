@@ -17,8 +17,6 @@ class UserDetail(models.Model):
     address = models.CharField(max_length=255, blank=True)
     postcode = models.CharField(max_length=150, blank=True)
 
-
-
 class TotalStock(models.Model):
     ts_key = models.BigAutoField(primary_key=True)
     article_number = models.CharField(max_length=50)
@@ -37,6 +35,8 @@ class TotalStock(models.Model):
     class Meta:
         managed = False
         db_table = 'total_stock'
+
+
 
 
 class Branch(models.Model):
@@ -58,6 +58,33 @@ class DeliveryMethod(models.Model):
         db_table = 'delivery_method'
 
 
+class InspectionCode(models.Model):
+    inspect_code = models.CharField(primary_key=True, max_length=100)
+    detail = models.CharField(max_length=1000, blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'inspection_code'
+
+
+class IrOrder(models.Model):
+    ir_index = models.BigIntegerField(primary_key=True)
+    article_number = models.CharField(max_length=100, blank=True, null=True)
+    description = models.CharField(max_length=1000, blank=True, null=True)
+    quantity = models.BigIntegerField(blank=True, null=True)
+    order_nm = models.CharField(max_length=100, blank=True, null=True)
+    arrival_date = models.CharField(max_length=100, blank=True, null=True)
+    subinventory = models.CharField(max_length=100, blank=True, null=True)
+    ship_date = models.CharField(max_length=100, blank=True, null=True)
+    comment = models.CharField(max_length=2000, blank=True, null=True)
+    state = models.CharField(max_length=100, blank=True, null=True)
+    timeline = models.CharField(max_length=4000, blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'ir_order'
+
+
 class LocalList(models.Model):
     lc_index = models.BigIntegerField(primary_key=True)
     arrival_date = models.CharField(max_length=50, blank=True, null=True)
@@ -66,11 +93,13 @@ class LocalList(models.Model):
     quantity = models.BigIntegerField(blank=True, null=True)
     so_no = models.CharField(max_length=100, blank=True, null=True)
     receipt_no = models.CharField(max_length=50, blank=True, null=True)
-    field = models.CharField(max_length=50, blank=True, null=True)
+    pic = models.CharField(max_length=50, blank=True, null=True)
     customer = models.CharField(max_length=100, blank=True, null=True)
     ship_date = models.CharField(max_length=1000, blank=True, null=True)
     pod_date = models.CharField(max_length=100, blank=True, null=True)
-    remark = models.CharField(max_length=4000, blank=True, null=True)
+    comment = models.CharField(max_length=4000, blank=True, null=True)
+    state = models.CharField(max_length=100, blank=True, null=True)
+    timeline = models.CharField(max_length=4000, blank=True, null=True)
 
     class Meta:
         managed = False
@@ -142,6 +171,30 @@ class Products(models.Model):
         db_table = 'products'
 
 
+class ServiceReqeust(models.Model):
+    svc_key = models.CharField(primary_key=True, max_length=100)
+    fe_name = models.CharField(max_length=100, blank=True, null=True)
+    fe_initial = models.CharField(max_length=100, blank=True, null=True)
+    req_day = models.CharField(max_length=100, blank=True, null=True)
+    req_time = models.CharField(max_length=100, blank=True, null=True)
+    address = models.CharField(max_length=200, blank=True, null=True)
+    del_met = models.CharField(max_length=100, blank=True, null=True)
+    is_return = models.CharField(max_length=50, blank=True, null=True)
+    is_urgent = models.CharField(max_length=50, blank=True, null=True)
+    recipient = models.CharField(max_length=50, blank=True, null=True)
+    contact = models.CharField(max_length=50, blank=True, null=True)
+    contact_sub = models.CharField(max_length=50, blank=True, null=True)
+    del_instruction = models.CharField(max_length=2000, blank=True, null=True)
+    parts = models.CharField(max_length=4000, blank=True, null=True)
+    std_day = models.CharField(max_length=100, blank=True, null=True)
+    timeline = models.CharField(max_length=4000, blank=True, null=True)
+    state = models.CharField(max_length=100, blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'service_reqeust'
+
+
 class ShipmentInformation(models.Model):
     si_index = models.BigIntegerField(primary_key=True)
     awb_no = models.CharField(max_length=100, blank=True, null=True)
@@ -160,8 +213,8 @@ class ShipmentInformation(models.Model):
     remark = models.CharField(max_length=2000, blank=True, null=True)
     parcels_no = models.CharField(max_length=100, blank=True, null=True)
     comment = models.CharField(max_length=2000, blank=True, null=True)
-    status = models.CharField(max_length=50, blank=True, null=True)
-    up_time = models.CharField(max_length=200, blank=True, null=True)
+    state = models.CharField(max_length=100, blank=True, null=True)
+    timeline = models.CharField(max_length=4000, blank=True, null=True)
 
     class Meta:
         managed = False
@@ -176,11 +229,24 @@ class SoOut(models.Model):
     dm_key = models.CharField(max_length=50)
     pod_key = models.CharField(max_length=50)
     is_local = models.CharField(max_length=2000)
-    up_time = models.CharField(max_length=100)
+    pod_date = models.CharField(max_length=50, blank=True, null=True)
+    timeline = models.CharField(max_length=4000)
 
     class Meta:
         managed = False
         db_table = 'so_out'
+
+
+class SvcBin(models.Model):
+    bin_index = models.BigAutoField(primary_key=True)
+    article_number = models.CharField(max_length=100, blank=True, null=True)
+    bin = models.CharField(max_length=100, blank=True, null=True)
+    bin_old = models.CharField(max_length=100, blank=True, null=True)
+    subinventory = models.CharField(max_length=100, blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'svc_bin'
 
 
 class SystemStock(models.Model):
@@ -211,26 +277,3 @@ class Test(models.Model):
     class Meta:
         managed = False
         db_table = 'test'
-
-class ServiceReqeust(models.Model):
-    svc_key = models.CharField(primary_key=True, max_length=100)
-    fe_name = models.CharField(max_length=100, blank=True, null=True)
-    fe_initial = models.CharField(max_length=100, blank=True, null=True)
-    req_day = models.CharField(max_length=100, blank=True, null=True)
-    req_time = models.CharField(max_length=100, blank=True, null=True)
-    address = models.CharField(max_length=200, blank=True, null=True)
-    del_met = models.CharField(max_length=100, blank=True, null=True)
-    is_return = models.CharField(max_length=50, blank=True, null=True)
-    is_urgent = models.CharField(max_length=50, blank=True, null=True)
-    recipient = models.CharField(max_length=50, blank=True, null=True)
-    contact = models.CharField(max_length=50, blank=True, null=True)
-    contact_sub = models.CharField(max_length=50, blank=True, null=True)
-    del_instruction = models.CharField(max_length=2000, blank=True, null=True)
-    parts = models.CharField(max_length=4000, blank=True, null=True)
-    std_day = models.CharField(max_length=100, blank=True, null=True)
-    timeline = models.CharField(max_length=4000, blank=True, null=True)
-    state = models.CharField(max_length=100, blank=True, null=True)
-
-    class Meta:
-        managed = False
-        db_table = 'service_reqeust'
