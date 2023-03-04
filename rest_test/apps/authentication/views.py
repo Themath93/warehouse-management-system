@@ -10,7 +10,11 @@ from .forms import LoginForm, SignUpForm
 from django.contrib.auth.decorators import login_required
 from .models import *
 from django.contrib.auth.models import User
+from django.http import HttpResponse
+from django.forms.models import model_to_dict
 
+import pandas as pd
+import json
 
 def login_view(request):
     form = LoginForm(request.POST or None)
@@ -69,3 +73,12 @@ def profile(request):
         print(my_reqeusts)
 
         return render(request,'home/user.html',{'forms':user,'my_requests':my_reqeusts})
+
+    
+@login_required(login_url="/login/")
+def case_detail(request,case_id):
+    each_case = ServiceReqeust.objects.using('dw').filter(svc_key=case_id)
+    df_parts= pd.DataFrame(list(each_case.values()))['parts']
+    parts_str = df_parts[0].replace("'",'"')
+    dict_parts = json.loads(parts_str)
+    return render(request,'home/request_detail.html',{'dict_parts':dict_parts,'req_detail':each_case})

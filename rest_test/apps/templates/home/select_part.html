@@ -227,20 +227,14 @@
                     <input type="text" class="form-control" id="specific_address" name="specific_address" placeholder="상세주소를 작성해주세요." required>
                     <div class="invalid-feedback">상세주소는 반드시 필요합니다.</div>
                   </div>
-                  <div class="form-group col-md-4">
-                    <label for="my_address_list">등록된 주소</label>
-                    <select id="my_address_list" name="my_address_list" class="form-control">
-                      <option></option>
-                    </select>
-                  </div>
                 </div>
                 <div class="form-row">
-                  <div class="form-group col-md-6">
+                  <div class="form-group col-md-3">
                     <label for="req_date">출고요청일</label>
                     <input type="date" class="form-control" id="req_date" name="req_date" required>
                     <div class="invalid-feedback">출고요청일은 반드시 필요합니다.</div>
                   </div>
-                  <div class="form-group col-md-4">
+                  <div class="form-group col-md-3">
                     <label for="req_time">요청시간</label>
                     <input type="time" class="form-control" id="req_time" name="req_time" required>
                     <div class="invalid-feedback">출고요청시간은 반드시 필요합니다.</div>
@@ -257,8 +251,34 @@
                   </div>
                 </div>
                 <div class="form-group">
+                  <div class="form-row">
+                    <div class="form-group col-md-2">
+                      <label for="recipient">수령인</label>
+                      <input type="text" class="form-control" id="recipient" name="recipient" value="{{user.last_name}}{{user.first_name}}" required>
+                      <div class="invalid-feedback">수령인은 반드시 입력해야 합니다.</div>
+                    </div>
+                    <div class="form-group col-md-6">
+                      <label for="del_instruction">배송요청사항</label>
+                      <input type="text" class="form-control" id="del_instruction" name="del_instruction" placeholder="배송요청사항을 적어주세요.">
+                    </div>
+                  </div>
+                </div>
+                <div class="form-group">
                   <div class="card-header">
-                    <h4 class="card-title" id=""><b>Deilvery Details</b></h4>
+                    <h4 class="card-title" id=""><b>즐겨찾기</b></h4>
+                  </div>
+                  <div class="form-row">
+                    <div class="form-group col-md-3">
+                      <label for="my_address_list">등록된 주소</label>
+                      <select id="my_address_list" name="my_address_list" class="form-control">
+                        <option></option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <div class="card-header">
+                    <h4 class="card-title" id=""><b>Deilvery Options</b></h4>
                   </div>
                   <div class="form-row">
                     <div class="custom-control custom-checkbox">

@@ -3,18 +3,16 @@
         <!--
           Tip 1: You can change the color of the sidebar using: data-color="blue | green | orange | red"
       -->
-
+            {% if user.is_authenticated %}
         <div class="sidebar-wrapper">
             <div class="logo">
-                <a href="javascript:void(0)" class="simple-text logo-mini">
-                    KR
-                </a>
                 <a href="javascript:void(0)" class="simple-text logo-normal">
-                    Fulfillment
+                    Group : <b>{{ user.groups.all.0 }}</b><br>
+                    ID :  <b> {{user.username}}</b>
                 </a>
             </div>
             <ul class="nav">
-                {% if user.is_authenticated %}
+                
 
                 {% for group in user.groups.all %}
           

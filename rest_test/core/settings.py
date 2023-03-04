@@ -42,7 +42,7 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST = 'smtp-mail.outlook.com'
 EMAIL_HOST_USER = "deyoon@outlook.kr"
-EMAIL_HOST_PASSWORD = "as934285!@#"
+EMAIL_HOST_PASSWORD = "zx934285!@#"
 
 
 INSTALLED_APPS = [

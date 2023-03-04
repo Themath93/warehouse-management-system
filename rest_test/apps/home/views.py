@@ -8,7 +8,7 @@ from django.contrib.auth.decorators import login_required
 from django.http import HttpResponse, HttpResponseRedirect
 from django.template import loader
 from django.urls import reverse
-from django.shortcuts import render
+from django.shortcuts import render,redirect
 from django.db.models import Q
 from django.core.mail import send_mail
 from django.contrib.auth.models import User,Group
@@ -23,16 +23,22 @@ from PyKakao import Message
 
 @login_required(login_url="/login/")
 def index(request):
-    context = {'segment': 'index'}
+    get_request_type = request.GET.get('request_type')
+    if get_request_type != None:
+        my_svc_request = ServiceReqeust.objects.filter(Q(state=get_request_type)).using('dw')
+    else:
+        my_svc_request = ServiceReqeust.objects.using('dw')
     user_group = str(Group.objects.filter(user=request.user)[0])
     if user_group == 'Field Engineer_FE':
         user_fe_initial = request.user.userdetail.subinventory
-        my_svc_request = ServiceReqeust.objects.filter(Q(fe_initial=user_fe_initial)).order_by('-svc_key').using('dw')[:5]
-        print(my_svc_request[0].svc_key)
-        return render(request, 'home/index.html',{'segment':index,'my_svc_request':my_svc_request})
-        # html_template = loader.get_template('home/index.html')
-        # return HttpResponse(html_template.render({'segment': 'index','my_svc_requests':my_svc_request}, request))
-
+        my_svc_request = my_svc_request.filter(Q(fe_initial=user_fe_initial)).order_by('-svc_key')
+        html_template = loader.get_template('home/index_fe.html')
+        return HttpResponse(html_template.render({'segment': 'index','my_svc_request':my_svc_request}, request))
+    elif user_group == 'Manager':
+        user_fe_initial = request.user.userdetail.subinventory
+        my_svc_request = my_svc_request.order_by('-svc_key')
+        html_template = loader.get_template('home/index.html')
+        return HttpResponse(html_template.render({'segment': 'index','my_svc_request':my_svc_request}, request))
 
 @login_required(login_url="/login/")
 def pages(request):
@@ -110,6 +116,8 @@ def req_parts(request):
 def svc_process(request):
 
     if request.method =='POST':
+
+
         user_info = request.user.userdetail
         std_day = str(dt.datetime.today().date())
         req_user = request.user.username
@@ -119,15 +127,22 @@ def svc_process(request):
         req_date = request.POST.get('req_date')
         del_method = request.POST.get('del_method')
         req_time = request.POST.get('req_time')
-        is_urgent = request.POST.get('is_urgent')
-        is_return = request.POST.get('is_return')
+        is_urgent =request.POST.get('checkbox_is_urgent')
+        if is_urgent == 'on':
+            now = dt.datetime.now()
+            after_two_hour = now + dt.timedelta(hours=2)
+            del_time = str(after_two_hour).split('.')[0].split(' ')
+            req_date = del_time[0]
+            req_time = del_time[1]
+            is_urgent = 'urgent'
+        is_return = request.POST.get('checkbox_is_return')
         address = request.POST.get('search_address') + " " + request.POST.get('specific_address')
-        recipient = 'need_fill'
-        del_instruction = 'need_fill'
+        recipient = request.POST.get('recipient')
+        del_instruction = request.POST.get('del_instruction')
         state = 'requested'
 
         ### JSON 생성 ###
-        cols = ['part_no','serial_no/IR_no','qty','currnet_stock','transfer_to','BIN']
+        cols = ['part_no','serial_or_IR_no','qty','currnet_stock','transfer_to','BIN']
         data = []
         for key, value in request.POST.items():
             rows=[]
@@ -198,13 +213,12 @@ def svc_process(request):
                 else:
                     return HttpResponseRedirect(reverse('home:req_parts'))
 
-        print(data)
 
         # 가장 먼저해야하는 것은 SYSTEM_STOCK에 내용 반영 및 내용 전송
         # 임시사용 db 
         total_db = TotalStock.objects.filter(std_day='2023-02-01')
         for d in data:
-            if 'IR' not in d['serial_no/IR_no']:
+            if 'IR' not in d['serial_or_IR_no']:
                 search_db = total_db.filter(article_number=d['part_no']).get(subinventory=d['currnet_stock'])
                 search_db_qty = search_db.quantity
                 update_qty = search_db_qty-d['qty']
@@ -248,10 +262,11 @@ def svc_process(request):
             key_count = len(list(ServiceReqeust.objects.filter(svc_key__icontains=key_contain).using('dw').values())) + 1 
         except:
             key_count = 1
-
+            
+        svc_key = 'SVC_'+fe_initial.split('_')[1]+'_'+key_contain+str(key_count)
         req_db = ServiceReqeust(
 
-            svc_key='SVC_'+fe_initial.split('_')[1]+'_'+key_contain+str(key_count),
+            svc_key=svc_key,
             fe_name = request.user.first_name + request.user.last_name,
             fe_initial = fe_initial,
             req_day = req_date,
@@ -317,8 +332,8 @@ def svc_process(request):
 
 
 
-        return HttpResponse('요청이 완료되었습니다.')
-        # return HttpResponseRedirect(reverse('home:req_parts'))
+        # return HttpResponse('요청이 완료되었습니다.')
+        return redirect(f'/profile/{svc_key}') 
 
 def __sending_outlook_mail(request, daily_count, std_day, fe_initial, req_json):
     req_json = json.loads(req_json)
@@ -326,7 +341,7 @@ def __sending_outlook_mail(request, daily_count, std_day, fe_initial, req_json):
     info_dict['parts'] = req_json['parts']
 
     html_message = loader.render_to_string(
-        'home/request_detail.html',
+        'home/request_mail_form.html',
         context=info_dict
 
     )
@@ -334,7 +349,7 @@ def __sending_outlook_mail(request, daily_count, std_day, fe_initial, req_json):
     message = "test"
     from_email='deyoon@outlook.kr'
     to_list=['deyoon@outlook.kr',request.user.email]
-
+    print("메일 보내기 완료 ")
     send_mail(subject,message,from_email,to_list,fail_silently=True,html_message=html_message)
 
 

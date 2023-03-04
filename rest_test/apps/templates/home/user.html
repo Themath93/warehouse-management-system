@@ -96,7 +96,7 @@
             <h3 class="title">My Requests</h3>
           </div>
           <div class="card-body">
-            <div class="table-responsive">
+            <div class="table">
               <table class="table tablesorter " id="my_request" name="my_request">
                 <thead class=" text-primary">
                   <tr>
@@ -139,7 +139,7 @@
                       {{ req.state }}
                     </td>
                     <td class="text-center">
-                      추후 추가
+                      <a type="button" href="{% url 'authentication:case_detail' case_id=req.svc_key %}" class="btn btn-fill btn-primary" id="{{ req.svc_key }}" name="{{ req.svc_key }}">See Detail</a>
                     </td>
                   </tr>
                   {% endfor %}
@@ -158,4 +158,6 @@
 {% endblock content %}
 
 <!-- Specific Page JS goes HERE  -->
-{% block javascripts %}{% endblock javascripts %}
+{% block javascripts %}
+
+{% endblock javascripts %}
