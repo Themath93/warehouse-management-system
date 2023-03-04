@@ -24,9 +24,14 @@ from PyKakao import Message
 @login_required(login_url="/login/")
 def index(request):
     context = {'segment': 'index'}
-
-    html_template = loader.get_template('home/index.html')
-    return HttpResponse(html_template.render(context, request))
+    user_group = str(Group.objects.filter(user=request.user)[0])
+    if user_group == 'Field Engineer_FE':
+        user_fe_initial = request.user.userdetail.subinventory
+        my_svc_request = ServiceReqeust.objects.filter(Q(fe_initial=user_fe_initial)).order_by('-svc_key').using('dw')[:5]
+        print(my_svc_request[0].svc_key)
+        return render(request, 'home/index.html',{'segment':index,'my_svc_request':my_svc_request})
+        # html_template = loader.get_template('home/index.html')
+        # return HttpResponse(html_template.render({'segment': 'index','my_svc_requests':my_svc_request}, request))
 
 
 @login_required(login_url="/login/")
@@ -60,7 +65,6 @@ def pages(request):
 def req_parts(request):
     context={}
     user_group = str(Group.objects.filter(user=request.user)[0])
-    print(request.user.userdetail.subinventory)
     if user_group == 'Field Engineer_FE':
         user_detail = request.user.userdetail
         prod_pose = ProdPose.objects.all().using('dw').filter(Q(subinventory="KR_SERV01"))

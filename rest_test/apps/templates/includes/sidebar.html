@@ -3,6 +3,7 @@
         <!--
           Tip 1: You can change the color of the sidebar using: data-color="blue | green | orange | red"
       -->
+
         <div class="sidebar-wrapper">
             <div class="logo">
                 <a href="javascript:void(0)" class="simple-text logo-mini">
@@ -13,6 +14,11 @@
                 </a>
             </div>
             <ul class="nav">
+                {% if user.is_authenticated %}
+
+                {% for group in user.groups.all %}
+          
+                {% ifequal group.name 'Manager' %}
                 <li class="{% if 'index' in segment %} active {% endif %} ">
                     <a href="/">
                         <i class="tim-icons icon-chart-pie-36"></i>
@@ -37,12 +43,6 @@
                         <p>Notifications</p>
                     </a>
                 </li>
-                <li class="{% if 'user' in segment %} active {% endif %}">
-                    <a href="/user.html">
-                        <i class="tim-icons icon-single-02"></i>
-                        <p>User Profile</p>
-                    </a>
-                </li>
                 <li class="{% if 'tables' in segment %} active {% endif %}">
                     <a href="/tables.html">
                         <i class="tim-icons icon-puzzle-10"></i>
@@ -61,12 +61,48 @@
                         <p>Parts Request</p>
                     </a>
                 </li>
+                <li class="{% if 'user' in segment %} active {% endif %}">
+                    <a href="/user.html">
+                        <i class="tim-icons icon-single-02"></i>
+                        <p>User Profile</p>
+                    </a>
+                </li>
                 <li>
                     <a href="{% url 'authentication:login' %}">
                         <i class="tim-icons icon-button-power"></i>
                         <p>Logout</p>
                     </a>
                 </li>
+                {%endifequal%}
+                {% ifequal group.name 'Field Engineer_FE' %}
+                <li class="{% if 'index' in segment %} active {% endif %} ">
+                    <a href="/">
+                        <i class="tim-icons icon-chart-pie-36"></i>
+                        <p>Dashboard</p>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'home:req_parts' %}">
+                        <i class="tim-icons icon-settings"></i>
+                        <p>Parts Request</p>
+                    </a>
+                </li>
+                <li class="{% if 'user' in segment %} active {% endif %}">
+                    <a href="{% url 'authentication:profile' %}">
+                        <i class="tim-icons icon-single-02"></i>
+                        <p>My Profile</p>
+                    </a>
+                </li>
+                <li>
+                    <a href="{% url 'authentication:login' %}">
+                        <i class="tim-icons icon-button-power"></i>
+                        <p>Logout</p>
+                    </a>
+                </li>
+                {%endifequal%}
+                {%endfor%}
+                {%endif%}
+
             </ul>
         </div>
     </div>
