@@ -25,9 +25,9 @@ from PyKakao import Message
 def index(request):
     get_request_type = request.GET.get('request_type')
     if get_request_type != None:
-        my_svc_request = ServiceReqeust.objects.filter(Q(state=get_request_type)).using('dw')
+        my_svc_request = ServiceRequest.objects.filter(Q(state=get_request_type)).using('dw')
     else:
-        my_svc_request = ServiceReqeust.objects.using('dw')
+        my_svc_request = ServiceRequest.objects.using('dw')
     user_group = str(Group.objects.filter(user=request.user)[0])
     if user_group == 'Field Engineer_FE':
         user_fe_initial = request.user.userdetail.subinventory
@@ -77,7 +77,7 @@ def req_parts(request):
         products = Products.objects.all().using('dw')
         ir_orders = IrOrder.objects.all().using('dw').filter(Q(subinventory=user_detail.subinventory) & Q(state='GOOD_WR')).values(
             'ir_index','article_number','description','quantity','order_nm',
-            'arrival_date','subinventory','ship_date','comment','state'
+            'arrival_date','subinventory','ship_date','comments','state'
         )
         # 매일 재고는 그날 그날 업데이트 분을 줘야 한다. 
         # 현재 개발단계에서는 그냥 특정일자 재고리스트를 참고하도록하자
@@ -86,7 +86,7 @@ def req_parts(request):
         json_ts = json.dumps(total_stock_db,ensure_ascii=False)
         json_irs = json.dumps(list(ir_orders.values(
             'ir_index','article_number','description','quantity','order_nm',
-            'arrival_date','subinventory','ship_date','comment','state'
+            'arrival_date','subinventory','ship_date','comments','state'
         )),ensure_ascii=False)
         return render(request, 'home/select_part.html',{'data_ts':json_ts,'datas_pose':prod_pose,'datas_products':products,'user':request.user,'ir_orders':ir_orders,'json_irs':json_irs})
     elif user_group == 'Manager':
@@ -95,7 +95,7 @@ def req_parts(request):
         products = Products.objects.all().using('dw')
         ir_orders = IrOrder.objects.all().using('dw').values(
             'ir_index','article_number','description','quantity','order_nm',
-            'arrival_date','subinventory','ship_date','comment','state'
+            'arrival_date','subinventory','ship_date','comments','state'
         )
     
         # 매일 재고는 그날 그날 업데이트 분을 줘야 한다. 
@@ -105,7 +105,7 @@ def req_parts(request):
         json_ts = json.dumps(total_stock_db,ensure_ascii=False)
         json_irs = json.dumps(list(ir_orders.values(
             'ir_index','article_number','description','quantity','order_nm',
-            'arrival_date','subinventory','ship_date','comment','state'
+            'arrival_date','subinventory','ship_date','comments','state'
         )),ensure_ascii=False)
         return render(request, 'home/select_part.html',{'data_ts':json_ts,'datas_pose':prod_pose,'datas_products':products,'user':request.user,'ir_orders':ir_orders,'json_irs':json_irs})
     else:
@@ -196,7 +196,7 @@ def svc_process(request):
                         arrival_date = dict_ir_db['arrival_date'],
                         subinventory = dict_ir_db['subinventory'],
                         ship_date = dict_ir_db['ship_date'],
-                        comment = dict_ir_db['comment'],
+                        comments = dict_ir_db['comments'],
                         state = dict_ir_db['state'],
                         timeline = dict_ir_db['timeline'],
                     )
@@ -259,12 +259,12 @@ def svc_process(request):
         # SERVICE_REQUEST 파트요청 접수..
         key_contain = std_day.replace('-','')[2:]
         try:
-            key_count = len(list(ServiceReqeust.objects.filter(svc_key__icontains=key_contain).using('dw').values())) + 1 
+            key_count = len(list(ServiceRequest.objects.filter(svc_key__icontains=key_contain).using('dw').values())) + 1 
         except:
             key_count = 1
             
         svc_key = 'SVC_'+fe_initial.split('_')[1]+'_'+key_contain+str(key_count)
-        req_db = ServiceReqeust(
+        req_db = ServiceRequest(
 
             svc_key=svc_key,
             fe_name = request.user.first_name + request.user.last_name,

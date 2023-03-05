@@ -69,7 +69,7 @@ def profile(request):
         user = User.objects.get(id=request.user.id)
         uesr_detail = UserDetail.objects.filter(user_id=user.id)
         user_stock_id = uesr_detail[0].subinventory
-        my_reqeusts = ServiceReqeust.objects.filter(fe_initial=user_stock_id).using('dw')
+        my_reqeusts = ServiceRequest.objects.filter(fe_initial=user_stock_id).using('dw')
         print(my_reqeusts)
 
         return render(request,'home/user.html',{'forms':user,'my_requests':my_reqeusts})
@@ -77,7 +77,7 @@ def profile(request):
     
 @login_required(login_url="/login/")
 def case_detail(request,case_id):
-    each_case = ServiceReqeust.objects.using('dw').filter(svc_key=case_id)
+    each_case = ServiceRequest.objects.using('dw').filter(svc_key=case_id)
     df_parts= pd.DataFrame(list(each_case.values()))['parts']
     parts_str = df_parts[0].replace("'",'"')
     dict_parts = json.loads(parts_str)

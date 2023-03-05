@@ -76,7 +76,7 @@ class IrOrder(models.Model):
     arrival_date = models.CharField(max_length=100, blank=True, null=True)
     subinventory = models.CharField(max_length=100, blank=True, null=True)
     ship_date = models.CharField(max_length=100, blank=True, null=True)
-    comment = models.CharField(max_length=2000, blank=True, null=True)
+    comments = models.CharField(max_length=2000, blank=True, null=True)
     state = models.CharField(max_length=100, blank=True, null=True)
     timeline = models.CharField(max_length=4000, blank=True, null=True)
 
@@ -97,7 +97,7 @@ class LocalList(models.Model):
     customer = models.CharField(max_length=100, blank=True, null=True)
     ship_date = models.CharField(max_length=1000, blank=True, null=True)
     pod_date = models.CharField(max_length=100, blank=True, null=True)
-    comment = models.CharField(max_length=4000, blank=True, null=True)
+    comments = models.CharField(max_length=4000, blank=True, null=True)
     state = models.CharField(max_length=100, blank=True, null=True)
     timeline = models.CharField(max_length=4000, blank=True, null=True)
 
@@ -150,7 +150,7 @@ class PodMethod(models.Model):
 
 class ProdPose(models.Model):
     subinventory = models.CharField(primary_key=True, max_length=50)
-    commnet = models.CharField(max_length=500, blank=True, null=True)
+    comments = models.CharField(max_length=500, blank=True, null=True)
 
     class Meta:
         managed = False
@@ -171,7 +171,7 @@ class Products(models.Model):
         db_table = 'products'
 
 
-class ServiceReqeust(models.Model):
+class ServiceRequest(models.Model):
     svc_key = models.CharField(primary_key=True, max_length=100)
     fe_name = models.CharField(max_length=100, blank=True, null=True)
     fe_initial = models.CharField(max_length=100, blank=True, null=True)
@@ -192,7 +192,7 @@ class ServiceReqeust(models.Model):
 
     class Meta:
         managed = False
-        db_table = 'service_reqeust'
+        db_table = 'service_request'
 
 
 class ShipmentInformation(models.Model):
@@ -212,7 +212,7 @@ class ShipmentInformation(models.Model):
     for_free = models.CharField(max_length=50, blank=True, null=True)
     remark = models.CharField(max_length=2000, blank=True, null=True)
     parcels_no = models.CharField(max_length=100, blank=True, null=True)
-    comment = models.CharField(max_length=2000, blank=True, null=True)
+    comments = models.CharField(max_length=2000, blank=True, null=True)
     state = models.CharField(max_length=100, blank=True, null=True)
     timeline = models.CharField(max_length=4000, blank=True, null=True)
 
