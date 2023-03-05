@@ -100,6 +100,51 @@ class ShipmentInformation:
         cur.execute("commit")
 
     @classmethod
+    def update_shipdate_for_branch(self,get_each_index_num,ship_date,status='SHIP_CONFIRM',del_method='일반배송'):
+        """
+        so out시 db의 ship_date수정 및 pod완료시 pod_date 수정이 필요하다.
+        # ws_si 시트의 해당하는 db 값 수정 대리점 출고전용
+        comments 수정 추가
+        """
+        cur = self.DataWarehouse_DB
+        if type(get_each_index_num) is list:
+            idx_list = get_each_index_num
+        elif type(get_each_index_num) is dict:
+            idx_list=get_each_index_num['idx_list']
+        else:
+            idx_list = [get_each_index_num]
+        
+        # comment 수정
+        if type(del_method) == dict :
+            pacels_dict = del_method
+            for parcel_num,cou_num in pacels_dict.items():
+                query = f"UPDATE SHIPMENT_INFORMATION SET COMMENTS = '{cou_num}' WHERE PARCELS_NO = {parcel_num}"
+                cur.execute(query)
+        else : 
+            for val in idx_list:
+                query = f"UPDATE SHIPMENT_INFORMATION SET COMMENTS = '{del_method}' WHERE SI_INDEX = '{val}'"
+                cur.execute(query)
+
+        for val in idx_list:
+            # ship_date
+            query = f"UPDATE SHIPMENT_INFORMATION SET SHIP_DATE = '{ship_date}' WHERE SI_INDEX = {val}"
+            cur.execute(query)
+            # timeline
+            bring_tl_query = f"SELECT TIMELINE FROM SHIPMENT_INFORMATION WHERE SI_INDEX = {val}"
+            try:
+                json_tl = cur.execute(bring_tl_query).fetchone()[0]
+            except:
+                self.WB_CY.app.alert(f" SI_INDEX : {val} 해당 INDEX는 DB에 등록되지 않은 INDEX입니다. Data는 DataInput기능으로만 저장 가능합니다. 종료합니다.","Quit")
+                return 
+            cur.execute(bring_tl_query).fetchone()[0]
+            timeline_query = f"UPDATE SHIPMENT_INFORMATION SET TIMELINE = '{create_db_timeline(json_tl)}' WHERE SI_INDEX = {val}"
+            cur.execute(timeline_query)
+            # state
+            update_state_query = f"UPDATE SHIPMENT_INFORMATION SET STATE = '{status}' WHERE SI_INDEX = {val}"
+            cur.execute(update_state_query)
+
+
+    @classmethod
     def update_arrival_date(self,get_each_index_num,arrival_date):
         cur = self.DataWarehouse_DB
         idx_list=get_each_index_num

@@ -134,7 +134,7 @@ def __xl_clear_values(sel_sht):
     status_cel = sel_sht.range("H4")
     sel_sht.range("C2:C7").clear_contents()
     sel_sht.range('V3:V4').clear_contents()
-    sel_sht.range('P4:P7').clear_contents()
+    sel_sht.range('P3:P7').clear_contents()
     status_cel.color = None
     status_cel.value = "waiting_for_out"
     sel_sht.range("C4").value = "=TODAY()+1"

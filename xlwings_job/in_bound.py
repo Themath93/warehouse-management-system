@@ -187,7 +187,7 @@ def warehousing_inspection(input_date=str,print_form_dir = os.path.dirname(os.pa
                            ,branch_list))
 
     # print_form에서 사용할 컬럼명
-    col_list = ['AWB_NO','ORDER_NM','SHIP_TO','PARCELS_NO','CHECK','COMMENT','DIVISION']
+    col_list = ['AWB_NO','ORDER_NM','SHIP_TO','PARCELS_NO','CHECK','COMMENTS','DIVISION']
     join_col = ', '.join(col_list[:-3]) # query용 join
     
     # DB불러오기

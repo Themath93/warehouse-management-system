@@ -41,7 +41,6 @@ class Email():
     WS_DB = wb_cy.sheets[SHEET_NAMES[0]]
     WS_SI = wb_cy.sheets[SHEET_NAMES[1]]
     WS_POD = wb_cy.sheets[SHEET_NAMES[2]]
-    WS_BR = wb_cy.sheets[SHEET_NAMES[3]]
     WS_LC = wb_cy.sheets[SHEET_NAMES[5]]
     WS_SVMX = wb_cy.sheets[SHEET_NAMES[6]]
     WS_OTHER = wb_cy.sheets[SHEET_NAMES[7]]
@@ -513,7 +512,7 @@ class MainControl:
     FORM_ADD = ['$M$7:$M$9', '$O$7']
     STATUS = ['requested', 'pick/pack', 'dispatched', 'complete']
     COL_LIST =['ML_INDEX','REQ_TYPE','CREATE_DATE','REQ_DATE','PIC','IS_URGENT','LEFT_TIME','STATUS','DEL_MED','REGION']
-    BASE_QRY = 'select * from SERVICE_REQEUST '
+    BASE_QRY = 'select * from SERVICE_REQUEST '
 
     @classmethod
     def bring_reuests(self):
