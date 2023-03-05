@@ -7,15 +7,14 @@ sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 
 
 from datajob.xlwings_dj.shipment_information import ShipmentInformation
-from datajob.xlwings_dj.local_list import LocalList
 from xlwings_job.oracle_connect import DataWarehouse
 ## 출고
 import datetime as dt
-from datajob.xlwings_dj.so_out import SOOut
 from xlwings_job.xl_utils import bring_data_from_db, clear_form, get_each_index_num, get_idx, get_out_info, get_row_list_to_string, get_xl_rng_for_ship_date, row_nm_check, sht_protect
 import xlwings as xw
 import pandas as pd
 import html
+import win32com.client as cli
 my_date_handler = lambda year, month, day, **kwargs: "%04i-%02i-%02i" % (year, month, day)
 
 wb_cy = xw.Book.caller()
@@ -68,7 +67,7 @@ def branch_ship_ready():
     val_rng[2].value = branch_name # 대리점명
 
 def branch_ship_confirm():
-
+    wb_cy.app.screen_updating = False
     ship_answer = wb_cy.app.alert("Form의 출고를 진행 하시겠습니까?",'SHIP CONFIRM',buttons="yes_no_cancel")
     if ship_answer != "yes":
         wb_cy.app.alert("종료합니다.","Quit")
@@ -114,7 +113,7 @@ def branch_ship_confirm():
                 return
             
     # 1. update_shipdate 매서드사용으로 DB변화완료
-    ShipmentInformation.update_shipdate_for_branch(idx_list,input_values[1],del_method=del_method)
+    ShipmentInformation.update_shipdate(idx_list,input_values[1],del_method=del_method)
     
     # 2. sht_proctect() 매서드로 edit_mode진입
     sht_protect(False)
@@ -186,6 +185,7 @@ def branch_ship_confirm():
     mail_obj.Save()
     
     wb_cy.app.alert(f"{input_values[1]} 출고가 완료 되었습니다. 메일 임시보관함(Draft)를 확인해보세요!",'DONE')
+    wb_cy.app.screen_updating = True
 
 def get_out_table_for_branch(sheet_name=wb_cy.selection.sheet,index_row_number=9):
     """

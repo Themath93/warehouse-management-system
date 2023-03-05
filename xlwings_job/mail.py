@@ -519,6 +519,7 @@ class MainControl:
         qry_condition = self.SEL_SHT.range(self.FORM_ADD[0]).options(ndim=1).value + self.SEL_SHT.range(self.FORM_ADD[1]).options(ndim=1).value
         json_data = []
 
+        find_svc_key = self.SEL_SHT.range("O8")
 
         # 시작하기전에 sht 클리닝
         last_row = self.SEL_SHT.range("J1048576").end('up').row
@@ -543,7 +544,13 @@ class MainControl:
         else:
             qry = self.BASE_QRY + f"WHERE STATE = '{qry_condition[3]}' "
 
+        if find_svc_key.value != None:
+            qry = self.BASE_QRY + f"WHERE SVC_KEY = '{find_svc_key.value}'"
+
+
         df_req = pd.DataFrame(queried_db.execute(qry))
+
+        
 
         for i in range(len(df_req)):
             row_req = df_req.loc[i]

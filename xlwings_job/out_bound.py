@@ -1,16 +1,19 @@
 ## xl_wings 절대경로 추가
 import sys, os
 
+
+
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 
 
 from datajob.xlwings_dj.shipment_information import ShipmentInformation
 from datajob.xlwings_dj.local_list import LocalList
+from datajob.xlwings_dj.so_out import SOOut
 
 ## 출고
 from datetime import datetime
-from datajob.xlwings_dj.so_out import SOOut
-from xlwings_job.xl_utils import bring_data_from_db, clear_form, get_each_index_num, get_idx, get_out_info, get_row_list_to_string, get_xl_rng_for_ship_date, row_nm_check, sht_protect
+from xlwings_job.oracle_connect import DataWarehouse
+from xlwings_job.xl_utils import bring_data_from_db, clear_form, get_each_index_num, get_idx, get_out_info, get_out_table, get_row_list_to_string, get_xl_rng_for_ship_date, row_nm_check, sht_protect
 import xlwings as xw
 import pandas as pd
 
@@ -261,6 +264,7 @@ class ShipConfirm():
 
     @classmethod
     def ship_confirm(self):
+        cur = DataWarehouse()
         wb_cy.app.screen_updating = False
         # SO 품목 출고 담당
 
@@ -269,8 +273,35 @@ class ShipConfirm():
         tmp_lc_address = self.WS_DB.range("U3")
 
         # 선택한 시트 객체
-        sel_rng = wb_cy.selection
-        sel_sht = sel_rng.sheet
+        sel_sht = wb_cy.selection.sheet
+        del_method = sel_sht.range("C5").value
+        is_no_local = sel_sht.range("C7").value == 'no_local'
+        if (is_no_local == True) & (del_method == '택배'):
+            col_names = list(pd.DataFrame(cur.execute(f"select column_name from user_tab_columns where table_name = upper('SHIPMENT_INFORMATION')").fetchall())[0])
+            si_idx_list = get_out_table()
+            db_row_list = []
+            for idx in si_idx_list:
+                qry = f"SELECT * FROM SHIPMENT_INFORMATION WHERE SI_INDEX = '{idx}'"
+                db_row_list.append(cur.execute(qry).fetchone())
+            df_si = pd.DataFrame(db_row_list,columns=col_names)
+            parcel_list = list(set(df_si['PARCELS_NO']))
+        elif (is_no_local == False) & (del_method == '택배') :
+            wb_cy.app.alert("택배배송은 로컬품목없이 SO건만 출고시 사용 가능합니다. 배송방법을 다시선택해주세요.","Quit")
+            return
+
+
+        while True:
+            courier_num_list = input_delivery_invoice_number_for_out_bound(parcel_list)
+            pacels_dict = dict(zip(parcel_list,courier_num_list))
+            alert_str = str(pacels_dict).replace(",","\n").replace('{','').replace('}',"")
+            answer = wb_cy.app.alert("당신의 입력 : \n"+alert_str+" \n 수정하시겠습니까?","CONFIRM",buttons="yes_no_cancel")
+            if answer == 'no':
+                del_method = pacels_dict
+                break
+            if answer == 'cancel':
+                wb_cy.app.alert("종료합니다.","Quit")
+                return
+        wb_cy.app.alert(str(pacels_dict))
 
         status_cel = sel_sht.range("H4")
 
@@ -312,7 +343,7 @@ class ShipConfirm():
                 # xl_column date update ==> si_sht
                 sel_sht.range(tmp_si_address.value).value = ship_date
                 # ws_si 내용 db update
-                ShipmentInformation.update_shipdate(get_each_index_num=get_each_index_num(tmp_list[1]),ship_date=ship_date)
+                ShipmentInformation.update_shipdate(get_each_index_num=get_each_index_num(tmp_list[1]),ship_date=ship_date,del_method=del_method)
                 tmp_si_address.clear_contents()
                 clear_form(self.WS_LC)
                 clear_form()
@@ -395,3 +426,10 @@ def local_act_ob(WS_SI,WS_LC) :
 
     WS_LC.range("H4").value = "local_out_row_input_required"
     WS_LC.range("H4").color = (0,255,255)
+
+def input_delivery_invoice_number_for_out_bound(parcel_list):
+    wb_cy.app.alert("Parcel_NO에 맞는 송장번호를 입력해주세요.","INFO")
+    courier_num_list = []
+    for i in range(len(parcel_list)):
+        courier_num_list.append(wb_cy.app.api.InputBox(f"'{parcel_list[i]}'에 맞는 송장번호를 입력해주세요.","Delivery invoice number INPUT",Type=2))
+    return courier_num_list

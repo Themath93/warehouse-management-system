@@ -21,7 +21,7 @@ wb_cy = xw.Book.caller()
 
 
 ## 선택한 행, 시트 이름 딕셔너리로 반환
-def row_nm_check(xw_book_name=xw.books[0]):
+def row_nm_check(xw_book_name=wb_cy):
     """
     Return Dict, get activated sheet's name(str), get selected row's number(list)
 
@@ -213,7 +213,7 @@ def get_idx(sheet_name):
 
 
 #############################################################################
-def get_out_table(sheet_name,index_row_number=9):
+def get_out_table(sheet_name=wb_cy.selection.sheet,index_row_number=9):
     """
     xlwings.main.Sheet를 인수로 입력, 해당시트의 index행번호 default = 9 (int)
     list형태의 출고하는 시트의 index들을 반환한다.
