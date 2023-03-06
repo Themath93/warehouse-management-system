@@ -9,27 +9,11 @@ __license__ = "MIT"
 
 import sys
 
-from datajob.dw.total_stock_tf import TotalStockTransformer
-
-
-
-
-# def extract_execute_daily():
-#     RawMaterialsExtractor.extract_data()
-#     OilPreciousMetalExtractor.extract_data()
-#     StockIndexExtractor.extract_data()
-#     SovereignYieldExtractor.extract_data()
-#     BankInterestExtractor.extract_data()
-#     ExchangeExtractor.extract_data()
-
-# def extract_execute_monthly():
-#     GlobalMarketCapExtractor.extract_data()
-
 
 
 def main():
     works = {
-        'extract':{
+        'do_somthing':{
             # 'execute_daily':extract_execute_daily
             # ,'execute_montly':extract_execute_monthly
             # , 'futures_market_rm': RawMaterialsExtractor.extract_data
@@ -40,7 +24,7 @@ def main():
             # , 'spot_market_ex' : ExchangeExtractor.extract_data
         },
         'transform':{
-            'total_stock_tf': TotalStockTransformer.transform
+            # 'total_stock_tf': TotalStockTransformer.transform
         }
 
     }
