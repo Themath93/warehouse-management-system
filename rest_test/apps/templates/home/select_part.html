@@ -96,25 +96,27 @@
                 <div class="col-md-6 pr-md-1">
                   <div class="form-group">
                     <label>TOOL NUMBER</label>
-                    <input type="text" class="form-control" placeholder=" Write here..." id="tool_nm" name="tool_nm">
+                    <input type="text" class="form-control" list="datalistOptions_TOOL" placeholder="모든 데이터조회 'ALL' 입력" id="mytool_list" name="mytool_list">
+                    <datalist id="datalistOptions_TOOL" name="mytool_list_ld">
+                      <option value="ALL">
+                      {% for tool in tools %}
+                      <option value="{{tool.tool_nm}}">
+                      {% endfor %}
+                    </datalist>
                   </div>
                 </div>
                 <div class="col-md-6 pl-md-1">
                   <div class="form-group">
                     <label>FAVOR TOOLS</label>
-                    <input class="form-control" list="datalistOptions_TOOL" id="favor_tools" name="favor_tools"  placeholder="Type to search...">
-                    <datalist id="datalistOptions_TOOL" name="faver_tools_list">
-                      <option value="San Francisco">
-                      <option value="New York">
-                      <option value="Seattle">
-                      <option value="Los Angeles">
-                      <option value="Chicago">
+                    <input class="form-control" list="datalistOptions_TOOL_favor" id="favor_tools" name="favor_tools"  placeholder="Type to search...">
+                    <datalist id="datalistOptions_TOOL_favor" name="faver_tools_list">
+                      <option value="추후 구현예정" >
                     </datalist>
                   </div>
                 </div>
               </div>
               <div class="card-footer">
-                <input type="button" class="btn btn-fill btn-primary" value="Find TOOL"> 
+                 <input type="button" onclick="findTool()" class="btn btn-fill btn-primary" value=" Find TOOL"> 
               </div>
           </div>
         </div>
@@ -423,6 +425,63 @@
   <!-- 서비스재고 table 끝 -->
 
 
+  <!-- tool_order 시작-->
+ <div class="content" style="display:none;" id="tool_order">
+  <div hidden id="tool_order_content">
+
+  </div>
+  <div class="row">
+    <div class="col-md-12">
+      <div class="card ">
+        <div class="card-header">
+          <h4 class="card-title" id="tool_order_card"></h4>
+        </div>
+        <div class="card-body">
+          <div class="table">
+            <table class="table tablesorter " id="tool_order_table">
+              <thead class=" text-primary">
+                <tr>
+                  <th class="text-center">
+                    CATEGORY / SYSTEM
+                  </th>
+                  <th class="text-center">
+                    TOOL_NM
+                  </th>
+                  <th class="text-center">
+                    DESCRIPTION
+                  </th>
+                  <th class="text-center">
+                    PICTURE
+                  </th>
+                  <th class="text-center">
+                    ON_HAND
+                  </th>
+                  <th class="text-center">
+                    CALIBRATION
+                  </th>
+                  <th class="text-center">
+                    COMMENTS
+                  </th>
+                  <th class="text-center">
+                    PICK
+                  </th>
+                </tr>
+              </thead>
+              <tbody id="tool_order_list_tb">
+              </tbody>
+            </table>
+            <div class="d-flex justify-content-center">
+              <button class="btn btn-fill btn-primary" id="prevButtonTOOL">Previous</button> 
+              <button class="btn btn-fill btn-primary" id="nextButtonTOOL">Next</button> 
+            </div>
+          </div>
+        </div>
+      </div>
+    </div> 
+  </div>
+</div>
+<!-- tool_order 끝 -->
+
 
 
 
@@ -526,6 +585,11 @@
 var data_sys = '{{ data_ts|safe }}';
 var json_data_sys = JSON.parse(data_sys);
 var json_ir_orders = JSON.parse('{{ json_irs|safe }}');
+var json_tool_orders = JSON.parse('{{ json_tools|safe }}');
+
+var tool_order_div = document.getElementById('tool_order');
+var tool_hidden_div = document.getElementById('tool_order_content');
+query_tools = json_tool_orders;
 
 var ir_order_div = document.getElementById('ir_order');
 var ir_hidden_div = document.getElementById('ir_order_content');
@@ -615,7 +679,140 @@ function findIrParts() {
   ir_hidden_div.innerHTML = str_data_irs;
 }
 
-//addpart 시작
+//findTool 시작
+function findTool() {
+  if (tool_order_div.style.display == 'block') {
+   tool_order_div.style.display = 'none';
+   query_tools = json_tool_orders;
+ }
+ 
+ // 선택한 인벤토리 및 파트번호 찾기
+ var myorder_list = document.getElementById('mytool_list').value;
+ 
+ // myorder_list 에 만약에 값이 있다면 tool_order_nm은 진행 X
+ if (myorder_list == 'ALL') {
+     query_tools = query_tools
+   } else {
+     query_tools = query_tools.filter(function(e){
+       return e.order_nm === myorder_list;
+     })
+  }
+
+
+ tool_order_div.style.display = 'block';
+ // query된 값 다시 태그안에 넣어주기
+ str_data_tools =JSON.stringify(query_tools);
+ tool_hidden_div.innerHTML = str_data_tools;
+}
+
+function addTool(input_id) {
+  //part부분
+  // Select the table (well, tbody)
+  var table_ap = document.querySelector('#add_part_table tbody')
+
+  // 파트 중복 선택확인
+  var children_ap = Array.from(table_ap.children)
+  selected_list = [];
+  selected_list_ir = [];
+  selected_list_tool = [];
+  children_ap.forEach(e => {
+
+    if (e.id.includes("ir")==true) {
+      selected_list_ir.push(parseInt(e.id.split("_")[3]))
+    } else if(e.id.includes("tool")==true){
+      selected_list_tool.push(parseInt(e.id.split("_")[3]))
+    } else{
+      selected_list.push(parseInt(e.id.split("_")[2]))
+    }
+    
+  }); 
+  
+  input_tool_key = parseInt(input_id.split("_")[3]); //key 만 추출 string type change to int type
+
+
+  // 중복체크 구문 includes()
+  select_is_mutiple = selected_list_tool.includes(input_tool_key)
+
+  if (select_is_mutiple === true) {
+    alert("이미 선택한 파트입니다. 중복선택 불가")
+    return;
+  }
+  
+  
+  
+  // 만족하는 json 행 찾기
+  selected_tool_json = json_tool_orders.filter(function(e){
+        return e.tool_index === input_tool_key;  // djagno로 부터 받은 최초 table에서 해당 ts_key 조회로 행값 불러오기
+  });
+  
+
+
+
+  // qty가 기존최대 값을 넘는지 확인해보기
+  input_qty_tool = document.getElementById('parts_qty_tool_'+input_tool_key.toString()).value;
+  if (input_qty_tool > selected_tool_json[0].quantity) {
+    // 받은 값이 tb 상의 값보다 클 경우 alert와 함께 addPart테이블에 추가하지 않고 함수종료
+    alert('최대 요청 개수를 초과했습니다. 최대요청가능수량 : '+selected_tool_json[0].quantity.toString());
+    return;
+  }
+
+  //add_part div display --> block div 보여주기
+  var div_add_part = document.getElementById('add_part');
+  if (div_add_part.style.display == 'none') {
+    div_add_part.style.display = 'block';
+  }
+
+
+ 
+  //to_stock은 입력받기
+  var f = selected_tool_json;
+  // 로그인 된사람만 이용가능 -> eng일경우 본인의 trunckstock_id를 기본 value로 설정
+  const trunckstock_id = "{{ user.userdetail.subinventory }}";
+  subinventory_dl = document.getElementById('datalistOptions_sub').innerHTML
+  subinventory_dl = `<input class="form-control" style="text-align:center;" list="datalistOptions_tosub" id="to_sub" name="to_tool_${f[0].tool_index}"  value="${trunckstock_id}" placeholder="Transfer할 Stock입력">` +
+  '<datalist id="datalistOptions_tosub" name="subinventory_dl_tosub">' +
+    subinventory_dl +  '</datalist>' 
+
+  var ss_card = document.getElementById('add_part_card');
+
+  result = `<tr id="tr_selected_tool_${f[0].tool_index}" name="tr_selected_tool_${f[0].tool_index}">
+        <td class="text-center">
+          ${f[0].system}
+          <input type="hidden" name="prod_group_${f[0].system}" value="${f[0].system}" >
+        </td>
+        <td class="text-center">
+          ${f[0].tool_nm}
+          <input type="hidden" name="article_number_tool_${f[0].tool_nm}" value="${f[0].tool_nm}">
+        </td>
+        <td class="text-center">
+          ${f[0].description}
+          <input type="hidden" name="description" value="${f[0].description}">
+        </td>
+        <td class="text-center">
+          TOOL
+          <input type="hidden" name="subinventory" value="${f[0].on_hand}">
+        </td>
+        <td class="text-center">
+          ${subinventory_dl}
+        </td>
+        <td class="text-center">
+          1
+          <input type="hidden" name="input_qty_tool_${f[0].tool_index}" value="1">
+        </td>
+        <td class="text-center">
+          <input type="button" value="Delete"  onClick="DeleteTr(this.id);" class="btn btn-fill btn-primary" id="parts_input_tool_${f[0].tool_index}" name="parts_input_tool_${f[0].tool_index}">  
+        </td>
+        </tr>`;
+  table_ap.innerHTML += result;
+
+ 
+  
+  //part 부분끝 
+}
+
+
+
+//addirpart 시작
 function addIRPart(input_id) {
   //part부분
   // Select the table (well, tbody)
@@ -710,7 +907,7 @@ function addIRPart(input_id) {
           ${input_qty_ir}
           <input type="hidden" name="input_qty_ir_${f[0].ir_index}" value="${input_qty_ir}">
         </td>
-        <td>
+        <td class="text-center">
           <input type="button" value="Delete"  onClick="DeleteTr(this.id);" class="btn btn-fill btn-primary" id="parts_input_ir_${f[0].ir_index}" name="parts_input_ir_${f[0].ir_index}">  
         </td>
         </tr>`;
@@ -820,7 +1017,7 @@ function addPart(input_id) {
           ${input_qty_svc}
           <input type="hidden" name="input_qty_svc_${f[0].ts_key}" value="${input_qty_svc}">
         </td>
-        <td>
+        <td class="text-center">
           <input type="button" value="Delete"  onClick="DeleteTr(this.id);" class="btn btn-fill btn-primary" id="parts_input_${f[0].ts_key}" name="parts_input_${f[0].ts_key}">  
         </td>
         </tr>`;
@@ -898,11 +1095,34 @@ const ir_config = {
 ir_observer.observe( ir_target, { attributes: true } );
 ///////////////////////////////////////////////////////////////////
 ///////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////
+/////////////////////////////// TOOL ORDER옵저빙 //////////////////////
+const tool_target = document.getElementById('tool_order');
+const tool_observer = new MutationObserver( function( mutations ){
+    mutations.forEach( function( mutation ){
+        // Was it the style attribute that changed? (Maybe a classname or other attribute change could do this too? You might want to remove the attribute condition) Is display set to 'none'?
+        if( mutation.attributeName === 'style' && window.getComputedStyle( tool_target ).getPropertyValue( 'display' ) === 'block'
+          ){
+            changed_id = mutation.target.id;
+            if (changed_id == 'tool_order' ) {
+              renderTable_Tools(query_tools);
+            }
+        }
+    } );
+} );
+const tool_config = { 
+    attributes: true, // 속성 변화 할때 감지
+};
+ 
+// 5. 감지 시작
+tool_observer.observe( tool_target, { attributes: true } );
+///////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////
 
     // sort
   document.addEventListener('DOMContentLoaded', init, false);
 
-  let data_service, table, table_ir, sortCol;
+  let data_service, table, table_tool, sortCol;
   let sortAsc = false;
   const pageSize = 15;
   let curPage = 1;
@@ -912,6 +1132,7 @@ ir_observer.observe( ir_target, { attributes: true } );
     // Select the table (well, tbody)
     table = document.querySelector('#service_parts_table tbody');
     table_ir = document.querySelector('#ir_order_table tbody');
+    table_tool = document.querySelector('#tool_order_table tbody');
     // get the cats
     
     // renderTable_Part();
@@ -927,6 +1148,47 @@ ir_observer.observe( ir_target, { attributes: true } );
     //ir_order
     document.querySelector('#nextButtonIR').addEventListener('click', nextPageIR, false);
     document.querySelector('#prevButtonIR').addEventListener('click', previousPageIR, false);
+
+    //tool_order
+    document.querySelector('#nextButtonTOOL').addEventListener('click', nextPageIR, false);
+    document.querySelector('#prevButtonTOOL').addEventListener('click', previousPageIR, false);
+  }
+
+  function renderTable_Tools(get_json_db) {
+        // db데이터받기
+    var jons_tools = JSON.parse('{{ json_tools|safe }}');
+    if (get_json_db == null) {
+      get_json_db = jons_tools
+    };
+
+    var ss_card_tool = document.getElementById('tool_order_card');
+    ss_card_tool.innerHTML = 'SVC TOOLS' + ' 재고 기준 날짜 : '+ std_day
+
+    // create html
+    let result_tool = '';
+    get_json_db.filter((row, index) => {
+          let start = (curPage-1)*pageSize;
+          let end =curPage*pageSize;
+          if(index >= start && index < end) return true;
+    }).forEach((c,idx) => {
+//  
+        result_tool += `<tr id="tr_tool_${c.tool_index}">
+        <td class="col-md-2 text-center">${c.category} / ${c.system}</td>
+        <td class="col-md-1 text-center">${c.tool_nm}</td>
+        <td class="col-md-1 text-center">${c.description}</td>
+        <td class="col-md-2 text-center">
+          <img class="rounded mx-auto d-block" src="{{ ASSETS_ROOT }}${c.picture}" alt="...">
+        </td>
+        <td class="col-md-1 text-center">${c.on_hand}</td>
+        <td class="col-md-2 text-center">${c.calibration}</td>
+        <td class="col-md-2 text-center">${c.comments}</td>
+        <td>
+          <input type="button" value="Select"  onClick="addTool(this.id);" class="btn btn-fill btn-primary" id="parts_input_tool_${c.tool_index}" name="parts_input_tool_${c.tool_index}"> 
+          <input type="hidden" value="1" id="parts_qty_tool_${c.tool_index}" name="parts_qty_tool_${c.tool_index}">   
+        </td>
+        </tr>`;
+    });
+    table_tool.innerHTML = result_tool;
   }
 
   function renderTable_Irs(get_json_db) {
@@ -1033,6 +1295,16 @@ ir_observer.observe( ir_target, { attributes: true } );
     renderTable_Irs(JSON.parse(ir_hidden_div.innerHTML));
   }
 
+  function previousPageTOOL() {
+    if(curPage > 1) curPage--;
+    renderTable_Tools(JSON.parse(tool_hidden_div.innerHTML));
+  }
+
+  function nextPageIR() {
+    if((curPage * pageSize) < JSON.parse(tool_hidden_div.innerHTML).length) curPage++;
+    renderTable_Tools(JSON.parse(tool_hidden_div.innerHTML));
+  }
+
 
 
 // Delete 선택항목삭제
@@ -1048,6 +1320,10 @@ function DeleteTr(td_id){
       var id_num = td_id.split("_")[3];
       var sel_tr_id = "tr_selected_ir_" + id_num;
       selected_list_ir = selected_list_ir.filter((element) => element !== parseInt(id_num));
+    } else if (td_id.includes('tool') == true){
+      var id_num = td_id.split("_")[3];
+      var sel_tr_id = "tr_selected_tool_" + id_num;
+      selected_list_tool = selected_list_tool.filter((element) => element !== parseInt(id_num));
     }
 
     var selected_tr = document.getElementById(sel_tr_id);

@@ -277,3 +277,22 @@ class Test(models.Model):
     class Meta:
         managed = False
         db_table = 'test'
+
+class SvcTool(models.Model):
+    tool_index = models.BigAutoField(primary_key=True)
+    category = models.CharField(max_length=200, blank=True, null=True)
+    system = models.CharField(max_length=200, blank=True, null=True)
+    tool_nm = models.CharField(max_length=200, blank=True, null=True)
+    description = models.CharField(max_length=500, blank=True, null=True)
+    picture = models.CharField(max_length=100, blank=True, null=True)
+    serial_nm = models.CharField(max_length=500, blank=True, null=True)
+    calibration = models.CharField(max_length=500, blank=True, null=True)
+    on_hand = models.CharField(max_length=500, blank=True, null=True)
+    ship_date = models.CharField(max_length=500, blank=True, null=True)
+    tool_bin = models.CharField(max_length=500, blank=True, null=True)
+    comments = models.CharField(max_length=500, blank=True, null=True)
+    state = models.CharField(max_length=200, blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'svc_tool'

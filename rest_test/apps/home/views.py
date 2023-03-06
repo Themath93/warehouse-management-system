@@ -71,6 +71,8 @@ def pages(request):
 def req_parts(request):
     context={}
     user_group = str(Group.objects.filter(user=request.user)[0])
+    tool = SvcTool.objects.filter(Q(on_hand=None)).order_by('tool_index').using("dw")
+    json_tool = json.dumps(list(tool.values()))
     if user_group == 'Field Engineer_FE':
         user_detail = request.user.userdetail
         prod_pose = ProdPose.objects.all().using('dw').filter(Q(subinventory="KR_SERV01"))
@@ -88,7 +90,7 @@ def req_parts(request):
             'ir_index','article_number','description','quantity','order_nm',
             'arrival_date','subinventory','ship_date','comments','state'
         )),ensure_ascii=False)
-        return render(request, 'home/select_part.html',{'data_ts':json_ts,'datas_pose':prod_pose,'datas_products':products,'user':request.user,'ir_orders':ir_orders,'json_irs':json_irs})
+        return render(request, 'home/select_part.html',{'data_ts':json_ts,'datas_pose':prod_pose,'datas_products':products,'user':request.user,'ir_orders':ir_orders,'json_irs':json_irs,'tools':tool,'json_tools':json_tool})
     elif user_group == 'Manager':
         user_detail = request.user.userdetail
         prod_pose = ProdPose.objects.all().using('dw')
@@ -107,7 +109,7 @@ def req_parts(request):
             'ir_index','article_number','description','quantity','order_nm',
             'arrival_date','subinventory','ship_date','comments','state'
         )),ensure_ascii=False)
-        return render(request, 'home/select_part.html',{'data_ts':json_ts,'datas_pose':prod_pose,'datas_products':products,'user':request.user,'ir_orders':ir_orders,'json_irs':json_irs})
+        return render(request, 'home/select_part.html',{'data_ts':json_ts,'datas_pose':prod_pose,'datas_products':products,'user':request.user,'ir_orders':ir_orders,'json_irs':json_irs,'tools':tool,'json_tools':json_tool})
     else:
         html_template = loader.get_template('home/page-404.html')
         return HttpResponse(html_template.render(context, request))
@@ -157,6 +159,45 @@ def svc_process(request):
                 rows.append(list(req_part_db.values('bin_cur'))[0]['bin_cur'])
                 tmp = dict(zip(cols,rows))
                 data.append(tmp)
+
+                # 가장 먼저해야하는 것은 SYSTEM_STOCK에 내용 반영 및 내용 전송
+                # 임시사용 db 
+                total_db = TotalStock.objects.filter(std_day='2023-02-01')
+                for d in data:
+                    if 'IR' not in d['serial_or_IR_no']:
+                        search_db = total_db.filter(article_number=d['part_no']).get(subinventory=d['currnet_stock'])
+                        search_db_qty = search_db.quantity
+                        update_qty = search_db_qty-d['qty']
+                        if update_qty < 0 : # 이 경우는 중복출고가 이뤄지던 도중 이미 품목이 가로채기 당한경우
+                            return HttpResponse(d['part_no']+'의 출고가능 수량은'+str(search_db_qty) + '개 입니다. 출고요청을 종료합니다.')
+                        search_db.quantity=update_qty
+                        if update_qty == 0: # 출고가능 개수가 0이면 db에서 삭제
+                            search_db.delete()
+                        else : 
+                            search_db.save()
+                        try : # 해당엔지니어에게 이미 파트가 있는 경우
+                            search_db_fe = total_db.filter(article_number=d['part_no']).get(subinventory=d['transfer_to'])
+                            search_db_qty_fe = search_db_fe.quantity
+                            update_qty_fe = search_db_qty_fe + d['qty']
+                            search_db_fe.quantity=update_qty_fe
+                            search_db_fe.save()
+
+                        except: # 해당 엔지니어가 해당 파트가 아예없는경우
+                            TotalStock(
+                                article_number = d['part_no'],
+                                subinventory = d['transfer_to'],
+                                quantity = d['qty'],
+                                country = 'None',
+                                prod_centre = 'None',
+                                prod_group = 'None',
+                                description = 'Reqeusted Part',
+                                prod_status_type = 'None',
+                                bin_cur = 'None',
+                                std_day = std_day,
+                                state = 'Not Apply to System Yet',
+                                state_time = str(dt.datetime.now()).split('.')[0]
+                        ).save()
+
             elif 'input_qty_ir' in key:
                 in_ts_key = int(key.split('_')[-1])
                 req_ir_db = IrOrder.objects.filter(Q(ir_index=in_ts_key)).using('dw')
@@ -170,7 +211,7 @@ def svc_process(request):
                 data.append(tmp)
                 
                 dict_ir_db = req_ir_db.values().first()
-
+                
                 # IR_ORDER DB반영
                 # 3가지 경우
                 # 1. 요청개수가 DB 총수량 보다 작을 경우 DB데이터 나눠야함
@@ -211,46 +252,35 @@ def svc_process(request):
                     change_db.ship_date = req_date
                     change_db.save() 
                 else:
+                    print('IR 진입') 
                     return HttpResponseRedirect(reverse('home:req_parts'))
 
+            #tool 출고가 있을 경우
+            elif 'input_qty_tool' in key:
+                in_ts_key = int(key.split('_')[-1])
+                req_tool_db = SvcTool.objects.filter(Q(tool_index=in_ts_key)).using('dw')
+                rows.append(list(req_tool_db.values('tool_nm'))[0]['tool_nm'])
+                rows.append(list(req_tool_db.values('system'))[0]['system'])
+                rows.append(int(value))
+                rows.append(list(req_tool_db.values('on_hand'))[0]['on_hand'])
+                rows.append(request.POST.get('to_tool_'+str(in_ts_key)))
+                rows.append(list(req_tool_db.values('tool_bin'))[0]['tool_bin'])
+                tmp = dict(zip(cols,rows))
+                data.append(tmp)
 
-        # 가장 먼저해야하는 것은 SYSTEM_STOCK에 내용 반영 및 내용 전송
-        # 임시사용 db 
-        total_db = TotalStock.objects.filter(std_day='2023-02-01')
-        for d in data:
-            if 'IR' not in d['serial_or_IR_no']:
-                search_db = total_db.filter(article_number=d['part_no']).get(subinventory=d['currnet_stock'])
-                search_db_qty = search_db.quantity
-                update_qty = search_db_qty-d['qty']
-                if update_qty < 0 : # 이 경우는 중복출고가 이뤄지던 도중 이미 품목이 가로채기 당한경우
-                    return HttpResponse(d['part_no']+'의 출고가능 수량은'+str(search_db_qty) + '개 입니다. 출고요청을 종료합니다.')
-                search_db.quantity=update_qty
-                if update_qty == 0: # 출고가능 개수가 0이면 db에서 삭제
-                    search_db.delete()
-                else : 
-                    search_db.save()
-                try : # 해당엔지니어에게 이미 파트가 있는 경우
-                    search_db_fe = total_db.filter(article_number=d['part_no']).get(subinventory=d['transfer_to'])
-                    search_db_qty_fe = search_db_fe.quantity
-                    update_qty_fe = search_db_qty_fe + d['qty']
-                    search_db_fe.quantity=update_qty_fe
-                    search_db_fe.save()
+                #SVCTOOL DB반영
+                check_available = list(req_tool_db.values('on_hand'))[0]['on_hand']
+                # 아무도 가지고있지않으면 사용 가능
+                if check_available == '':
+                    change_db = req_tool_db[0]
+                    change_db.state = 'SHIP_CONFIRM'
+                    change_db.ship_date = req_date
+                    change_db.on_hand = fe_initial
+                    change_db.save()
+                else:
+                    return HttpResponseRedirect(reverse('home:req_parts'))
 
-                except: # 해당 엔지니어가 해당 파트가 아예없는경우
-                    TotalStock(
-                        article_number = d['part_no'],
-                        subinventory = d['transfer_to'],
-                        quantity = d['qty'],
-                        country = 'None',
-                        prod_centre = 'None',
-                        prod_group = 'None',
-                        description = 'Reqeusted Part',
-                        prod_status_type = 'None',
-                        bin_cur = 'None',
-                        std_day = std_day,
-                        state = 'Not Apply to System Yet',
-                        state_time = str(dt.datetime.now()).split('.')[0]
-                ).save()
+        
 
 
 
