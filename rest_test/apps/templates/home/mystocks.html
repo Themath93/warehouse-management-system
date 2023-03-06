@@ -1,0 +1,213 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} User Stock {% endblock %} 
+
+<!-- Specific Page CSS goes HERE  -->
+{% block stylesheets %}{% endblock stylesheets %}
+
+{% block content %}
+
+  <div class="content">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="title">RETURN FORM</h3>
+          </div>
+          <div class="card-body">
+            <form action="{% url 'authentication:part_return' %}" method="post">
+                {% csrf_token %}
+              <div class="row">
+                <div class="col-md-2 pl-md-1">
+                  <div class="form-group">
+
+                    <label>USER ID</label>
+                    <input type="text" class="form-control" placeholder="USER_ID" value="{{ forms.username }}" name="user_id" readonly>
+                  </div>
+                </div>
+                <div class="col-md-2 pl-md-1">
+                  <div class="form-group">
+                    <label>SUBINVENTORY</label>
+                    <input type="text" class="form-control" placeholder="SUBINVENTORY" value="{{ forms.userdetail.subinventory}}" name="subinventory" readonly>
+                  </div>
+                </div>
+                <div class="col-md-2 pl-md-1">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Email address</label>
+                    <input type="email" class="form-control" value="{{ forms.email }}" name="email">
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-2 pl-md-1">
+                  <div class="form-group">
+                    <label>RETURN METHOD</label>
+                    <input type="" class="form-control" placeholder="반납 방법을 선택해주세요." value="" name="return_method">
+                  </div>
+                </div>
+                <div class="col-md-2 pl-md-1">
+                  <div class="form-group">
+                    <label>송장번호</label>
+                    <input type="text" class="form-control" placeholder="반납 방법이 '택배'일 경우에만 적어주세요." value="" name="courier_nm">
+                  </div>
+                </div>
+                <div class="col-md-2 pl-md-1">
+                    <div class="form-group">
+                      <label>Contact Number</label>
+                      <input type="text" class="form-control" placeholder="010-1111-1234" value="{{ forms.userdetail.contact_number_1 }}" name="contact">
+                    </div>
+                  </div>
+              </div>
+              <div class="row">
+                <div class="col-md-3">
+                  <div class="form-group">
+                    <label>RETURN PLACE ADDRESS</label>
+                    <input type="text" class="form-control" placeholder="Address" value="{{ forms.userdetail.address }}" name="address_1" >
+                  </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="form-group">
+                      <label>ADDRESS DETAIL</label>
+                      <input type="text" class="form-control" placeholder="상세주소를 적어주세요." value="" name="address_2">
+                    </div>
+                  </div>
+              </div>
+              <div class="row">
+                <div class="col-md-4 px-md-1">
+                  <div class="form-group">
+                    <label>날짜</label>
+                    <input type="text" class="form-control" placeholder="010-1234-1234" value="{{ forms.userdetail.contact_number_2 }}" name="req_date">
+                  </div>
+                </div>
+                <div class="col-md-4 pl-md-1">
+                  <div class="form-group">
+                    <label>시간</label>
+                    <input type="text" class="form-control" placeholder="postcode" value="{{ forms.userdetail.postcode }}" name="req_time">
+                  </div>
+                </div>
+              </div>
+          </div>
+          <div class="card-footer">
+            <button type="submit" class="btn btn-fill btn-primary">Save</button>
+        </form>
+          </div>
+        </div>
+      </div>
+    
+    </div>
+
+    <!-- myrequest list -->
+    <div class="row">
+      <div class="col-md-12">
+        <div class="card">
+          <div class="card card-tasks">
+            <div class="card-header">
+                {% with my_parts.all|first as part %}
+              <h4 class="title d-inline">MY STOCK 기준일 : {{ part.std_day }}</h4>
+                {% endwith %}
+              <div class="dropdown">
+                  <button type="button" class="btn btn-link dropdown-toggle btn-icon"
+                          data-toggle="dropdown">
+                      <i class="tim-icons icon-settings-gear-63"></i>
+                  </button>
+                  <div class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenuLink">
+
+                      <button type="submit" class="dropdown-item" name="request_type" value="all">ALL</button>  
+                      <button type="submit" class="dropdown-item" name="request_type" value="requested">REQUESTED</button>
+
+                  </div>
+              </div>
+            </div>
+              <div class="card-body">
+                <div class="table-full-width table-responsive">
+                  <table class="table tablesorter " id="my_stock" name="my_stock">
+                    <thead class=" text-primary">
+                      <tr>
+                        <th class="text-center">
+                            GROUP
+                        </th>
+                        <th class="text-center">
+                          ARTICLE_NUMBER
+                        </th>
+                        <th class="col-md-2 text-center">
+                          DESCRIPTION
+                        </th>
+                        <th class="text-center">
+                            SUBINVENTORY
+                        </th>
+                        <th class="text-center">
+                          QUANTITY
+                        </th>
+                        <th class="text-center">
+                            PICK
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {% for part in my_parts %}
+                      <tr id="svc_{{part.ts_key}}" name="svc_{{ part.ts_key }}">
+                        <td class="text-center">
+                           PART
+                        </td>
+                        <td class="text-center">
+                          {{ part.article_number }}
+                        </td>
+                        <td class="col-md-2 text-center">
+                          {{ part.description }}
+                        </td>
+                        <td class="text-center">
+                          {{ part.subinventory }}
+                        </td>
+                        <td class="text-center">
+                          <input type="number" value="{{ part.quantity }}" min="0" max="{{ part.quantity }}" class="form-control input-sm" id="parts_qty_{{part.ts_key}}" name="parts_qty_{{part.ts_key}}">  
+                        </td>
+                        <td class="text-center">
+                            <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
+                            <label class="form-check-label" for="flexCheckDefault">
+                            </label>
+                        </td>
+                      </tr>
+                      {% endfor %}
+                      {% for tool in my_tools %}
+                      <tr id="tool_{{tool.tool_index}}" name="tool_{{ tool.tool_index }}">
+                        <td class="text-center">
+                           TOOL
+                        </td>
+                        <td class="text-center">
+                          {{ tool.tool_nm }}
+                        </td>
+                        <td class="col-md-2 text-center">
+                          {{ tool.description }}
+                        </td>
+                        <td class="text-center">
+                          {{ tool.on_hand }}
+                        </td>
+                        <td class="text-center">
+                          <input type="number" value="1" min="0" max="1" class="form-control input-sm" id="parts_qty_{{tool.tool_index}}" name="parts_qty_{{tool.tool_index}}">  
+                        </td>
+                        <td class="text-center">
+                            <input class="form-check-input" type="checkbox" value="" id="flexCheckDefault">
+                            <label class="form-check-label" for="flexCheckDefault">
+                            </label>
+                        </td>
+                      </tr>
+                      {% endfor %}
+                    </tbody>
+                  </table>
+                </div>
+            </form>
+                <!-- table body -->
+              </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+
+{% endblock javascripts %}

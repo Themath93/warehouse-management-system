@@ -4,7 +4,7 @@ Copyright (c) 2019 - present AppSeed.us
 """
 
 from django.urls import path
-from .views import login_view, register_user, profile, case_detail
+from .views import login_view, register_user, profile, case_detail,my_stock,send_return_request
 from django.contrib.auth.views import LogoutView
 
 
@@ -14,6 +14,8 @@ urlpatterns = [
     path('login/', login_view, name="login"),
     path('profile/', profile, name='profile'),
     path('profile/<str:case_id>', case_detail, name='case_detail'),
+    path('profile/mystock/send_return_request', send_return_request, name='part_return'),
+    path('profile/mystock/<str:subinventory>', my_stock, name='my_stock'),
     path('register/', register_user, name="register"),
     path("logout/", LogoutView.as_view(), name="logout")
 ]

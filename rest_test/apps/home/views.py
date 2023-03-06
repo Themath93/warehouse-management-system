@@ -32,8 +32,10 @@ def index(request):
     if user_group == 'Field Engineer_FE':
         user_fe_initial = request.user.userdetail.subinventory
         my_svc_request = my_svc_request.filter(Q(fe_initial=user_fe_initial)).order_by('-svc_key')
+        my_parts = TotalStock.objects.filter(Q(subinventory=user_fe_initial))
+        my_tool = SvcTool.objects.filter(Q(on_hand=user_fe_initial)).using('dw')
         html_template = loader.get_template('home/index_fe.html')
-        return HttpResponse(html_template.render({'segment': 'index','my_svc_request':my_svc_request}, request))
+        return HttpResponse(html_template.render({'segment': 'index','my_svc_request':my_svc_request,"my_tools":my_tool,'my_parts':my_parts}, request))
     elif user_group == 'Manager':
         user_fe_initial = request.user.userdetail.subinventory
         my_svc_request = my_svc_request.order_by('-svc_key')
@@ -77,7 +79,7 @@ def req_parts(request):
         user_detail = request.user.userdetail
         prod_pose = ProdPose.objects.all().using('dw').filter(Q(subinventory="KR_SERV01"))
         products = Products.objects.all().using('dw')
-        ir_orders = IrOrder.objects.all().using('dw').filter(Q(subinventory=user_detail.subinventory) & Q(state='GOOD_WR')).values(
+        ir_orders = IrOrder.objects.all().using('dw').filter((Q(subinventory=user_detail.subinventory) | Q(subinventory='KR_OPS')) & Q(state='GOOD_WR')).values(
             'ir_index','article_number','description','quantity','order_nm',
             'arrival_date','subinventory','ship_date','comments','state'
         )
