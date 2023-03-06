@@ -10,7 +10,7 @@ import xlwings as xw
 
 class ServiceRequest:
     """
-    Shipment_Information DB CRUD 담당
+    SERVICE_REQUEST DB CRUD 담당
     """
     # STATUS = ['requested', 'pick/pack', 'dispathed', 'complete']
     WB_CY = xw.Book.caller()
@@ -20,8 +20,8 @@ class ServiceRequest:
     @classmethod
     def update_status(self,svc_key,up_time_content,status):
         cur = self.DataWarehouse_DB
-        status_qry = f"UPDATE SERVICE_REQEUST SET STATE = '{status}' WHERE SVC_KEY = '{svc_key}'"
+        status_qry = f"UPDATE SERVICE_REQUEST SET STATE = '{status}' WHERE SVC_KEY = '{svc_key}'"
         cur.execute(status_qry)
-        timeline_qry = f"UPDATE SERVICE_REQEUST SET TIMELINE = '{create_db_timeline(up_time_content)}' WHERE SVC_KEY = '{svc_key}'"
+        timeline_qry = f"UPDATE SERVICE_REQUEST SET TIMELINE = '{create_db_timeline(up_time_content)}' WHERE SVC_KEY = '{svc_key}'"
         cur.execute(timeline_qry)
         cur.execute('commit')
