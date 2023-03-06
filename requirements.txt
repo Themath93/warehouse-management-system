@@ -28,13 +28,6 @@ ipywidgets==8.0.2
 jedi==0.18.1
 Jinja2==3.1.2
 jsonschema==4.16.0
-jupyter==1.0.0
-jupyter-console==6.4.4
-jupyter-server==1.21.0
-jupyter_client==7.4.4
-jupyter_core==4.11.2
-jupyterlab-pygments==0.2.2
-jupyterlab-widgets==3.0.3
 MarkupSafe==2.1.1
 matplotlib-inline==0.1.6
 mistune==2.0.4
@@ -43,8 +36,6 @@ nbclient==0.7.0
 nbconvert==7.2.3
 nbformat==5.7.0
 nest-asyncio==1.5.6
-notebook==6.5.1
-notebook_shim==0.2.0
 numpy==1.23.4
 packaging==21.3
 pandas==1.5.1

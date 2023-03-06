@@ -17,7 +17,7 @@ import html
 import win32com.client as cli
 my_date_handler = lambda year, month, day, **kwargs: "%04i-%02i-%02i" % (year, month, day)
 
-wb_cy = xw.Book.caller()
+wb_cy = xw.Book("cytiva.xlsm")
 
 def branch_ship_ready():
 

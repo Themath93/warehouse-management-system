@@ -16,7 +16,7 @@ import json
 from barcode import Code128
 from barcode.writer import ImageWriter
 
-wb_cy = xw.Book.caller()
+wb_cy = xw.Book("cytiva.xlsm")
 # wb_cy = xw.Book('cytiva.xlsm')
 
 

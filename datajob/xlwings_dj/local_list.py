@@ -14,7 +14,7 @@ class LocalList:
     """
     LocalList DB CRUD 담당
     """
-    WB_CY = xw.Book.caller()
+    WB_CY = xw.Book("cytiva.xlsm")
     WS_LC = WB_CY.sheets['로컬리스트']
     DataWarehouse_DB = DataWarehouse()
 

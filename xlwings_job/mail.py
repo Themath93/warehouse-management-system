@@ -22,7 +22,7 @@ import json
 
 
 
-wb_cy = xw.Book.caller()
+wb_cy = xw.Book("cytiva.xlsm")()
 
 
 class Email():

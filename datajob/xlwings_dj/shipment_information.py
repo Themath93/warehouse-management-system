@@ -14,7 +14,7 @@ class ShipmentInformation:
     """
     Shipment_Information DB CRUD 담당
     """
-    WB_CY = xw.Book.caller()
+    WB_CY = xw.Book("cytiva.xlsm")
     WS_SI = WB_CY.sheets['Shipment information']
     DataWarehouse_DB = DataWarehouse()
 

@@ -18,8 +18,8 @@ import xlwings as xw
 import pandas as pd
 
 
-wb_cy = xw.Book.caller()
-# wb_cy = xw.Book('cytiva.xlsm')
+wb_cy = xw.Book("cytiva.xlsm")
+
 
 class ShipReady():
     SHEET_NAMES =  ['Temp_DB', 'Shipment information', '인수증', 

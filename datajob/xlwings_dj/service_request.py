@@ -13,7 +13,7 @@ class ServiceRequest:
     SERVICE_REQUEST DB CRUD 담당
     """
     # STATUS = ['requested', 'pick/pack', 'dispathed', 'complete']
-    WB_CY = xw.Book.caller()
+    WB_CY = xw.Book("cytiva.xlsm")
     WS_SI = WB_CY.sheets['Shipment information']
     DataWarehouse_DB = DataWarehouse()
 

@@ -14,7 +14,7 @@ class SvcBin:
     """
     SVC_BIN DB CRUD 담당
     """
-    WB_CY = xw.Book.caller()
+    WB_CY = xw.Book("cytiva.xlsm")
     DataWarehouse_DB = DataWarehouse()
 
     @classmethod
