@@ -14,7 +14,7 @@ class ServiceRequest:
     """
     # STATUS = ['requested', 'pick/pack', 'dispathed', 'complete']
     WB_CY = xw.Book("cytiva.xlsm")
-    WS_SI = WB_CY.sheets['Shipment information']
+    WS_SI = WB_CY.sheets['SHIPMENT_INFORMATION']
     DataWarehouse_DB = DataWarehouse()
 
     @classmethod

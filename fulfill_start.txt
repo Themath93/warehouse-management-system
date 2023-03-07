@@ -1,6 +1,0 @@
-1. 깃 클론 
-2. 브랜치 warehouse
-3. 파이썬 다운로드 www.python.org  ver : 3.10.10
-4. py.ext -m pip install -r requirements.txt
-5. 제한된 보기해제 옵션 보안센터 제한된 보기해제
-6. xlwings.xlam 파일 매크로포함으로 실행

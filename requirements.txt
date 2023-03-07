@@ -70,7 +70,6 @@ stack-data==0.5.1
 terminado==0.17.0
 tinycss2==1.2.1
 tornado==6.2
-tqdm==4.64.1
 traitlets==5.5.0
 tzdata==2022.7
 urllib3==1.26.12

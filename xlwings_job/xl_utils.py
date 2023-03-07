@@ -93,7 +93,7 @@ def clear_form(sel_sht = wb_cy.selection.sheet):
 
         main_clear('SVC')
     else :
-        if sel_sht.name == 'IR_SVC' :
+        if sel_sht.name == 'IR_ORDER' :
             # DATE_TYPE
             str_dt = 'ALL,ARRIVAL_DATE,SHIP_DATE'
             rng_dt = sel_sht.range((2,"C"))
@@ -110,7 +110,7 @@ def clear_form(sel_sht = wb_cy.selection.sheet):
             sel_sht.api.Unprotect(Password='themath93')
             protect_sht(sel_sht,protect_sht_pass)
             __xl_clear_values(sel_sht)
-            if sel_sht.name == 'Shipment information':
+            if sel_sht.name == 'SHIPMENT_INFORMATION':
                 # si_index컬럼 기준으로 오름차순 정렬 -> so_out시 excel 내용 업데이트에 반드시필요
                 last_row = sel_sht.range("A1048576").end('up').row
                 sel_sht.range((9,'A'),(last_row,'R')).api.Sort(Key1=sel_sht.range((9,'A')).api, Order1=1, Header=1, Orientation=1)
@@ -551,8 +551,14 @@ def data_insert():
             # 입력한 값이 있는지는 확인해봐야함
             last_row = sel_sht.range("B1048576").end('up').row
             last_col = sel_sht.range("XFD9").end("left").column
-            # wb_cy.app.alert(str(last_row))
             if last_row > 9: # 10번 행에 값이 있다는 뜻.. data_input실행가능
+
+                # 참고할 컬럼행에 값이 띄엄띄엄 있는것은 아닌지 확인하기
+                none_count = sel_sht.range((9,"B"),(last_row,"B")).value.count(None)
+                if none_count > 0 :
+                    wb_cy.app.alert(f"'B' 컬럼은 반드시 값이 있어야합니다. \n 비어있는 행이 {none_count} 개 확인 됩니다. \n 수정 후 다시 시도해주세요!","Input WARNING")
+                    return     
+
                 tb_dict[db_table_name].data_input()
                 # ShipmentInformation.data_input() # data db업로드 완료
 
@@ -564,8 +570,8 @@ def data_insert():
                 sht_protect()
                 wb_cy.app.alert("DATA INPUT이 완료 되었습니다! (DB_반영완료).","Input COMPLETE")
             else :
-                wb_cy.app.alert("Input할 값이 없습니다. 'B'컬럼에는 반드시 값이 있어야합니다.","Input WARNING")
-                return None
+                wb_cy.app.alert("Input할 값이 없습니다. \n 'B'컬럼에는 반드시 값이 있어야합니다.","Input WARNING")
+                return
 
 
         else : #False #취소이므로 매서드 중단
@@ -611,7 +617,7 @@ def bring_data_from_db():
         cur=DataWarehouse()
         db_table_name = sel_sht.range("D5").value
         idx_col_name = sel_sht.range("A9").value
-        last_row = sel_sht.range("B1048576").end('up').row
+        
         last_col = sel_sht.range("XFD9").end("left").column
 
         df = pd.DataFrame(cur.execute(f'select * from {db_table_name}').fetchall())
@@ -623,7 +629,9 @@ def bring_data_from_db():
         df.set_index(idx_col_name,inplace=True)
         df = df.replace('None','')
         sel_sht.range("A9").value = df
+        last_row = sel_sht.range("B1048576").end('up').row
         xl_content = sel_sht.range((10,1),(last_row,last_col))
+        xl_content.font.size = 11
         xl_content.api.Borders.LineStyle = 1 
         xl_content.api.HorizontalAlignment = xw.constants.HAlign.xlHAlignLeft
 
@@ -703,3 +711,15 @@ def recall_col_names():
     table_name_cel = sel_sht.range("D5").value
     col_names_from_db = list(pd.DataFrame(DataWarehouse().execute(f"select column_name from user_tab_columns where table_name = upper('{table_name_cel}')").fetchall())[0])
     sel_sht.range("A9").value = col_names_from_db
+
+
+def move_sht(sht_name):
+    if '_sheetBtn' not in sht_name:
+        return
+    sht_name = sht_name.replace("_sheetBtn","")
+    sht_names = wb_cy.sheet_names
+    if sht_name not in sht_names:
+        return
+    # wb_cy.app.alert(sht_name)
+    selected_sht = wb_cy.sheets[sht_name]
+    selected_sht.api.Activate()

@@ -7,7 +7,7 @@ import pandas as pd
 
 
 
-LOCATION = r"C:\Users\lms46\Desktop\fulfill\instantclient_fulfill"
+LOCATION = os.path.dirname(os.path.abspath(os.path.dirname(__file__))) + "\\instantclient_fulfill"
 
 
 

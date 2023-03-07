@@ -1,13 +1,6 @@
 
 
-wb_sht_list = ['Shipment information',
- '인수증',
- '대리점송장',
- '대리점 출고대기',
- '로컬리스트',
- 'In-Transit part report',
- '기타리스트',
- '출고리스트','툴리스트']
+wb_sht_list = ['SHIPMENT_INFORMATION', 'LOCAL_LIST', 'IR_ORDER']
 
 abbreviation=['si','so_pod','br','br_d','lc','svmx','else','sc','tool']
 

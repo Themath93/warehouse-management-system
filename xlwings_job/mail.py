@@ -22,13 +22,12 @@ import json
 
 
 
-wb_cy = xw.Book("cytiva.xlsm")()
+wb_cy = xw.Book("cytiva.xlsm")
 
 
 class Email():
-    SHEET_NAMES =  ['Temp_DB', 'Shipment information', '인수증', 
-    '대리점송장', '대리점 출고대기', '로컬리스트', 'IR_SVC', '기타리스트',
-     '출고리스트', 'BIN','통합제어']
+    SHEET_NAMES =  ['Temp_DB', 'SHIPMENT_INFORMATION', 'POD', 
+    'LOCAL_LIST', 'IR_ORDER','SVC_BIN','MAIN']
 
     STATUS = ['waiting_for_out', 'ship_is_ready', '_is_empty','local_out_row_input_required']
 
@@ -41,9 +40,8 @@ class Email():
     WS_DB = wb_cy.sheets[SHEET_NAMES[0]]
     WS_SI = wb_cy.sheets[SHEET_NAMES[1]]
     WS_POD = wb_cy.sheets[SHEET_NAMES[2]]
-    WS_LC = wb_cy.sheets[SHEET_NAMES[5]]
-    WS_SVMX = wb_cy.sheets[SHEET_NAMES[6]]
-    WS_OTHER = wb_cy.sheets[SHEET_NAMES[7]]
+    WS_LC = wb_cy.sheets[SHEET_NAMES[4]]
+    WS_SVMX = wb_cy.sheets[SHEET_NAMES[5]]
     WS_MAIN = wb_cy.sheets[SHEET_NAMES[-1]]
 
     @classmethod
@@ -228,7 +226,7 @@ def print_form(shape_name=None,print_form_dir = "C:\\Users\\lms46\\Desktop\\fulf
     except:
         wb_pf = xw.Book(print_form_dir)
     ws_svc = wb_pf.sheets['SVC']
-    bin_loc = wb_cy.sheets['BIN']
+    bin_loc = wb_cy.sheets['SVC_BIN']
     
     
     

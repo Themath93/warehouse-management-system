@@ -121,7 +121,11 @@ def branch_ship_confirm():
     sht_protect(True)
     
     # 3. mail form작성
-    ws_br_out= xw.Book('print_form.xlsx').sheets['BRANCH_SHIPPING']
+    try : 
+        ws_br_out= xw.Book('print_form.xlsx').sheets['BRANCH_SHIPPING']
+    except:
+        print_form_dir = os.path.dirname(os.path.abspath(__file__)) +"\\print_form.xlsx"
+        ws_br_out= xw.Book(print_form_dir).sheets['BRANCH_SHIPPING']
     carton_count = len(df_br[pd.notna(df_br['NM_OF_PACKAGE'])])
     branch_out_col_names = [
         'ARRIVAL_DATE',

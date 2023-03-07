@@ -1,8 +1,5 @@
 ## xl_wings 절대경로 추가
 import sys, os
-
-
-
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 
 
@@ -22,9 +19,8 @@ wb_cy = xw.Book("cytiva.xlsm")
 
 
 class ShipReady():
-    SHEET_NAMES =  ['Temp_DB', 'Shipment information', '인수증', 
-    '대리점송장', '대리점 출고대기', '로컬리스트', 'IR_SVC', '기타리스트',
-     '출고리스트', 'BIN']
+    SHEET_NAMES =  ['Temp_DB', 'SHIPMENT_INFORMATION', 'POD', 
+    'LOCAL_LIST', 'IR_ORDER','SVC_BIN','MAIN']
 
     STATUS = ['waiting_for_out', 'ship_is_ready', '_is_empty','local_out_row_input_required', 'edit_mode']
 
@@ -37,9 +33,9 @@ class ShipReady():
     WS_DB = wb_cy.sheets[SHEET_NAMES[0]]
     WS_SI = wb_cy.sheets[SHEET_NAMES[1]]
     WS_POD = wb_cy.sheets[SHEET_NAMES[2]]
-    WS_LC = wb_cy.sheets[SHEET_NAMES[5]]
-    WS_SVMX = wb_cy.sheets[SHEET_NAMES[6]]
-    WS_OTHER = wb_cy.sheets[SHEET_NAMES[7]]
+    WS_LC = wb_cy.sheets[SHEET_NAMES[4]]
+    WS_SVMX = wb_cy.sheets[SHEET_NAMES[5]]
+    WS_MAIN = wb_cy.sheets[SHEET_NAMES[-1]]
 
     @classmethod
     def ship_ready(self):
@@ -247,18 +243,18 @@ class ShipConfirm():
     """
     모든 품목에 대하여 출고 확정 기능을 담당
     """
-    SHEET_NAMES =  ['Temp_DB', 'Shipment information', '인수증', 
-    '대리점송장', '대리점 출고대기', '로컬리스트', 'IR_SVC', '기타리스트',
-     '출고리스트', 'BIN']
+    SHEET_NAMES =  ['Temp_DB', 'SHIPMENT_INFORMATION', 'POD', 
+    'LOCAL_LIST', 'IR_ORDER','SVC_BIN','MAIN']
+
 
     STATUS = ['waiting_for_out', 'ship_is_ready', '_is_empty','local_out_row_input_required', 'edit_mode']
 
     WS_DB = wb_cy.sheets[SHEET_NAMES[0]]
     WS_SI = wb_cy.sheets[SHEET_NAMES[1]]
     WS_POD = wb_cy.sheets[SHEET_NAMES[2]]
-    WS_LC = wb_cy.sheets[SHEET_NAMES[5]]
-    WS_SVMX = wb_cy.sheets[SHEET_NAMES[6]]
-    WS_OTHER = wb_cy.sheets[SHEET_NAMES[7]]
+    WS_LC = wb_cy.sheets[SHEET_NAMES[4]]
+    WS_SVMX = wb_cy.sheets[SHEET_NAMES[5]]
+    WS_MAIN = wb_cy.sheets[SHEET_NAMES[-1]]
 
 
 
@@ -285,23 +281,23 @@ class ShipConfirm():
                 db_row_list.append(cur.execute(qry).fetchone())
             df_si = pd.DataFrame(db_row_list,columns=col_names)
             parcel_list = list(set(df_si['PARCELS_NO']))
+            while True:
+                courier_num_list = input_delivery_invoice_number_for_out_bound(parcel_list)
+                pacels_dict = dict(zip(parcel_list,courier_num_list))
+                alert_str = str(pacels_dict).replace(",","\n").replace('{','').replace('}',"")
+                answer = wb_cy.app.alert("당신의 입력 : \n"+alert_str+" \n 수정하시겠습니까?","CONFIRM",buttons="yes_no_cancel")
+                if answer == 'no':
+                    del_method = pacels_dict
+                    break
+                if answer == 'cancel':
+                    wb_cy.app.alert("종료합니다.","Quit")
+                    return
         elif (is_no_local == False) & (del_method == '택배') :
             wb_cy.app.alert("택배배송은 로컬품목없이 SO건만 출고시 사용 가능합니다. 배송방법을 다시선택해주세요.","Quit")
             return
 
 
-        while True:
-            courier_num_list = input_delivery_invoice_number_for_out_bound(parcel_list)
-            pacels_dict = dict(zip(parcel_list,courier_num_list))
-            alert_str = str(pacels_dict).replace(",","\n").replace('{','').replace('}',"")
-            answer = wb_cy.app.alert("당신의 입력 : \n"+alert_str+" \n 수정하시겠습니까?","CONFIRM",buttons="yes_no_cancel")
-            if answer == 'no':
-                del_method = pacels_dict
-                break
-            if answer == 'cancel':
-                wb_cy.app.alert("종료합니다.","Quit")
-                return
-        wb_cy.app.alert(str(pacels_dict))
+
 
         status_cel = sel_sht.range("H4")
 

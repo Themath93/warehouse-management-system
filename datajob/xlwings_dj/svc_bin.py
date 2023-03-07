@@ -30,7 +30,7 @@ class SvcBin:
         input_data = self.WB_CY.app.api.InputBox("해당 매서드 진행을 위해 발급받은 'db_pass'를 입력해주세요.","DATABASE WARNING", Type=2)
         
         if input_data == db_pass:
-            ws_bin = self.WB_CY.sheets['BIN'] 
+            ws_bin = self.WB_CY.sheets['SVC_BIN'] 
 
             last_row = get_empty_row(ws_bin,col=1)-1
             last_col = ws_bin.range("XFD9").end('left').column

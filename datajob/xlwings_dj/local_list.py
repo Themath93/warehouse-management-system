@@ -15,7 +15,7 @@ class LocalList:
     LocalList DB CRUD 담당
     """
     WB_CY = xw.Book("cytiva.xlsm")
-    WS_LC = WB_CY.sheets['로컬리스트']
+    WS_LC = WB_CY.sheets['LOCAL_LIST']
     DataWarehouse_DB = DataWarehouse()
 
     @classmethod
@@ -123,7 +123,11 @@ class LocalList:
         last_col = self.WS_LC.range("XFD9").end("left").column
         col_names = self.WS_LC.range((9,1),(9,last_col)).options(numbers=int,dates=dt.date).value
         content = self.WS_LC.range((10,1),(last_row,last_col)).options(numbers=int,dates=dt.date).value
-        df = pd.DataFrame([content],columns=col_names)
+        if last_row == 10:
+            df = pd.DataFrame([content],columns=col_names)
+        else:
+            df = pd.DataFrame(content,columns=col_names)
+        
         df = df.astype('string')
         df = df.astype({
             'LC_INDEX':'int',

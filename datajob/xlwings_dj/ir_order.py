@@ -30,7 +30,7 @@ class IROrder:
         input_data = self.WB_CY.app.api.InputBox("해당 매서드 진행을 위해 발급받은 'db_pass'를 입력해주세요.","DATABASE WARNING", Type=2)
         
         if input_data == db_pass:
-            ws_ir = self.WB_CY.sheets['IR_SVC'] 
+            ws_ir = self.WB_CY.sheets['IR_ORDER'] 
 
             last_row = get_empty_row(ws_ir,col=1)-1
             last_col = ws_ir.range("XFD9").end('left').column
@@ -54,7 +54,7 @@ class IROrder:
 
     @classmethod
     def data_input(self):
-        ws_ir = self.WB_CY.sheets['IR_SVC']
+        ws_ir = self.WB_CY.sheets['IR_ORDER']
         cur = self.DataWarehouse_DB
         last_idx_db = pd.DataFrame(cur.execute('select max(ir_index) from ir_order').fetchall())[0][0]
         last_row = ws_ir.range("B1048576").end('up').row

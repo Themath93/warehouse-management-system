@@ -9,13 +9,13 @@ import datetime as dt
 from xlwings_job.oracle_connect import insert_data,DataWarehouse
 from xlwings_job.xl_utils import get_empty_row, create_db_timeline
 import xlwings as xw
-
+my_date_handler = lambda year, month, day, **kwargs: "%04i-%02i-%02i" % (year, month, day)
 class ShipmentInformation:
     """
     Shipment_Information DB CRUD 담당
     """
     WB_CY = xw.Book("cytiva.xlsm")
-    WS_SI = WB_CY.sheets['Shipment information']
+    WS_SI = WB_CY.sheets['SHIPMENT_INFORMATION']
     DataWarehouse_DB = DataWarehouse()
 
     @classmethod
@@ -222,15 +222,21 @@ class ShipmentInformation:
         last_idx_db = pd.DataFrame(cur.execute('select max(si_index) from shipment_information').fetchall())[0][0]
         last_row = self.WS_SI.range("B1048576").end('up').row
         last_col = self.WS_SI.range("XFD9").end("left").column
-        col_names_1 = self.WS_SI.range((9,1),(9,7)).options(numbers=int,dates=dt.date).value
-        content_1 = self.WS_SI.range((10,1),(last_row,7)).options(numbers=int,dates=dt.date).value
-        col_names_2 = self.WS_SI.range((9,8),(9,9)).options(numbers=int,dates=dt.date).value
-        content_2 = self.WS_SI.range((10,8),(last_row,9)).options(dates=dt.date).value
-        col_names_3 = self.WS_SI.range((9,10),(9,last_col)).options(numbers=int,dates=dt.date).value
-        content_3 = self.WS_SI.range((10,10),(last_row,last_col)).options(numbers=int,dates=dt.date).value
-        df_1 = pd.DataFrame([content_1],columns=col_names_1)
-        df_2 = pd.DataFrame([content_2],columns=col_names_2)
-        df_3 = pd.DataFrame([content_3],columns=col_names_3)
+        col_names_1 = self.WS_SI.range((9,1),(9,7)).options(numbers=int,dates=my_date_handler).value
+        content_1 = self.WS_SI.range((10,1),(last_row,7)).options(numbers=int,dates=my_date_handler).value
+        col_names_2 = self.WS_SI.range((9,8),(9,9)).options(numbers=int,dates=my_date_handler).value
+        content_2 = self.WS_SI.range((10,8),(last_row,9)).options(dates=my_date_handler).value
+        col_names_3 = self.WS_SI.range((9,10),(9,last_col)).options(numbers=int,dates=my_date_handler).value
+        content_3 = self.WS_SI.range((10,10),(last_row,last_col)).options(numbers=int,dates=my_date_handler).value
+
+        if last_row == 10:
+            df_1 = pd.DataFrame([content_1],columns=col_names_1)
+            df_2 = pd.DataFrame([content_2],columns=col_names_2)
+            df_3 = pd.DataFrame([content_3],columns=col_names_3)
+        else:
+            df_1 = pd.DataFrame(content_1,columns=col_names_1)
+            df_2 = pd.DataFrame(content_2,columns=col_names_2)
+            df_3 = pd.DataFrame(content_3,columns=col_names_3)
         df = pd.concat([df_1,df_2,df_3],axis=1)
         df = df.astype('string')
         df = df.astype({

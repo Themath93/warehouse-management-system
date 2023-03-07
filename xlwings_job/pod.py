@@ -279,7 +279,7 @@ def pod_done():
         so_idx_list = list(df_details['SO_DETAIL'][0])
         ShipmentInformation.update_pod_date(so_idx_list,date_cell.value)
         
-        wb_cy.sheets['Shipment information'].activate()
+        wb_cy.sheets['SHIPMENT_INFORMATION'].activate()
         sht_protect(False)
         time.sleep(2)
         bring_data_from_db()
@@ -293,7 +293,7 @@ def pod_done():
         
         LocalList.update_pod_date(lc_idx_list,date_cell.value)
 
-        wb_cy.sheets['로컬리스트'].activate()
+        wb_cy.sheets['LOCAL_LIST'].activate()
         
         sht_protect(False)
         time.sleep(2)
