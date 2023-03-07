@@ -12,6 +12,7 @@ class SOOut:
     """
     DataWarehouse_DB = DataWarehouse()
     WB_CY = xw.Book("cytiva_worker.xlsm").set_mock_caller()
+    WB_CY = xw.Book.caller()
     def put_data(self,out_list):
         df_so = pd.DataFrame(out_list).T
         df_so[0][0]= None

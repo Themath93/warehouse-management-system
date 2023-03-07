@@ -15,6 +15,7 @@ class ShipmentInformation:
     Shipment_Information DB CRUD 담당
     """
     WB_CY = xw.Book("cytiva_worker.xlsm").set_mock_caller()
+    WB_CY = xw.Book.caller()
     WS_SI = WB_CY.sheets['SHIPMENT_INFORMATION']
     DataWarehouse_DB = DataWarehouse()
 

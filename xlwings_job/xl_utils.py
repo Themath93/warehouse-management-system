@@ -17,7 +17,7 @@ from barcode import Code128
 from barcode.writer import ImageWriter
 
 wb_cy = xw.Book("cytiva_worker.xlsm").set_mock_caller()
-
+wb_cy = xw.Book.caller()
 
 ## 선택한 행, 시트 이름 딕셔너리로 반환
 def row_nm_check(xw_book_name=wb_cy):
@@ -724,6 +724,7 @@ def move_sht(sht_name):
 
 def create_manual_print_form():
     wb_cy = xw.Book("cytiva_worker.xlsm").set_mock_caller()
+    wb_cy = xw.Book.caller()
     answer = wb_cy.app.alert("print_form을 여시겠습니까?","CONFIRM",buttons="yes_no_cancel")
     if answer != "yes":
         wb_cy.app.alert("종료합니다.","Quit")
@@ -749,6 +750,7 @@ def create_manual_print_form():
 
 def create_manual_tool():
     wb_cy = xw.Book("cytiva_worker.xlsm").set_mock_caller()
+    wb_cy = xw.Book.caller()
     answer = wb_cy.app.alert("TOOL LIST를 여시겠습니까?","CONFIRM",buttons="yes_no_cancel")
     if answer != "yes":
         wb_cy.app.alert("종료합니다.","Quit")

@@ -5,7 +5,7 @@ sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 import xlwings as xw
 
 wb_caller = xw.Book("cytiva_worker.xlsm").set_mock_caller()
-
+wb_caller = xw.Book.caller()
 def begin_work():
     form_book_dir = os.path.join(os.path.expanduser('~'),'Desktop') + "\\fulfill\\xlwings_job\\cytiva.xlsm"
     wb_worker = xw.Book.caller()

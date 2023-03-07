@@ -20,6 +20,7 @@ from xlwings_job.oracle_connect import DataWarehouse
 from xlwings_job.xl_utils import bring_data_from_db, clear_form, create_db_timeline, get_each_index_num, get_idx, get_xl_rng_for_ship_date, row_nm_check, sht_protect
 from datajob.xlwings_dj.shipment_information import ShipmentInformation
 wb_cy = xw.Book("cytiva_worker.xlsm").set_mock_caller()
+wb_cy = xw.Book.caller()
 my_date_handler = lambda year, month, day, **kwargs: "%04i-%02i-%02i" % (year, month, day)
 
 def warehousing_ready(input_date=str):

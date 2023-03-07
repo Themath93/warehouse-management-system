@@ -11,6 +11,7 @@ import json
 import datetime as dt
 import string
 wb_cy = xw.Book("cytiva_worker.xlsm").set_mock_caller()
+wb_cy = xw.Book.caller()
 my_date_handler = lambda year, month, day, **kwargs: "%04i-%02i-%02i" % (year, month, day)
 
 def clear_form_bin():

@@ -16,7 +16,7 @@ import pandas as pd
 
 
 wb_cy = xw.Book("cytiva_worker.xlsm").set_mock_caller()
-
+wb_cy = xw.Book.caller()
 
 class ShipReady():
     SHEET_NAMES =  ['Temp_DB', 'SHIPMENT_INFORMATION', 'POD', 
