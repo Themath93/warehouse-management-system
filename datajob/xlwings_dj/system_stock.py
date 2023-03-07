@@ -1,34 +1,39 @@
 import sys, os
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))))
 
-import os
-import json
 import pandas as pd
-import win32com.client as cli
 import datetime as dt
 from xlwings_job.oracle_connect import insert_data,DataWarehouse
 from xlwings_job.xl_utils import get_empty_row, create_db_timeline
 import xlwings as xw
 
+wb_cy = xw.Book("cytiva_worker.xlsm").set_mock_caller()
+wb_cy = xw.Book.caller()
+
 my_date_handler = lambda year, month, day, **kwargs: "%04i-%02i-%02i" % (year, month, day)
+
 class SystemStock:
     """
     SYSTEM_STOCK DB CRUD 담당
     """
-    WB_CY = xw.Book("cytiva_worker.xlsm").set_mock_caller()
-    WB_CY = xw.Book.caller()
+
     DataWarehouse_DB = DataWarehouse()
     DB_COLS = ['ARTICLE_NUMBER', 'SUBINVENTORY', 'LOCATION', 'QUANTITY', 'IN_DATE', 'EXPIRY_DATE', 'CURRENCY', 'LOT_COST', 'LOT_COST_IN_USD', 'STD_DAY']
+
     @classmethod
     def put_data(self):
         std_day = str(dt.datetime.now()).split(' ')[0]
-        answer = self.WB_CY.app.alert(std_day + " 기준으로 재고리스트 시트내용 업데이트후 yes를 눌러주세요.","STOCK UPDATE",buttons='yes_no_cancel')
+        answer = wb_cy.app.alert(std_day + " 기준으로 재고리스트 시트내용 업데이트후 yes를 눌러주세요.","STOCK UPDATE",buttons='yes_no_cancel')
         if answer != 'yes':
-            self.WB_CY.app.alert("종료합니다.","Quit")
+            wb_cy.app.alert("종료합니다.","Quit")
             return
         
-        ws_stock = self.WB_CY.sheets['재고리스트']
+        ws_stock = wb_cy.sheets['재고리스트']
         last_row = ws_stock.range('A1048576').end('up').row
+        if last_row ==1:
+            wb_cy.app.alert("재고리스트 시트에 값이 없습니다.","Quit")
+            return
+        
         last_col = ws_stock.range('XFD1').end('left').column
         col_names = ws_stock.range((1,1),(1,last_col)).value
         for idx,name in enumerate(col_names):

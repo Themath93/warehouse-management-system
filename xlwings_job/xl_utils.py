@@ -2,6 +2,7 @@
 import sys, os
 
 
+
 sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 
 
@@ -773,3 +774,9 @@ def create_manual_tool():
     new_wb.sheets["Sheet1"].delete()
     wb_form.close()
     new_wb.app.alert("매뉴얼로 작업이 필요할 시 사용 해주세요.","INFO")
+
+
+def call_system_stock():
+    sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))))
+    from datajob.xlwings_dj.system_stock import SystemStock
+    SystemStock.put_data()
