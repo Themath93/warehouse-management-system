@@ -282,9 +282,8 @@ def pod_done():
         ShipmentInformation.update_pod_date(so_idx_list,date_cell.value)
         
         wb_cy.sheets['SHIPMENT_INFORMATION'].activate()
-        sht_protect(False)
         time.sleep(2)
-        bring_data_from_db()
+        bring_data_from_db(in_method=True)
 
         wb_cy.sheets['POD'].activate()
     except:
@@ -297,9 +296,8 @@ def pod_done():
 
         wb_cy.sheets['LOCAL_LIST'].activate()
         
-        sht_protect(False)
         time.sleep(2)
-        bring_data_from_db()
+        bring_data_from_db(in_method=True)
 
         wb_cy.sheets['POD'].activate()
     except:

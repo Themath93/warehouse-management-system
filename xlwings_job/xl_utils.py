@@ -608,13 +608,15 @@ def __bring_tb_from_db_and_formatting_xltb(sel_sht, cur, last_col):
 
 
 # db 테이블 데이터를 xl로 시트로 보여준다.
-def bring_data_from_db():
+def bring_data_from_db(in_method=False):
     # sheet에 filter가 걸려져 있을경우 낭패를 본다. 반드시 필터해제후 진행
     """
     해당 시트에 DB전체 table 데이터 불러오기
     """
     sel_sht = wb_cy.selection.sheet
     status = sel_sht.range("H4").value
+    if in_method == True:
+        status = 'edit_mode'
     if status == 'edit_mode': # edit_mode에서만 지원
 
         sel_sht.api.AutoFilterMode = False # Filter가 걸려져있으면 데이터복사가 원활하게 되지 않는다. 필터해제 코드

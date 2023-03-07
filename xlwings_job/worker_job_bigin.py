@@ -74,7 +74,7 @@ def begin_work():
     req_type_str = 'ALL,SVC,PO,DEMO,RETURN'
     status_str = 'ALL,requested,pick/pack,dispatched,completed'
     del_met_str = ','.join(list(pd.DataFrame(cur.execute("SELECT * FROM DELIVERY_METHOD").fetchall())[1]))
-    pod_met_str = ','.join(list(pd.DataFrame(cur.execute("SELECT * FROM DELIVERY_METHOD").fetchall())[1]))
+    pod_met_str = ','.join(list(pd.DataFrame(cur.execute("SELECT * FROM POD_METHOD").fetchall())[1]))
     # SHEET OBJ
     sht_main = wb_worker.sheets['MAIN']
     sht_si = wb_worker.sheets['SHIPMENT_INFORMATION']

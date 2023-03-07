@@ -78,34 +78,22 @@ def warehousing_ready(input_date=str):
     cel_in_row= sel_sht.range("C2")
     cel_in_row.value = ' '.join(row_nm_check()['selection_row_nm']).replace(',','~').replace(' ', ', ')
     idx_key = get_idx(sel_sht)
-
-
     # DB 반영 및 sel_sht 내용 반영 arrvial_date, status ==> HOLDING
     status = 'HOLDING'
-
-
     # DB 업데이트
     __update_db_content(input_date, sel_sht, idx_key, status)
-
-
     # 검수지출력
     warehousing_inspection(input_date)
-
     # 대리점 입고예정메일 작성 
     branch_receiving(input_date)
-
     # form정리
     clear_form()
-
-    # edit_mode로 이동
-    sht_protect()
-
     # DB내용 excel에반영
-    bring_data_from_db()
-
+    bring_data_from_db(in_method=True)
     # edit_mode 종료
     sht_protect()
 
+    
 def __update_db_content(input_date, sel_sht, idx_key, status):
 
 
@@ -121,9 +109,6 @@ def __update_db_content(input_date, sel_sht, idx_key, status):
     db_obj.update_status(list_for_DB,status)
 
     # 대리점리스트 가져오기 FROM DB
-    # branch_list = DataWarehouse().execute('select branch_name from branch').fetchall()
-    # branch_list = list(map(lambda e: str(e).replace("('","").replace("',)","")
-    #                     ,branch_list))
     branch_list = list(pd.DataFrame(DataWarehouse().execute('select * from branch').fetchall())[0])
     ## SHIPMENT_INFORMATION 컬럼명다가져오기
     query = """
@@ -139,8 +124,6 @@ def __update_db_content(input_date, sel_sht, idx_key, status):
 
     # input_date가 적혀있는 db정보 가져오기 데이터프레임 타입으로
     df_in = pd.DataFrame(DataWarehouse().execute(f"select * from SHIPMENT_INFORMATION where ARRIVAL_DATE = '{input_date}'"),columns=si_col_list)
-
-    wb_cy.app.alert(df_in.to_string())
 
     # get_svc_or_branch_idx_list
     svc_idx_list = []
@@ -315,6 +298,7 @@ def branch_receiving(input_date=str,print_form_dir = "C:\\Users\\lms46\\Desktop\
 
         # 메일보내기 기능은 CI file을 첨부가 가능할 때 진행행
         # mail_obj.Send()
+        wb_pf.close()
     return json.dumps(ci_dict_list,ensure_ascii=False)
 
 

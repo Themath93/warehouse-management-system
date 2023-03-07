@@ -326,8 +326,7 @@ class ShipConfirm():
                 clear_form()
                 
                 self.WS_LC.select()
-                sht_protect(False)
-                bring_data_from_db()
+                bring_data_from_db(in_method=True)
                 sht_protect()
                 self.WS_SI.select()
 
@@ -345,8 +344,7 @@ class ShipConfirm():
                 clear_form()
 
 
-            sht_protect(False)
-            bring_data_from_db()
+            bring_data_from_db(in_method=True)
             sht_protect()
             wb_cy.app.screen_updating = True
         else  : 
