@@ -15,7 +15,7 @@ import xlwings as xw
 import json
 import datetime as dt
 import time
-wb_cy = xw.Book('cytiva.xlsm')
+wb_cy = xw.Book.caller()
 my_date_handler = lambda year, month, day, **kwargs: "%04i-%02i-%02i" % (year, month, day)
 
 

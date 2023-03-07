@@ -16,8 +16,7 @@ import json
 from barcode import Code128
 from barcode.writer import ImageWriter
 
-wb_cy = xw.Book("cytiva.xlsm")
-# wb_cy = xw.Book('cytiva.xlsm')
+wb_cy = xw.Book.caller()
 
 
 ## 선택한 행, 시트 이름 딕셔너리로 반환
@@ -720,6 +719,55 @@ def move_sht(sht_name):
     sht_names = wb_cy.sheet_names
     if sht_name not in sht_names:
         return
-    # wb_cy.app.alert(sht_name)
     selected_sht = wb_cy.sheets[sht_name]
     selected_sht.api.Activate()
+
+def create_manual_print_form():
+    wb_cy = xw.Book.caller()
+    answer = wb_cy.app.alert("print_form을 여시겠습니까?","CONFIRM",buttons="yes_no_cancel")
+    if answer != "yes":
+        wb_cy.app.alert("종료합니다.","Quit")
+        return
+    # 프린트폼 불러오기
+    book_name = 'print_form.xlsx'
+    form_book_dir = os.path.join(os.path.expanduser('~'),'Desktop') + "\\fulfill\\xlwings_job\\"+book_name
+
+    wb_form = xw.Book(form_book_dir)
+    # 새로운 워크북 생성해서 시트 붙여넣기
+    new_wb = xw.Book()
+    
+    form_sheets = wb_form.sheets
+
+    # worker 엑셀 시트에 from 시트값 주기
+    for form_sht in reversed(form_sheets):
+        # Copy to second Book requires to use before or after
+        form_sht.copy(after=new_wb.sheets["Sheet1"])
+    wb_form = xw.Book(form_book_dir)
+    new_wb.sheets["Sheet1"].delete()
+    wb_form.close()
+    new_wb.app.alert("매뉴얼로 작업이 필요할 시 사용 해주세요.","INFO")
+
+def create_manual_tool():
+    wb_cy = xw.Book.caller()
+    answer = wb_cy.app.alert("TOOL LIST를 여시겠습니까?","CONFIRM",buttons="yes_no_cancel")
+    if answer != "yes":
+        wb_cy.app.alert("종료합니다.","Quit")
+        return
+    # 프린트폼 불러오기
+    book_name = 'svc_tool.xlsm'
+    form_book_dir = os.path.join(os.path.expanduser('~'),'Desktop') + "\\fulfill\\xlwings_job\\"+book_name
+
+    wb_form = xw.Book(form_book_dir)
+    # 새로운 워크북 생성해서 시트 붙여넣기
+    new_wb = xw.Book()
+    
+    form_sheets = wb_form.sheets
+
+    # worker 엑셀 시트에 from 시트값 주기
+    for form_sht in reversed(form_sheets):
+        # Copy to second Book requires to use before or after
+        form_sht.copy(after=new_wb.sheets["Sheet1"])
+    wb_form = xw.Book(form_book_dir)
+    new_wb.sheets["Sheet1"].delete()
+    wb_form.close()
+    new_wb.app.alert("매뉴얼로 작업이 필요할 시 사용 해주세요.","INFO")

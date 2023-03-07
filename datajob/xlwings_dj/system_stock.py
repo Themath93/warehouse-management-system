@@ -15,7 +15,7 @@ class SystemStock:
     """
     SYSTEM_STOCK DB CRUD 담당
     """
-    WB_CY = xw.Book("cytiva.xlsm")
+    WB_CY = xw.Book.caller()
     DataWarehouse_DB = DataWarehouse()
     DB_COLS = ['ARTICLE_NUMBER', 'SUBINVENTORY', 'LOCATION', 'QUANTITY', 'IN_DATE', 'EXPIRY_DATE', 'CURRENCY', 'LOT_COST', 'LOT_COST_IN_USD', 'STD_DAY']
     @classmethod

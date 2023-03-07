@@ -15,7 +15,7 @@ import xlwings as xw
 import pandas as pd
 
 
-wb_cy = xw.Book("cytiva.xlsm")
+wb_cy = xw.Book.caller()
 
 
 class ShipReady():
