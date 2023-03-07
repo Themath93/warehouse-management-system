@@ -3,7 +3,7 @@
 - python version = 3.10.x
 
 
-1. 깃 클론
+1. git clone -b warehouse --single-branch https://github.com/Themath93/fulfill.git
 2. 브랜치 warehouse
 3. 파이썬 다운로드 www.python.org  ver : 3.10.10
 4. py.ext -m pip install -r requirements.txt

@@ -10,7 +10,7 @@ sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 
 import xlwings as xw
 
-wb_caller = xw.Book.caller()
+wb_caller = xw.Book("cytiva_worker.xlsm").set_mock_caller()
 
 def test():
     wb_caller.app.alert(os.path.join(os.path.expanduser('~'),'Desktop') + "\\cytiva_worker.xlsm")

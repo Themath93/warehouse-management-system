@@ -22,7 +22,7 @@ import json
 
 
 
-wb_cy = xw.Book.caller()
+wb_cy = xw.Book("cytiva_worker.xlsm").set_mock_caller()
 
 
 class Email():
@@ -210,7 +210,7 @@ def print_form(shape_name=None,print_form_dir = "C:\\Users\\lms46\\Desktop\\fulf
     """
     메일제목, print_form.xlsx 절대경로 
     """
-    wb_cy = xw.Book.caller()
+    wb_cy = xw.Book("cytiva_worker.xlsm").set_mock_caller()
     ws_main= wb_cy.sheets['통합제어']
     shape_name = shape_name.replace('_prfm','')
 
@@ -305,7 +305,7 @@ def print_form(shape_name=None,print_form_dir = "C:\\Users\\lms46\\Desktop\\fulf
 
 
 def ship_confirm_mail(shape_name =None):
-    wb_cy = xw.Book.caller()
+    wb_cy = xw.Book("cytiva_worker.xlsm").set_mock_caller()
     ws_main= wb_cy.sheets['통합제어']
     # shape_name = shape_name.replace('_prfm','')
     md_index= shape_name.replace('_shcf','')

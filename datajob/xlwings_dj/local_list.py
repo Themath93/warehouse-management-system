@@ -14,7 +14,7 @@ class LocalList:
     """
     LocalList DB CRUD 담당
     """
-    WB_CY = xw.Book.caller()
+    WB_CY = xw.Book("cytiva_worker.xlsm").set_mock_caller()
     WS_LC = WB_CY.sheets['LOCAL_LIST']
     DataWarehouse_DB = DataWarehouse()
 

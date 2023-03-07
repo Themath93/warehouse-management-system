@@ -4,14 +4,14 @@ import win32com.client as cli
 from datetime import datetime
 from xlwings_job.oracle_connect import insert_data,DataWarehouse
 from xlwings_job.xl_utils import create_db_timeline
-
+import xlwings as xw
 
 class SOOut:
     """
     SO_OUT DB CRUD 담당
     """
     DataWarehouse_DB = DataWarehouse()
-
+    WB_CY = xw.Book("cytiva_worker.xlsm").set_mock_caller()
     def put_data(self,out_list):
         df_so = pd.DataFrame(out_list).T
         df_so[0][0]= None
