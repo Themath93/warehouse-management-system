@@ -535,15 +535,19 @@ def data_insert():
     cur= DataWarehouse()
     if status.value == 'edit_mode':  # edit_mode에서만 data_input_mode() 사용 가능
         last_row = sel_sht.range("A1048576").end('up').row
+        if last_row < 10:
+            last_row = 10
         last_col = sel_sht.range("XFD9").end("left").column
         xl_table = sel_sht.range((10,1),(last_row,last_col))
         xl_table.clear_contents()
         status.value = 'data_insert_mode'
 
+        sel_sht.range((10,1),(1008,last_col)).api.Borders.LineStyle = 1 
+
         sel_sht.range("A10").select() # 데이터 진입모드시 입력할 첫째 행으로 포인터 이동 필수..
         sel_sht.range("A10").options(transpose=True).value = tmp_idx # index컬럼에 값이 없다면 매서드 진행 불가로 index에는 자동으로 값을 넣어주자 최대 999개
         wb_cy.app.alert("data_insert_mode모드로 진입합니다. 데이터 입력 후 버튼을 다시한번 눌러주세요.","DATA Input Mode")
-        return None
+        return
     elif status.value == 'data_insert_mode':  # data_insert_mode 상태면 다시 data_input기능을 마칠지 물어본다.
         input_comfirm = wb_cy.app.alert(" B 컬럼은 빈칸이 없어야 정상작동 합니다. 입력한 DATA를 Confirm하시겠습니까?",
                     "Input Confirm",buttons="yes_no_cancel")
@@ -780,3 +784,8 @@ def call_system_stock():
     sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))))
     from datajob.xlwings_dj.system_stock import SystemStock
     SystemStock.put_data()
+
+def open_user_guide():
+    ppt_name = "cytiva_user_guide.pptx"
+    guide_dir = os.path.join(os.path.expanduser('~'),'Desktop') + "\\fulfill\\xlwings_job\\"+ppt_name
+    os.startfile(guide_dir)
