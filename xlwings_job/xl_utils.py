@@ -213,12 +213,15 @@ def get_idx(sheet_name):
 
 
 #############################################################################
-def get_out_table(sheet_name=wb_cy.selection.sheet,index_row_number=9):
+def get_out_table(sheet_name=wb_cy.selection.sheet,index_row_number=9,direct_call=None):
     """
     xlwings.main.Sheet를 인수로 입력, 해당시트의 index행번호 default = 9 (int)
     list형태의 출고하는 시트의 index들을 반환한다.
     """
-    out_row_nums = sheet_name.range("C2").options(numbers=int).value
+    if direct_call == True:
+        out_row_nums = get_row_list_to_string(row_nm_check(wb_cy)['selection_row_nm'])
+    else:
+        out_row_nums = sheet_name.range("C2").options(numbers=int).value
     last_col = sheet_name.range("XFD9").end('left').column
     idx_row_num = index_row_number
     col_names = sheet_name.range(sheet_name.range(int(idx_row_num),1),sheet_name.range(int(idx_row_num),last_col)).value

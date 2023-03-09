@@ -25,6 +25,9 @@ my_date_handler = lambda year, month, day, **kwargs: "%04i-%02i-%02i" % (year, m
 
 def warehousing_ready(input_date=str):
 
+    run_confirm = wb_cy.app.alert("입고를 진행 하시겠습니까?","CONFIRM",buttons='yes_no_cancel')
+    if run_confirm != 'yes':
+        return
 
     sel_sht = wb_cy.selection.sheet
 
@@ -34,29 +37,31 @@ def warehousing_ready(input_date=str):
     if check_in_date_ans == 'no':
 
             month_ans = wb_cy.app.api.InputBox("아니라면 입고되는 월을 적어주세요 **숫자만 적어주세요**' ","IN DATE CHECK",Type=1)
-            if int(month_ans) < 10:
+            if month_ans == False :
+                wb_cy.app.alert("취소하셨습니다. 메서드를 종료합니다.","EXIT")
+                clear_form()
+                return
+            elif int(month_ans) < 10:
                 month_ans = "0"+str(int(month_ans))
             elif int(month_ans) >= 10:
                 month_ans = str(int(month_ans))
-            else :
-                wb_cy.app.alert("취소하셨습니다. 메서드를 종료합니다.","EXIT")
-                return None
-            
+
             day_ans = wb_cy.app.api.InputBox("입고되는 일수를 적어주세요 **숫자만 적어주세요**' ","IN DATE CHECK",Type=1)
-            if int(day_ans) < 10:
+            if day_ans == False :
+                wb_cy.app.alert("취소하셨습니다. 메서드를 종료합니다.","EXIT")
+                return
+            elif int(day_ans) < 10:
                 day_ans = "0"+str(int(day_ans))
             elif int(day_ans) >= 10:
                 day_ans = str(int(day_ans))
-            else :
-                wb_cy.app.alert("취소하셨습니다. 메서드를 종료합니다.","EXIT")
-                return None
             
             current_year_str = str(dt.datetime.today().year)    
             input_date =  current_year_str + "-" + month_ans  + "-" + day_ans
 
     elif check_in_date_ans == 'cancel':
         wb_cy.app.alert("취소하셨습니다. 메서드를 종료합니다.","EXIT")
-        return None
+        clear_form()
+        return
     else :
         input_date = default_in_date
 
@@ -66,14 +71,18 @@ def warehousing_ready(input_date=str):
         wb_cy.app.alert("'waiting_for_out' 상태에서만 해당 기능 사용이 가능합니다. 매서드를 종료합니다.","WAREHOUSING WARNING")
         return None
 
-    # ARRIVAL_DATE에 값이 있으면 사용 불가
+    # ARRIVAL_DATE에 값이 있으면 사용 불가 IN_DB DATA
+    
+
+    # ARRIVAL_DATE에 값이 있으면 사용 불가 아래 내용은 SHEET에서 가져옴 
     arrv_col_add = get_xl_rng_for_ship_date(wb_cy.selection,ship_date_col_num="K")
     arrv_val_rng = sel_sht.range(arrv_col_add).options(numbers=int,dates=my_date_handler,empty=None, ndim=1)
     is_empty = [True for val in arrv_val_rng.value if type(val) is str]
 
     if len(is_empty) > 0 : # 값이 있다는 이야기
         wb_cy.app.alert("'ARRIVAL_DATE'컬럼에 이미 값이 있습니니다. 중북 입고는 불가합니다.. 매서드를 종료합니다.","WAREHOUSING WARNING")
-        return None
+        clear_form()
+        return
 
     cel_in_row= sel_sht.range("C2")
     cel_in_row.value = ' '.join(row_nm_check()['selection_row_nm']).replace(',','~').replace(' ', ', ')
@@ -90,8 +99,7 @@ def warehousing_ready(input_date=str):
     clear_form()
     # DB내용 excel에반영
     bring_data_from_db(in_method=True)
-    # edit_mode 종료
-    sht_protect()
+
 
     
 def __update_db_content(input_date, sel_sht, idx_key, status):

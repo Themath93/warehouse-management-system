@@ -10,7 +10,7 @@ from datajob.xlwings_dj.shipment_information import ShipmentInformation
 from xlwings_job.oracle_connect import DataWarehouse
 ## 출고
 import datetime as dt
-from xlwings_job.xl_utils import bring_data_from_db, clear_form, get_each_index_num, get_idx, get_out_info, get_row_list_to_string, get_xl_rng_for_ship_date, row_nm_check, sht_protect
+from xlwings_job.xl_utils import bring_data_from_db, clear_form, get_each_index_num, get_idx, get_out_info, get_out_table, get_row_list_to_string, get_xl_rng_for_ship_date, row_nm_check, sht_protect
 import xlwings as xw
 import pandas as pd
 import html
@@ -34,7 +34,7 @@ def branch_ship_ready():
     val_rng = sel_sht.range("P3:P7")
     val_rng.clear_contents()
 
-    idx_list = get_out_table_for_branch()
+    idx_list = get_out_table(direct_call=True)
     idx_list_str = list(map(lambda e : str(e),idx_list))
     
     db_row_list =[]
@@ -197,47 +197,47 @@ def branch_ship_confirm():
     wb_cy.app.screen_updating = True
 
 
-def get_out_table_for_branch(sheet_name=wb_cy.selection.sheet,index_row_number=9):
-    """
-    xlwings.main.Sheet를 인수로 입력, 해당시트의 index행번호 default = 9 (int)
-    list return
-    """
-    out_row_nums = get_row_list_to_string(row_nm_check(wb_cy)['selection_row_nm'])
-    last_col = sheet_name.range("XFD9").end('left').column
-    idx_row_num = index_row_number
-    col_names = sheet_name.range(sheet_name.range(int(idx_row_num),1),sheet_name.range(int(idx_row_num),last_col)).value
+# def get_out_table_for_branch(sheet_name=wb_cy.selection.sheet,index_row_number=9):
+#     """
+#     xlwings.main.Sheet를 인수로 입력, 해당시트의 index행번호 default = 9 (int)
+#     list return
+#     """
+#     out_row_nums = get_row_list_to_string(row_nm_check(wb_cy)['selection_row_nm'])
+#     last_col = sheet_name.range("XFD9").end('left').column
+#     idx_row_num = index_row_number
+#     col_names = sheet_name.range(sheet_name.range(int(idx_row_num),1),sheet_name.range(int(idx_row_num),last_col)).value
     
-    for idx ,i in enumerate(col_names):
+#     for idx ,i in enumerate(col_names):
         
-        if i == None:
-            continue
-        elif '_INDEX' in i :
-            col_num = idx
+#         if i == None:
+#             continue
+#         elif '_INDEX' in i :
+#             col_num = idx
     
-    df_so = pd.DataFrame()
+#     df_so = pd.DataFrame()
     
-    # wb_cy.app.alert(out_row_nums)
-    try :
-        row_list = out_row_nums.replace(' ','').split(',')
-    except:
-        row_list = [out_row_nums]
-    for row in row_list :
+#     # wb_cy.app.alert(out_row_nums)
+#     try :
+#         row_list = out_row_nums.replace(' ','').split(',')
+#     except:
+#         row_list = [out_row_nums]
+#     for row in row_list :
         
-        # 연속된 행인 경우
-        if '~' in str(row) :
-            left_row =int(row.split('~')[0])
-            right_row = int(row.split('~')[1])
-            rng = sheet_name.range(sheet_name.range(left_row,1),sheet_name.range(right_row,last_col))
-            df_so = pd.concat([df_so,pd.DataFrame(sheet_name.range(rng).options(numbers=int).value)]) 
-        else :
+#         # 연속된 행인 경우
+#         if '~' in str(row) :
+#             left_row =int(row.split('~')[0])
+#             right_row = int(row.split('~')[1])
+#             rng = sheet_name.range(sheet_name.range(left_row,1),sheet_name.range(right_row,last_col))
+#             df_so = pd.concat([df_so,pd.DataFrame(sheet_name.range(rng).options(numbers=int).value)]) 
+#         else :
             
-            left_row =int(row)
-            right_row = int(row)
-            rng = sheet_name.range(sheet_name.range(left_row,1),sheet_name.range(right_row,last_col))
-            df_so = pd.concat([df_so,pd.DataFrame(sheet_name.range(rng).options(numbers=int).value).T])
+#             left_row =int(row)
+#             right_row = int(row)
+#             rng = sheet_name.range(sheet_name.range(left_row,1),sheet_name.range(right_row,last_col))
+#             df_so = pd.concat([df_so,pd.DataFrame(sheet_name.range(rng).options(numbers=int).value).T])
 
     
-    return list(df_so[col_num])
+#     return list(df_so[col_num])
 
 def input_delivery_invoice_number_for_branch(parcel_list):
     wb_cy.app.alert("Parcel_NO에 맞는 송장번호를 입력해주세요.","INFO")

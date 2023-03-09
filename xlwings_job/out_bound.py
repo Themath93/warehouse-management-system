@@ -40,81 +40,70 @@ class ShipReady():
     @classmethod
     def ship_ready(self):
         # self.WS_DB.range("U2") ==> ws_si 시트를 위한 임시 값 저장소
-        tmp_si_address = self.WS_DB.range("U2")
-        #edit_mode인 경우에는 출고 자체금지!
-        if self.STATUS_CELL.value != self.STATUS[4] :
-            # ship_ready기능을 사용하기 위해선 기본적으로 선택한 out_rows의 ship_date 컬럼이 None 값
-            # 그리고 DB상의 ship_date 컬럼에서도 'None' 값이어야만한다.
-            out_rows=get_row_list_to_string(row_nm_check(wb_cy)['selection_row_nm'])
+        table_name = self.WS_SI.range("D5").value
+        cur=DataWarehouse()
+        row_cel = self.WS_SI.range("C2")
+        out_rows_str=get_row_list_to_string(row_nm_check(wb_cy)['selection_row_nm'])
+        # waiting_for_out 에서만 사용가능!
+        if self.STATUS[2] in self.STATUS_CELL.value:
 
-            # status HOLDING 확인
-            out_rows_xl_status = get_xl_rng_for_ship_date(ship_date_col_num="R")
-            sel_rng_status = self.WS_SI.range(out_rows_xl_status).options(ndim=1)
+            self.check_local_empty()
+        elif self.STATUS_CELL.value != self.STATUS[0] :
 
-            hold_count = sel_rng_status.value.count("HOLDING")
+            wb_cy.app.alert(self.STATUS_CELL.value+"에서는 출고기능 사용이 불가합니다.",'INFO')
+            return
+        
+        # 이미 출고가능은 확인된 상태에서는 더이상 출고번호를 입력받을 필요는 없음
+ 
 
-            # 선택한 행중 어느 하나라도 Status가 HOLDING 상태임
-            if hold_count > 0 : 
-                wb_cy.app.alert("해당 품목의 STATUS가 'HOLDING'이기 때문에 진행이 불가합니다. 매서드를 종료합니다.","Ship Ready WARNING")
-                return None
-
-            # # arrval_date 입고안된 파트 출고인지 확인
-            # out_rows_xl_ad = get_xl_rng_for_ship_date(ship_date_col_num="K")
-            # sel_rng_ad = self.WS_SI.range(out_rows_xl_ad).options(ndim=1)
-            # wb_cy.app.alert(str(sel_rng_ad))
-            # # None의개수가 1개이상이면 입고안된 품목에대해 ship_ready를 요청한 것
-            # cnt_none_ad = sel_rng_ad.value.count(None)
-
-            # if cnt_none_ad > 0 :
-            #     ready_answer = wb_cy.app.alert("아직 입고가 되지 않은 파트가 신청 되었습니다. 계속진행 하시겟습니까?","Ship Ready Confirm",buttons='yes_no_cancel')
-            #     if ready_answer != 'yes': #출고 안하겠다는말
-            #         wb_cy.app.alert("Ship Ready를 종료합니다.","Ship Ready Confirm")
-            #         return None
+        elif self.STATUS_CELL.value == self.STATUS[0] :
+            # STATUS CHECK
+            # HOLDING, BRANCH, DMG, WRONG
+            out_row_list=get_out_table(direct_call=True)
+            db_row_list = []
+            for si_index in out_row_list:
+                db_row_list.append(cur.execute(f"SELECT SI_INDEX,ARRIVAL_DATE,SHIP_DATE,STATE,REMARK FROM {table_name} WHERE SI_INDEX = '{si_index}'").fetchone())
+            df_sel =  pd.DataFrame(db_row_list,columns=['SI_INDEX','ARRIVAL_DATE','SHIP_DATE','STATE','REMARK'])
             
+            check_list = []
+            check_list.append(len(df_sel[df_sel['STATE'] == "HOLDING"]) > 0)
+            check_list.append(len(df_sel[df_sel['REMARK'] == "대리점"]) > 0)
+            check_list.append(df_sel['SHIP_DATE'].count(None) != 0)
+            check_available = check_list.count(True)
+
+            if check_available > 0 :
+                wb_cy.app.alert("""선택하신 품목은 출고가 불가합니다. 아래내용을 참고해주세요. 
+                                \n 1. STATE가 HOLDING 인경우 ** (검수가 안된 품목일 수 있습니다. 해당 품목에 대한 검수를 마쳐주세요!)
+                                \n 2. 대리점 품목인 경우 **대리점용 출고시스템을 따로사용해주세요 (ONLY FOR BRANCH)
+                                \n 3. 이미 출고가 된 품목인 경우""",
+                                "WARNING")
+                return
             
+            is_arrived = len(df_sel[~pd.notna(df_sel['ARRIVAL_DATE'])]) > 0
+            is_damaged = len(df_sel[df_sel['STATE'].str.contains("DMG")]) > 0
+            is_wrong = len(df_sel[df_sel['STATE'].str.contains("WR_")]) > 0
+            if is_arrived == True:
+                ready_answer = wb_cy.app.alert("아직 입고가 되지 않은 품목이 포함되어 있습니다. 계속진행 하시겟습니까?","Ship Ready Confirm",buttons='yes_no_cancel')
+                if ready_answer != 'yes': #출고 안하겠다는말
+                    wb_cy.app.alert("Ship Ready를 종료합니다.","Ship Ready Confirm")
+                    return
+                
+            if is_damaged == True:
+                ready_answer = wb_cy.app.alert("검수 중 Damamged 품목이 포함되어 있습니다. 계속진행 하시겟습니까?","Ship Ready Confirm",buttons='yes_no_cancel')
+                if ready_answer != 'yes': #출고 안하겠다는말
+                    wb_cy.app.alert("Ship Ready를 종료합니다.","Ship Ready Confirm")
+                    return
+                
+            if is_wrong == True:
+                ready_answer = wb_cy.app.alert("검수 중 Wrongshipped 품목이 포함되어 있습니다 계속진행 하시겟습니까?","Ship Ready Confirm",buttons='yes_no_cancel')
+                if ready_answer != 'yes': #출고 안하겠다는말
+                    wb_cy.app.alert("Ship Ready를 종료합니다.","Ship Ready Confirm")
+                    return            
+            row_cel.value = out_rows_str
+            self.check_local_empty()
 
-            ### ws_si 시트상의 ship_date에 값이 없는지 확인 
-            out_rows_xl = get_xl_rng_for_ship_date(ship_date_col_num="L")
-            # ndim=1 => value가 하나일때도 list로 value 반환
-            sel_rng = self.WS_SI.range(out_rows_xl).options(ndim=1)
 
-            # try : 
-            cnt_none = sel_rng.value.count(None)
-            len_rng =len(sel_rng.value)
-            # except :
-            #     cnt_none = sel_rng.value
-            #     len_rng = None
 
-            if (cnt_none == len_rng) :
-
-                # 출고행 번호에 값이 없을 경우
-                if self.WS_SI.range("C2").value == None:
-
-                    self.WS_SI.range("C2").value = out_rows
-                    
-                    tmp_si_address.value = get_xl_rng_for_ship_date(ship_date_col_num="L")
-                                # arrval_date 입고안된 파트 출고인지 확인
-                    out_rows_xl_ad = get_xl_rng_for_ship_date(ship_date_col_num="K")
-                    sel_rng_ad = self.WS_SI.range(out_rows_xl_ad).options(ndim=1)
-                    # None의개수가 1개이상이면 입고안된 품목에대해 ship_ready를 요청한 것
-                    cnt_none_ad = sel_rng_ad.value.count(None)
-
-                    if cnt_none_ad > 0 :
-                        ready_answer = wb_cy.app.alert("아직 입고가 되지 않은 파트가 신청 되었습니다. 계속진행 하시겟습니까?","Ship Ready Confirm",buttons='yes_no_cancel')
-                        if ready_answer != 'yes': #출고 안하겠다는말
-                            wb_cy.app.alert("Ship Ready를 종료합니다.","Ship Ready Confirm")
-                            return None
-                    
-                    self.check_local_empty()
-                else :
-                # 출고행 번호에 값이 있을 경우
-
-                    self.check_local_empty()
-            #ship_date에 날짜 또는 값이 있을 경우
-            else:
-                wb_cy.app.alert("SHIP_DATE 컬럼에 값이 있습니다. 중복출고는 불가합니다." , "Mutiple Out WARNING")
-        else :
-            wb_cy.app.alert(self.STATUS_CELL.value+"에서는 출고기능 사용이 불가합니다.",'안내')
     
     @classmethod
     def only_local(self):
@@ -327,7 +316,6 @@ class ShipConfirm():
                 
                 self.WS_LC.select()
                 bring_data_from_db(in_method=True)
-                sht_protect()
                 self.WS_SI.select()
 
             else :
@@ -345,7 +333,6 @@ class ShipConfirm():
 
 
             bring_data_from_db(in_method=True)
-            sht_protect()
             wb_cy.app.screen_updating = True
         else  : 
             print("무응답")

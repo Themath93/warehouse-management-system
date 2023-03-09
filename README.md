@@ -23,3 +23,17 @@
 **주의사항**
 1. 엑셀작업시 셀안에 임의로 넣는 값은 저장을 하더라도 저장되지 않음
     - 시트마다 Cell change나 Data Input 기능등이 있는데 해당 기능을 사용하여야만 데이터베이스에 적용하여 이용가능
+
+
+PatchNote 230309 warehouse ver 1.12 
+1. CODE
+    1. INboundReady
+        - Fatfinger 방지를 위한 컨펌기능추가
+    2. Shipready 
+        - 로직 기능 개선 및 속도향상
+2. EXCEL
+    1. Cytiva.xlsm
+        - SHIPMENT_INFORMAITON 시트의 STATUS 셀 크기조정 60 -> 48
+3. USERGUIDE
+    1. 유저가이드 PPT 생성 
+        - cytitva_worker.xlsm 에서 userguide 버튼 클릭하면 실행 가능
