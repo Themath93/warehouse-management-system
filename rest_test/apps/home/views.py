@@ -196,7 +196,7 @@ def svc_process(request):
                                 prod_status_type = 'None',
                                 bin_cur = 'None',
                                 std_day = std_day,
-                                state = 'Not Apply to System Yet',
+                                state = 'SHIP_CONFIRM',
                                 state_time = str(dt.datetime.now()).split('.')[0]
                         ).save()
 
