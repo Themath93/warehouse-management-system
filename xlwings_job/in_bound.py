@@ -306,7 +306,7 @@ def branch_receiving(input_date=str,print_form_dir = "C:\\Users\\lms46\\Desktop\
 
         # 메일보내기 기능은 CI file을 첨부가 가능할 때 진행행
         # mail_obj.Send()
-        wb_pf.close()
+    wb_pf.close()
     return json.dumps(ci_dict_list,ensure_ascii=False)
 
 

@@ -2,7 +2,7 @@
 
 wb_sht_list = ['SHIPMENT_INFORMATION', 'LOCAL_LIST', 'IR_ORDER']
 
-abbreviation=['si','so_pod','br','br_d','lc','svmx','else','sc','tool']
+abbreviation=['si','lc','br','br_d','lc','svmx','else','sc','tool']
 
 #약어모음집 dict
 abb_sheets_names = dict(zip(wb_sht_list,abbreviation))

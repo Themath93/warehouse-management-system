@@ -132,6 +132,7 @@ def __xl_clear_values(sel_sht):
             ws_db.range((k_row,"U")).clear_contents()
 
     status_cel = sel_sht.range("H4")
+    ws_db.range("U2:U3").clear_contents()
     sel_sht.range("C2:C7").clear_contents()
     sel_sht.range('V3:V4').clear_contents()
     sel_sht.range('P3:P7').clear_contents()
@@ -235,7 +236,6 @@ def get_out_table(sheet_name=wb_cy.selection.sheet,index_row_number=9,direct_cal
     
     df_so = pd.DataFrame()
     
-    # wb_cy.app.alert(out_row_nums)
     try :
         row_list = out_row_nums.replace(' ','').split(',')
     except:
@@ -249,7 +249,6 @@ def get_out_table(sheet_name=wb_cy.selection.sheet,index_row_number=9,direct_cal
             rng = sheet_name.range(sheet_name.range(left_row,1),sheet_name.range(right_row,last_col))
             df_so = pd.concat([df_so,pd.DataFrame(sheet_name.range(rng).options(numbers=int).value)]) 
         else :
-            
             left_row =int(row)
             right_row = int(row)
             rng = sheet_name.range(sheet_name.range(left_row,1),sheet_name.range(right_row,last_col))
@@ -264,7 +263,7 @@ def get_out_table(sheet_name=wb_cy.selection.sheet,index_row_number=9,direct_cal
 def get_out_info(sheet_name):
 
     #2 배송방법 3 인수증방식
-    info_list = sheet_name.range("C3:C7").value
+    info_list = sheet_name.range("C3:C7").options(numbers=int).value
     info_list[1]=str(info_list[1].date().isoformat())
     # 배송방법, 인수증방식은 DB에서 해당 내용으로 키값을 받아 DB에저장 -> byte사용이적어 용량에 유리
     info_list[2] = get_tb_idx('DELIVERY_METHOD',info_list[2])
@@ -284,7 +283,6 @@ def get_out_info(sheet_name):
         info_list.insert(0,get_idx(sheet_name))
 
     info_list.insert(0,out_idx)
-
     return info_list
 
 
@@ -616,6 +614,7 @@ def bring_data_from_db(in_method=False):
     """
     해당 시트에 DB전체 table 데이터 불러오기
     """
+    wb_cy = xw.Book.caller()
     sel_sht = wb_cy.selection.sheet
     status = sel_sht.range("H4").value
     if in_method == True:

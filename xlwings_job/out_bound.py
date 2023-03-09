@@ -33,20 +33,21 @@ class ShipReady():
     WS_DB = wb_cy.sheets[SHEET_NAMES[0]]
     WS_SI = wb_cy.sheets[SHEET_NAMES[1]]
     WS_POD = wb_cy.sheets[SHEET_NAMES[2]]
-    WS_LC = wb_cy.sheets[SHEET_NAMES[4]]
-    WS_SVMX = wb_cy.sheets[SHEET_NAMES[5]]
+    WS_LC = wb_cy.sheets[SHEET_NAMES[3]]
+    WS_SVMX = wb_cy.sheets[SHEET_NAMES[4]]
     WS_MAIN = wb_cy.sheets[SHEET_NAMES[-1]]
 
     @classmethod
     def ship_ready(self):
         # self.WS_DB.range("U2") ==> ws_si 시트를 위한 임시 값 저장소
+        tmp_si_address = self.WS_DB.range("U2")
         table_name = self.WS_SI.range("D5").value
         cur=DataWarehouse()
         row_cel = self.WS_SI.range("C2")
         out_rows_str=get_row_list_to_string(row_nm_check(wb_cy)['selection_row_nm'])
         # waiting_for_out 에서만 사용가능!
         if self.STATUS[2] in self.STATUS_CELL.value:
-
+            
             self.check_local_empty()
         elif self.STATUS_CELL.value != self.STATUS[0] :
 
@@ -57,6 +58,7 @@ class ShipReady():
  
 
         elif self.STATUS_CELL.value == self.STATUS[0] :
+            
             # STATUS CHECK
             # HOLDING, BRANCH, DMG, WRONG
             out_row_list=get_out_table(direct_call=True)
@@ -100,6 +102,7 @@ class ShipReady():
                     wb_cy.app.alert("Ship Ready를 종료합니다.","Ship Ready Confirm")
                     return            
             row_cel.value = out_rows_str
+            tmp_si_address.value = get_xl_rng_for_ship_date(ship_date_col_num="L")
             self.check_local_empty()
 
 
@@ -241,8 +244,8 @@ class ShipConfirm():
     WS_DB = wb_cy.sheets[SHEET_NAMES[0]]
     WS_SI = wb_cy.sheets[SHEET_NAMES[1]]
     WS_POD = wb_cy.sheets[SHEET_NAMES[2]]
-    WS_LC = wb_cy.sheets[SHEET_NAMES[4]]
-    WS_SVMX = wb_cy.sheets[SHEET_NAMES[5]]
+    WS_LC = wb_cy.sheets[SHEET_NAMES[3]]
+    WS_SVMX = wb_cy.sheets[SHEET_NAMES[4]]
     WS_MAIN = wb_cy.sheets[SHEET_NAMES[-1]]
 
 
@@ -305,9 +308,9 @@ class ShipConfirm():
 
                 
                 if tmp_list.count('only_local') == 0 : #only_local일 경우에는 shipment update는필요없음
-                    ShipmentInformation.update_shipdate(get_each_index_num=get_each_index_num(tmp_list[1]),ship_date=ship_date)
+                    ShipmentInformation.update_shipdate(get_each_index_num=get_each_index_num(tmp_list[1]),ship_date=ship_date,del_method=del_method)
                 
-                LocalList.update_shipdate(get_each_index_num=get_each_index_num(local_idx),ship_date=ship_date)
+                LocalList.update_shipdate(get_each_index_num=get_each_index_num(local_idx),ship_date=ship_date,del_method=del_method)
                 
                 tmp_si_address.clear_contents()
                 tmp_lc_address.clear_contents()
@@ -317,6 +320,7 @@ class ShipConfirm():
                 self.WS_LC.select()
                 bring_data_from_db(in_method=True)
                 self.WS_SI.select()
+                bring_data_from_db(in_method=True)
 
             else :
                 # 로컬품목없이 ws_si 품목만 출고
@@ -351,9 +355,11 @@ class ShipConfirm():
     def __create_soout_index_insert_data_to_db(self, sel_sht, status_cel, tmp_idx):
         tmp_list = get_out_info(sel_sht)
         ## local 출고 품목이 있다면 local출고 index key화
-        if (sel_sht.name == self.SHEET_NAMES[1]) and (tmp_list[-3] != 'no_local') :
+        if tmp_list[-3] == 'only_local':
             tmp_list[-3] = str(get_idx(self.WS_LC))
-        
+            
+        elif (tmp_list[-3] != 'no_local') and (tmp_list[-3] != 'only_local'): 
+            tmp_list[-3] = str(get_idx(self.WS_LC))
         self.WS_DB.range("C"+ tmp_idx).value = tmp_list
         SOOut.put_data(self,tmp_list)
         # 성공적으로 tmep_db에 저장이 된상태라면 출고양식들을 지워줄 필요가있다.

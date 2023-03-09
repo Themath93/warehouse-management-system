@@ -66,7 +66,7 @@ class ShipmentInformation:
         insert_data(self.DataWarehouse_DB,df,'SHIPMENT_INFORMATION')
 
         # si업데이트
-    @classmethod
+    # @classmethod
     # def update_shipdate(self,get_each_index_num,ship_date,status='SHIP_CONFIRM'):
     #     """
     #     so out시 db의 ship_date수정 및 pod완료시 pod_date 수정이 필요하다.

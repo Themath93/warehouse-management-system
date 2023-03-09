@@ -54,7 +54,7 @@ class LocalList:
 
         # lc업데이트
     @classmethod
-    def update_shipdate(self,get_each_index_num,ship_date,status='SHIP_CONFIRM'):
+    def update_shipdate(self,get_each_index_num,ship_date,status='SHIP_CONFIRM',del_method='일반배송'):
         """
         so out시 db의 ship_date수정 및 pod완료시 pod_date 수정이 필요하다.
         # ws_lc 시트의 해당하는 db 값 수정
@@ -66,28 +66,49 @@ class LocalList:
             idx_list=get_each_index_num['idx_list']
         else:
             idx_list = [get_each_index_num]
-
+        
         for val in idx_list:
-            # shipdate 
-            query = f"UPDATE LOCAL_LIST SET SHIP_DATE = '{ship_date}' WHERE LC_INDEX = {val}"
+            # comments
+            query = f"UPDATE LOCAL_LIST SET COMMENTS = '{del_method}' WHERE LC_INDEX = '{val}'"
+            cur.execute(query)
+            # ship_date
+            query = f"UPDATE LOCAL_LIST SET SHIP_DATE = '{ship_date}' WHERE LC_INDEX = '{val}'"
             cur.execute(query)
             # timeline
-            bring_tl_query = f"SELECT TIMELINE FROM LOCAL_LIST WHERE LC_INDEX = {val}"
+            bring_tl_query = f"SELECT TIMELINE FROM LOCAL_LIST WHERE LC_INDEX = '{val}'"
             try:
                 json_tl = cur.execute(bring_tl_query).fetchone()[0]
             except:
                 self.WB_CY.app.alert(f" LC_INDEX : {val} 해당 INDEX는 DB에 등록되지 않은 INDEX입니다. Data는 DataInput기능으로만 저장 가능합니다. 종료합니다.","Quit")
                 return 
             cur.execute(bring_tl_query).fetchone()[0]
-            timeline_query = f"UPDATE LOCAL_LIST SET TIMELINE = '{create_db_timeline(json_tl)}' WHERE LC_INDEX = {val}"
+            timeline_query = f"UPDATE LOCAL_LIST SET TIMELINE = '{create_db_timeline(json_tl)}' WHERE LC_INDEX = '{val}'"
             cur.execute(timeline_query)
             # state
-            update_state_query = f"UPDATE LOCAL_LIST SET STATE = '{status}' WHERE LC_INDEX = {val}"
+            update_state_query = f"UPDATE LOCAL_LIST SET STATE = '{status}' WHERE LC_INDEX = '{val}'"
             cur.execute(update_state_query)
-            
         cur.execute("commit")
 
-        return None
+
+        # for val in idx_list:
+        #     # shipdate 
+        #     query = f"UPDATE LOCAL_LIST SET SHIP_DATE = '{ship_date}' WHERE LC_INDEX = {val}"
+        #     cur.execute(query)
+        #     # timeline
+        #     bring_tl_query = f"SELECT TIMELINE FROM LOCAL_LIST WHERE LC_INDEX = {val}"
+        #     try:
+        #         json_tl = cur.execute(bring_tl_query).fetchone()[0]
+        #     except:
+        #         self.WB_CY.app.alert(f" LC_INDEX : {val} 해당 INDEX는 DB에 등록되지 않은 INDEX입니다. Data는 DataInput기능으로만 저장 가능합니다. 종료합니다.","Quit")
+        #         return 
+        #     cur.execute(bring_tl_query).fetchone()[0]
+        #     timeline_query = f"UPDATE LOCAL_LIST SET TIMELINE = '{create_db_timeline(json_tl)}' WHERE LC_INDEX = {val}"
+        #     cur.execute(timeline_query)
+        #     # state
+        #     update_state_query = f"UPDATE LOCAL_LIST SET STATE = '{status}' WHERE LC_INDEX = {val}"
+        #     cur.execute(update_state_query)
+            
+        # cur.execute("commit")
     @classmethod
     def update_arrival_date(self):
         return None
