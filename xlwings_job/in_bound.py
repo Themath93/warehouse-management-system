@@ -234,7 +234,7 @@ def branch_receiving(input_date=str,print_form_dir = "C:\\Users\\lms46\\Desktop\
     cur = DataWarehouse()
     wb_pf = xw.Book(print_form_dir)
     ws_br_in = wb_pf.sheets['BRANCH_RECEIVING']
-    worker = '홍길동'
+    worker = wb_cy.sheets['MAIN'].range("D2").value
     outlook_send=cli.Dispatch("Outlook.Application")
 
     # DB에서 값가져오기

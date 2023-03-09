@@ -69,6 +69,7 @@ def branch_ship_ready():
 
 def branch_ship_confirm():
     wb_cy.app.screen_updating = False
+    worker = wb_cy.sheets['MAIN'].range("D2").value
     ship_answer = wb_cy.app.alert("Form의 출고를 진행 하시겠습니까?",'SHIP CONFIRM',buttons="yes_no_cancel")
     if ship_answer != "yes":
         wb_cy.app.alert("종료합니다.","Quit")
@@ -149,6 +150,7 @@ def branch_ship_confirm():
     req_rng.api.Borders.LineStyle = -4142
     req_rng.clear_contents()
 
+    ws_br_out.range("A2").value = f"DHL {worker} 입니다."
     ws_br_out.range("A7").value = f"총 {carton_count} CARTON 입니다."
     if input_values[3] == "택배":
         ws_br_out.range("D7").value = f"{input_values[1]}에 택배로 출고 완료 되었습니다."
