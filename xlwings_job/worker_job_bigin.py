@@ -9,9 +9,37 @@ import pandas as pd
 from xlwings_job.oracle_connect import DataWarehouse
 
 wb_caller = xw.Book("cytiva_worker.xlsm").set_mock_caller()
-def begin_work():
+wb_worker = xw.Book.caller()
+
+## 수동으로 바꿀 것 새로운 버전 배포시 반드시 업데이트!
+current_ver= float(1.133)
+
+def version_check():
+    os.chdir(os.path.join(os.path.expanduser('~'),'Desktop') + "\\fulfill\\")
+    my_version = float(os.popen('git log -1 --pretty=%B').read().replace("\n\n","").split(" ")[-1])
     
-    wb_worker = xw.Book.caller()
+    need_updated = my_version < current_ver
+    if need_updated == True:
+        answer = wb_worker.app.alert(f"New version has been released. Do you want to progress the update? \
+                            \n 새로운 버전이 릴리즈 되었습니다. 업데이트를 진행 하시겠습니까? \
+                            \n Current Version : {str(my_version)} \
+                            \n New Version : {str(current_ver)}","UPDATE",buttons='yes_no_cancel')
+        if answer != "yes":
+            return
+        else:
+            wb_worker.app.alert("업데이트를 진행합니다.","UPDATE")
+            os.system('git pull origin warehouse')
+            # os.system('git fetch --all')
+            # os.system('git reset --hard origin/warehouse')
+            wb_worker.app.alert("업데이트가 완료 되어있습니다. \
+                                \n 자세한 내용은 PATCH NOTE를 확인해주세요.","DONE")
+            return
+
+
+
+
+def begin_work():
+    # wb_worker = xw.Book.caller()
     answer = wb_worker.app.alert("FULFILLMENT FORM 을  가져오시겠습니까? \n\n yes를 선택하신 경우 기존에 DB로 전송되지 않은 시트 값들은 \n\n 전부 사라집니다.","CONFIRM",buttons="yes_no_cancel")
     if answer != "yes":
         wb_worker.app.alert("종료합니다.","QUIT")

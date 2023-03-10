@@ -8,14 +8,22 @@ __version__ = "0.1.0"
 __license__ = "MIT"
 
 import sys
+import os
 
-
+class GitPull:
+    
+    @classmethod
+    def git_pull(self):
+        os.system('git status')
+    @classmethod
+    def test(self):
+        os.system('echo Hello World')
 
 def main():
     works = {
-        'do_somthing':{
-            # 'execute_daily':extract_execute_daily
-            # ,'execute_montly':extract_execute_monthly
+        'start':{
+            "GitPull":GitPull.git_pull,
+            'test':GitPull.test
             # , 'futures_market_rm': RawMaterialsExtractor.extract_data
             # , 'futures_market_op': OilPreciousMetalExtractor.extract_data
             # , 'spot_market_si' : StockIndexExtractor.extract_data
