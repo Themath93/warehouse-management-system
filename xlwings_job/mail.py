@@ -24,7 +24,7 @@ import json
 
 wb_cy = xw.Book("cytiva_worker.xlsm").set_mock_caller()
 wb_cy = xw.Book.caller()
-
+my_date_handler = lambda year, month, day, **kwargs: "%04i-%02i-%02i" % (year, month, day)
 
 class Email():
     SHEET_NAMES =  ['Temp_DB', 'SHIPMENT_INFORMATION', 'POD', 
@@ -514,10 +514,26 @@ class MainControl:
     STATUS = ['requested', 'pick/pack', 'dispatched', 'complete']
     COL_LIST =['ML_INDEX','REQ_TYPE','CREATE_DATE','REQ_DATE','PIC','IS_URGENT','LEFT_TIME','STATUS','DEL_MED','REGION']
     BASE_QRY = 'select * from SERVICE_REQUEST '
-
+    REQ_TYPE_ALL_QRY = """
+                WHERE 
+                ( 
+                SVC_KEY like '%SVC%' or 
+                SVC_KEY like '%PO%' or 
+                SVC_KEY like '%DEMO%' or 
+                SVC_KEY like '%RETURN%' 
+                ) """
+    STATE_ALL_QRY = """
+                    AND
+                    (
+                    STATE like '%requested%' or 
+                    STATE like '%pick/pack%' or 
+                    STATE like '%dispatched%' or 
+                    STATE like '%complete%' 
+                    )
+                    """
     @classmethod
     def bring_reuests(self):
-        qry_condition = self.SEL_SHT.range(self.FORM_ADD[0]).options(ndim=1).value + self.SEL_SHT.range(self.FORM_ADD[1]).options(ndim=1).value
+        qry_condition = self.SEL_SHT.range(self.FORM_ADD[0]).options(ndim=1,dates=my_date_handler).value + self.SEL_SHT.range(self.FORM_ADD[1]).options(ndim=1,dates=my_date_handler).value
         json_data = []
 
         find_svc_key = self.SEL_SHT.range("O8")
@@ -534,25 +550,33 @@ class MainControl:
 
         # REQ_TYPE
         if qry_condition[2] == 'ALL' :
-            qry = self.BASE_QRY
+            qry = self.BASE_QRY + self.REQ_TYPE_ALL_QRY
         else :
             qry = self.BASE_QRY + f'WHERE svc_key LIKE \'%{qry_condition[2]}%\' '
-
-        queried_db = DataWarehouse().execute(qry)
         # STATUS
         if qry_condition[3] == 'ALL' :
-            qry = self.BASE_QRY
+            qry = qry + self.STATE_ALL_QRY
         else:
-            qry = self.BASE_QRY + f"WHERE STATE = '{qry_condition[3]}' "
+            qry = qry +  f"AND STATE = '{qry_condition[3]}' "
 
         if find_svc_key.value != None:
             qry = self.BASE_QRY + f"WHERE SVC_KEY = '{find_svc_key.value}'"
 
+        # START_DATE
+        if qry_condition[0] == None:
+            start_date = '1999-01-01'
+        else:
+            start_date = qry_condition[0]
 
-        df_req = pd.DataFrame(queried_db.execute(qry))
+        # end_date
+        if qry_condition[1] == None:
+            end_date = '2199-12-31'
+        else:
+            end_date = qry_condition[1]
 
-        
-
+        df_req = pd.DataFrame(DataWarehouse().execute(qry))
+        df_req = df_req[df_req[15].map(lambda e : json.loads(e)['data'][0]['c']).between(start_date,end_date)]
+        df_req.reset_index(drop=True,inplace=True)
         for i in range(len(df_req)):
             row_req = df_req.loc[i]
             rows = []
@@ -596,15 +620,9 @@ class MainControl:
             json_data.append(tmp)
 
         df_fin = pd.DataFrame(json_data)
-        # from_to
-        if qry_condition[0] == None:
-            qry_condition[0] = dt.datetime(1999, 1, 1)
-        if qry_condition[1] == None:
-            qry_condition[1] = dt.datetime(2199, 1, 1)
 
         if df_fin.empty != True:
-            df_fin['CREATE_DATE'] = df_fin['CREATE_DATE'].astype('datetime64[ns]')
-            df_fin = df_fin[df_fin['CREATE_DATE'].between(str(qry_condition[0]),str(qry_condition[1]))]
+            df_fin.sort_values('CREATE_DATE',inplace=True)
             df_fin.reset_index(drop=True,inplace=True)
             df_fin.index = df_fin.index +1
         self.SEL_SHT.range('I11').value = df_fin
@@ -746,11 +764,17 @@ class MainControl:
         ## prin_form 채우기
         
         try:
-            ws_svc= xw.Book('print_form.xlsx').sheets['SVC']
+            wb_pf= xw.Book('print_form.xlsx')
         except :
-            ws_svc= xw.Book(print_form_dir).sheets['SVC']
+            wb_pf= xw.Book(print_form_dir)
+
+        ws_svc= wb_pf.sheets['SVC']
+        
 
         ws_svc.range('B21:H40').clear_contents()
+
+            # REQ_TYPE
+        ws_svc.range('A1').value = df_fin.loc[0]['ML_INDEX'].split('_')[0]
 
         ws_svc.range('E2').value = df_fin.loc[0]['ML_INDEX']
             # Printed Day E3
@@ -801,6 +825,8 @@ class MainControl:
         # 서비스요청사항 프린트하기
         ws_svc.range("A1:H43").api.PrintPreview()
         
+        wb_pf.close()
+
         # ONLY PRINT 버튼을 눌렀을 때에는 DB Update 진행 X
         if print_only == None:
             # DB적용
@@ -837,3 +863,32 @@ class MainControl:
 
          # 메일리스트 다시불러오기
         self.bring_reuests()
+
+    @classmethod
+    def req_complete(self):
+        selected_cel = self.SEL_SHT.range("Q8")
+        svc_key = selected_cel.value
+        qry = self.BASE_QRY + 'where svc_key =' +  f"'{svc_key}'"
+        dispatch_status = self.STATUS[2] # dispatched
+        complete_status = self.STATUS[3] # complete
+
+        if selected_cel.value == None:
+            wb_cy.app.alert("선택한 요청이 없습니다. 매서드를 종료합니다.",'Quit')
+            return
+        req_confirm = wb_cy.app.alert('CASE를 COMPLETE 하시겠습니까? STATUS는 complete로 변경됩니다.','Ship Confirm Request',buttons ='yes_no_cancel')
+        if req_confirm != 'yes':
+            wb_cy.app.alert('종료합니다.','Quit')
+            return
+        req_df = pd.DataFrame([DataWarehouse().execute(qry).fetchone()])
+        current_status = req_df[16][0]
+        up_time_content = req_df[15][0]
+        if current_status != dispatch_status:
+            wb_cy.app.alert(current_status+ " 상태에서는 complete가 불가합니다. STATUS를 확인해주세요. 매서드를 종료합니다.",'Quit')
+            return None
+        
+        # DB업데이트
+        ServiceRequest.update_status(svc_key,up_time_content,complete_status)
+
+        # 메일리스트 다시불러오기
+        self.bring_reuests()
+
