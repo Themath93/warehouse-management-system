@@ -37,3 +37,8 @@ PatchNote 230309 warehouse ver 1.12
 3. USERGUIDE
     1. 유저가이드 PPT 생성 
         - cytitva_worker.xlsm 에서 userguide 버튼 클릭하면 실행 가능
+
+PatchNote 230309 warehouse ver 1.134
+1. CODE 
+    1. 서비스 출고 반납 관련 상태변경 메일 발송 기능 추가
+    2. Version 업데이트시 버천 체크자동으로 하여 업데이트 기능 추가

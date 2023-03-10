@@ -30,7 +30,26 @@ def DataWarehouse():
         )
         cursor = connection.cursor()
         return cursor
+    
+def WebDB():
+    try:
+        os.environ["PATH"] = LOCATION + ";" + os.environ["PATH"]
+        cx_Oracle.init_oracle_client(lib_dir=LOCATION)
+        connection = cx_Oracle.connect(
+            user='web_fulfill', password='fulfillment123QWE!@#', dsn='fulfill_high'
 
+        )
+        cursor = connection.cursor()
+        return cursor
+
+    except:
+
+        connection = cx_Oracle.connect(
+            user='web_fulfill', password='fulfillment123QWE!@#', dsn='fulfill_high'
+
+        )
+        cursor = connection.cursor()
+        return cursor
 
 def insert_data(cursor,DataFrame,table_name):
     """

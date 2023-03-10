@@ -12,7 +12,7 @@ wb_caller = xw.Book("cytiva_worker.xlsm").set_mock_caller()
 wb_worker = xw.Book.caller()
 
 ## 수동으로 바꿀 것 새로운 버전 배포시 반드시 업데이트!
-current_ver= float(1.133)
+current_ver= float(1.134)
 
 def version_check():
     os.chdir(os.path.join(os.path.expanduser('~'),'Desktop') + "\\fulfill\\")

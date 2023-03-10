@@ -6,7 +6,7 @@ sys.path.append(os.path.dirname(os.path.abspath(os.path.dirname(__file__))))
 
 
 import datetime as dt
-from oracle_connect import DataWarehouse
+from oracle_connect import DataWarehouse,WebDB
 
 from datajob.xlwings_dj.service_request import ServiceRequest
 from datajob.xlwings_dj.mail_detail import MailDetail
@@ -775,7 +775,7 @@ class MainControl:
 
             # REQ_TYPE
         ws_svc.range('A1').value = df_fin.loc[0]['ML_INDEX'].split('_')[0]
-
+            # CASE_ID
         ws_svc.range('E2').value = df_fin.loc[0]['ML_INDEX']
             # Printed Day E3
         ws_svc.range('E3').value = get_current_time()
@@ -833,6 +833,13 @@ class MainControl:
             up_time_content = pd.DataFrame([DataWarehouse().execute(qry).fetchone()])[15][0]
             status= self.STATUS[1] # pick pack
             ServiceRequest.update_status(svc_key,up_time_content,status)
+            # DB 적용 및 STATE 변경 알림 메일 전송
+            user_mail = get_user_email_with_case_id(svc_key)
+            tmp_cc = 'deyoon@outlook.kr'
+            send_state_mail_to_requester(svc_key,self.STATUS[0],self.STATUS[1],user_mail,tmp_cc)
+
+
+
         # 메일리스트 다시불러오기
         self.bring_reuests()
 
@@ -860,6 +867,10 @@ class MainControl:
         
         # DB업데이트
         ServiceRequest.update_status(svc_key,up_time_content,dispatch_status)
+        # DB 적용 및 STATE 변경 알림 메일 전송
+        user_mail = get_user_email_with_case_id(svc_key)
+        tmp_cc = 'deyoon@outlook.kr'
+        send_state_mail_to_requester(svc_key,self.STATUS[1],self.STATUS[2],user_mail,tmp_cc)
 
          # 메일리스트 다시불러오기
         self.bring_reuests()
@@ -888,7 +899,65 @@ class MainControl:
         
         # DB업데이트
         ServiceRequest.update_status(svc_key,up_time_content,complete_status)
+        user_mail = get_user_email_with_case_id(svc_key)
+        tmp_cc = 'deyoon@outlook.kr'
+        send_state_mail_to_requester(svc_key,self.STATUS[2],self.STATUS[3],user_mail,tmp_cc)
 
         # 메일리스트 다시불러오기
         self.bring_reuests()
 
+def get_user_email_with_case_id(case_id=str):
+    """
+    case_id(str)을 인수로 넣으면 해당 case를 신청자의 email주소를 반환한다.
+    """
+    cur_dw = DataWarehouse()
+    cur_web = WebDB()
+    try:
+        fe_initital = pd.DataFrame(cur_dw.execute(f"SELECT * FROM SERVICE_REQUEST WHERE SVC_KEY = '{case_id}'").fetchall())[2][0]
+        user_id = pd.DataFrame(cur_web.execute(f"SELECT ID FROM AUTHENTICATION_USERDETAIL WHERE SUBINVENTORY = '{fe_initital}'").fetchall())[0][0]
+        user_email = pd.DataFrame(cur_web.execute(f"SELECT email from AUTH_USER WHERE ID = '{user_id}'").fetchall())[0][0]
+        return user_email
+    
+    except:
+        return None
+    
+def send_state_mail_to_requester(case_id,latest_state,to_state,To_email,CC_email):
+
+    sel_sht = wb_cy.selection.sheet
+    worker = sel_sht.range("D2").value
+    try:
+        if type(To_email) is str:
+            To_email = [To_email]
+        if type(CC_email) is str:
+            CC_email = [CC_email]
+        
+        To_email = " ;".join(To_email)
+        CC_email = " ;".join(CC_email)
+        now = str(dt.datetime.now()).split('.')[0]
+
+    
+        outook_obj=cli.Dispatch("Outlook.Application")
+        mail_obj = outook_obj.CreateItem(0)
+        mail_obj.To = To_email
+        mail_obj.CC = CC_email
+        mail_obj.Subject = f"CASE : {case_id} STATE Changed {latest_state} to {to_state}"
+        mail_obj.HTMLBody =  f"""
+        <html>
+        <body lang=KO style='tab-interval:40.0pt;word-wrap:break-word'>
+        <div class=WordSection1>
+        <p class=MsoNormal>안녕하세요 </p>
+        <p class=MsoNormal><span class=GramE><span lang=EN-US>{worker} </span>입니다</span><span
+        lang=EN-US>. </span></p>
+        <p class=MsoNormal>CASE ID : <b>{case_id}</b> 는 <b>{now}</b> <span class=GramE>에  <b>{to_state}</b>로 상태 변경 되었음을 알려드립니다</span><span lang=EN-US>. </span></p>
+        <p class=MsoNormal><span lang=EN-US><o:p>&nbsp;</o:p></span></p>
+        <p class=MsoNormal>참고하시길 바랍니다<span lang=EN-US>. </span></p>
+        <p class=MsoNormal><span lang=EN-US><o:p>&nbsp;</o:p></span></p>
+        <p class=MsoNormal>감사합니다<span lang=EN-US>. </span></p>
+        <p class=MsoNormal><span lang=EN-US><o:p>&nbsp;</o:p></span></p>
+        </div>
+        </body>
+        </html>
+        """
+        mail_obj.Send()
+    except:
+        return None
