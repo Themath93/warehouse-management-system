@@ -1,0 +1,297 @@
+{% extends "layouts/base.html" %}
+
+{% block title %} User Stock {% endblock %} 
+
+<!-- Specific Page CSS goes HERE  -->
+{% block stylesheets %}{% endblock stylesheets %}
+
+{% block content %}
+
+  <div class="content">
+    <div class="row">
+      <div class="col-md-12">
+        <div class="card">
+          <div class="card-header">
+            <h3 class="title">RETURN FORM</h3>
+          </div>
+          <div class="card-body">
+            <form action="{% url 'authentication:part_return' %}" method="post">
+                {% csrf_token %}
+              <div class="row">
+                <div class="col-md-2 pl-md-1">
+                  <div class="form-group">
+
+                    <label>USER ID</label>
+                    <input type="text" class="form-control" placeholder="USER_ID" value="{{ forms.username }}" name="user_id" readonly>
+                  </div>
+                </div>
+                <div class="col-md-2 pl-md-1">
+                  <div class="form-group">
+                    <label>SUBINVENTORY</label>
+                    <input type="text" class="form-control" placeholder="SUBINVENTORY" value="{{ forms.userdetail.subinventory}}" name="subinventory" readonly>
+                  </div>
+                </div>
+                <div class="col-md-2 pl-md-1">
+                  <div class="form-group">
+                    <label for="exampleInputEmail1">Email</label>
+                    <input type="email" class="form-control" value="{{ forms.email }}" name="email" required>
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="col-md-2 pl-md-1">
+                  <div class="form-group">
+                    <label for="del_method">RETURN METHOD</label>
+                    <select name="del_method" id="del_method" class="form-control" required>
+                      <option>일반(퀵)</option>
+                      <option>택배</option>
+                      <option>기타</option>
+                      <div class="invalid-feedback">배송방법은 반드시 선택해주세요.</div>
+                    </select>
+                  </div>
+                </div>
+                <div class="col-md-2 pl-md-1">
+                  <div class="form-group">
+                    <label>송장번호</label>
+                    <input type="text" class="form-control" placeholder="반납 방법이 '택배'일 경우에만 적어주세요." value="" name="courier_nm">
+                  </div>
+                </div>
+                <div class="col-md-2 pl-md-1">
+                    <div class="form-group">
+                      <label>Contact Number</label>
+                      <input type="text" class="form-control" placeholder="010-1111-1234" value="{{ forms.userdetail.contact_number_1 }}" name="contact" required>
+                    </div>
+                  </div>
+              </div>
+              <div class="row">
+                <div class="col-md-2 pl-md-1">
+                  <div class="form-group">
+                    <label>RETURN PLACE ADDRESS</label>
+                    <input type="text" class="form-control" placeholder="Address" value="{{ forms.userdetail.address }}" id="search_address" name="address_1" readonly>
+                  </div>
+                </div>
+                <div class="col-md-2 pl-md-1">
+                    <div class="form-group">
+                      <label>ADDRESS DETAIL</label>
+                      <input type="text" class="form-control" placeholder="상세주소를 적어주세요." value="" name="address_2" required>
+                    </div>
+                </div>
+              </div>
+              <div class="row">
+                <button type="button" onclick="sample5_execDaumPostcode()" class="btn btn-fill btn-primary">주소검색</button>
+
+              </div>
+                                
+              <div class="row">
+                <div class="col-md-2 pl-md-1">
+                  <div class="form-group">
+                    <label>날짜</label>
+                    <input type="date" class="form-control" name="req_date" required>
+                  </div>
+                </div>
+                <div class="col-md-2 pl-md-1">
+                  <div class="form-group">
+                    <label>시간</label>
+                    <input type="time" class="form-control" name="req_time" required>
+                  </div>
+                </div>
+              </div>
+              <div class="row">
+                <div class="form-group col-md-6 pl-md-1">
+                    <label for="del_instruction">배송요청사항</label>
+                    <input type="text" class="form-control" id="del_instruction" name="del_instruction" placeholder="배송요청사항을 적어주세요.">
+                  </div>
+              </div>
+              <div class="form-group" style="display:none;" id="input_address">
+                <div class="card-header">
+                  <h4 class="card-title" id=""><b>KAKAO MAP</b></h4>
+                </div>
+                <div id="map" style="width:400px;height:400px;margin-top:10px;"></div>
+              </div>
+          </div>
+          <div class="card-footer">
+            <button type="submit" class="btn btn-fill btn-primary">반납 요청 제출</button>
+        
+          </div>
+          <div class="row">
+            <div class="col-md-12">
+              <div class="card">
+                <div class="card card-tasks">
+                  <div class="card-header">
+                      {% with my_parts.all|first as part %}
+                    <h4 class="title d-inline">MY STOCK 기준일 : {{ part.std_day }}</h4>
+                      {% endwith %}
+                    <div class="dropdown">
+                        <button type="button" class="btn btn-link dropdown-toggle btn-icon"
+                                data-toggle="dropdown">
+                            <i class="tim-icons icon-settings-gear-63"></i>
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-right" aria-labelledby="dropdownMenuLink">
+                            <!-- <button type="submit" class="dropdown-item" name="request_type" value="all">ALL</button>  
+                            <button type="submit" class="dropdown-item" name="request_type" value="requested">REQUESTED</button>
+                            <button type="submit" class="dropdown-item" name="request_type" value="requested">SVC</button> -->
+                        </div>
+                    </div>
+                  </div>
+                    <div class="card-body">
+                      <div class="table-full-width table-responsive">
+                        <table class="table tablesorter " id="my_stock" name="my_stock">
+                          <thead class=" text-primary">
+                            <tr>
+                              <th class="text-center">
+                                  GROUP
+                              </th>
+                              <th class="text-center">
+                                ARTICLE_NUMBER
+                              </th>
+                              <th class="col-md-2 text-center">
+                                DESCRIPTION
+                              </th>
+                              <th class="text-center">
+                                  SUBINVENTORY
+                              </th>
+                              <th class="text-center">
+                                QUANTITY
+                              </th>
+                              <th class="text-center">
+                                  PICK
+                              </th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {% for part in my_parts %}
+                            <tr id="svc_{{part.ts_key}}" name="svc_{{ part.ts_key }}">
+                              <td class="text-center">
+                                 PART
+                              </td>
+                              <td class="text-center">
+                                {{ part.article_number }}
+                              </td>
+                              <td class="col-md-2 text-center">
+                                {{ part.description }}
+                              </td>
+                              <td class="text-center">
+                                {{ part.subinventory }}
+                              </td>
+                              <td class="text-center">
+                                <input type="number" value="{{ part.quantity }}" min="0" max="{{ part.quantity }}" class="form-control input-sm" id="parts_qty_{{part.ts_key}}" name="parts_qty_{{part.ts_key}}">  
+                              </td>
+                              <td class="text-center">
+                                  <input class="form-check-input" type="checkbox" value="True" id="flexCheckDefault" name="check_ts_{{part.ts_key}}">
+                                  <label class="form-check-label" for="flexCheckDefault">
+                                  </label>
+                              </td>
+                            </tr>
+                            {% endfor %}
+                            {% for tool in my_tools %}
+                            <tr id="tool_{{tool.tool_index}}" name="tool_{{ tool.tool_index }}">
+                              <td class="text-center">
+                                 TOOL
+                              </td>
+                              <td class="text-center">
+                                {{ tool.tool_nm }}
+                              </td>
+                              <td class="col-md-2 text-center">
+                                {{ tool.description }}
+                              </td>
+                              <td class="text-center">
+                                {{ tool.on_hand }}
+                              </td>
+                              <td class="text-center">
+                                <input type="number" value="1" min="0" max="1" class="form-control input-sm" id="tools_qty_{{tool.tool_index}}" name="tools_qty_{{tool.tool_index}}">  
+                              </td>
+                              <td class="text-center">
+                                  <input class="form-check-input" type="checkbox" value="True" id="flexCheckDefault" name="check_tool_{{tool.tool_index}}">
+                                  <label class="form-check-label" for="flexCheckDefault">
+                                  </label>
+                              </td>
+                            </tr>
+                            {% endfor %}
+                          </tbody>
+                        </table>
+                      </div>
+                      <!-- table body -->
+                    </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </form>
+        </div>
+      </div>
+    
+    </div>
+
+    <!-- myrequest list -->
+    
+
+  </div>
+
+{% endblock content %}
+
+<!-- Specific Page JS goes HERE  -->
+{% block javascripts %}
+<script src="//t1.daumcdn.net/mapjsapi/bundle/postcode/prod/postcode.v2.js"></script>
+<script src="//dapi.kakao.com/v2/maps/sdk.js?appkey=e34832f9e80f0076b332dc2abfd0e743&libraries=services"></script>
+
+<script>
+    var mapContainer = document.getElementById('map'), // 지도를 표시할 div
+        mapOption = {
+            center: new daum.maps.LatLng(37.537187, 127.005476), // 지도의 중심좌표
+            level: 5 // 지도의 확대 레벨
+        };
+
+    //지도를 미리 생성
+    var map = new daum.maps.Map(mapContainer, mapOption);
+    //주소-좌표 변환 객체를 생성
+    var geocoder = new daum.maps.services.Geocoder();
+    //마커를 미리 생성
+    var marker = new daum.maps.Marker({
+        position: new daum.maps.LatLng(37.537187, 127.005476),
+        map: map
+    });
+
+
+    function sample5_execDaumPostcode() {
+        new daum.Postcode({
+            oncomplete: function(data) {
+                var addr = data.address; // 최종 주소 변수
+
+                // 주소 정보를 해당 필드에 넣는다.
+                var input_address = document.getElementById("input_address")
+                var search_address = document.getElementById("search_address")
+                // var specific_address = document.getElementById("specific_address")
+                // // 날짜 시간 입력받는 input tag
+                // var req_date = document.getElementById("req_date")
+                // var req_time = document.getElementById("req_time")
+                // var add_date_submit = document.getElementById("add_date_submit") 
+
+                search_address.value = addr;
+                // 주소로 상세 정보를 검색
+                geocoder.addressSearch(data.address, function(results, status) {
+                    // 정상적으로 검색이 완료됐으면
+                    if (status === daum.maps.services.Status.OK) {
+
+                        var result = results[0]; //첫번째 결과의 값을 활용
+
+                        // 해당 주소에 대한 좌표를 받아서
+                        var coords = new daum.maps.LatLng(result.y, result.x);
+                        // 지도를 보여준다.
+                        // mapContainer.style.display = "block";
+                        // 상세주소 및, 날짜 시간 입력을 받는 태그 보여줌
+                        input_address.style.display = "block";
+
+;
+
+                        map.relayout();
+                        // 지도 중심을 변경한다.
+                        map.setCenter(coords);
+                        // 마커를 결과값으로 받은 위치로 옮긴다.
+                        marker.setPosition(coords)
+                    }
+                });
+            }
+        }).open();
+    }
+</script>
+{% endblock javascripts %}
