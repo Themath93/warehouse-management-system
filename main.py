@@ -8,19 +8,20 @@ __version__ = "0.1.0"
 __license__ = "MIT"
 
 import sys
-
+from datajob.dm.daily_in_tf import DailyInTransformer
+from datajob.dm.daily_out_tf import DailyOutTransformer
+from datajob.dm.pod_achivement_rate import PODAchivemnetRate
 from datajob.dw.total_stock_tf import TotalStockTransformer
 
 
 
 
-# def extract_execute_daily():
-#     RawMaterialsExtractor.extract_data()
-#     OilPreciousMetalExtractor.extract_data()
-#     StockIndexExtractor.extract_data()
-#     SovereignYieldExtractor.extract_data()
-#     BankInterestExtractor.extract_data()
-#     ExchangeExtractor.extract_data()
+def transform_execute_daily():
+    DailyInTransformer.transform()
+    DailyOutTransformer.transform()
+    PODAchivemnetRate.transform()
+    TotalStockTransformer.transform()
+
 
 # def extract_execute_monthly():
 #     GlobalMarketCapExtractor.extract_data()
@@ -40,7 +41,11 @@ def main():
             # , 'spot_market_ex' : ExchangeExtractor.extract_data
         },
         'transform':{
-            'total_stock_tf': TotalStockTransformer.transform
+            'transform_daily':transform_execute_daily,
+            'total_stock_tf': TotalStockTransformer.transform,
+            'daily_in_tf' : DailyInTransformer.transform,
+            'daily_out_tf' : DailyOutTransformer.transform,
+            'pod_rate': PODAchivemnetRate.transform,
         }
 
     }

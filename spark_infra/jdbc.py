@@ -16,6 +16,13 @@ class WebDB(Enum):
     PROPS ={
         'user':'web_fulfill'
        ,'password':'fulfillment123QWE!@#'
+    }
+
+class DataMart(Enum):
+    URL = 'jdbc:oracle:thin:@fulfill_high?TNS_ADMIN=/home/worker/project/db/fulfill_wallet'
+    PROPS ={
+        'user':'dm_fulfill'
+       ,'password':'fulfillment123QWE!@#DM'
     }  
 
 

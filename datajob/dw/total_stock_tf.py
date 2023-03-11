@@ -12,11 +12,11 @@ from pyspark.sql.functions import col,lit
 class TotalStockTransformer:
 
     # 기준 날짜로 주기적으로 하지만 test에서는 정해놓고간다.
-    TODAY = '2023-02-01'
-    # TODAY = cal_std_day(0)
+    # TODAY = '2023-02-01'
+    TODAY = cal_std_day(-1)
     sys_stock=find_data(DataWarehouse, 'SYSTEM_STOCK')
     products = find_data(DataWarehouse, 'PRODUCTS')
-
+    
     @classmethod
     def transform(cls):
 

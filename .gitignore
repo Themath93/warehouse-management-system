@@ -1,5 +1,5 @@
 *.pyc
-__pycache/
+__pycache__/
 
 # excel 파일들 add금지
 *.xlsx
