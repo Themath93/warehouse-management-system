@@ -12,18 +12,23 @@ wb_caller = xw.Book("cytiva_worker.xlsm").set_mock_caller()
 wb_worker = xw.Book.caller()
 
 ## 수동으로 바꿀 것 새로운 버전 배포시 반드시 업데이트!
-current_ver= float(1.134)
-
 def version_check():
     os.chdir(os.path.join(os.path.expanduser('~'),'Desktop') + "\\fulfill\\")
-    my_version = float(os.popen('git log -1 --pretty=%B').read().replace("\n\n","").split(" ")[-1])
+
+    my_version = os.popen('git log origin/warehouse -1 --pretty=%B').read().replace("\n\n","")
+    new_version = os.popen('git log origin/warehouse -1 --not HEAD --pretty=%B').read().replace("\n\n","")
     
-    need_updated = my_version < current_ver
-    if need_updated == True:
+    need_update = new_version != ''
+
+
+    
+    if need_update == True:
+        my_version = float(my_version.split(' ')[-1])
+        new_version = float(new_version.split(' ')[-1])
         answer = wb_worker.app.alert(f"New version has been released. Do you want to progress the update? \
                             \n 새로운 버전이 릴리즈 되었습니다. 업데이트를 진행 하시겠습니까? \
                             \n Current Version : {str(my_version)} \
-                            \n New Version : {str(current_ver)}","UPDATE",buttons='yes_no_cancel')
+                            \n New Version : {str(new_version)}","UPDATE",buttons='yes_no_cancel')
         if answer != "yes":
             return
         else:
