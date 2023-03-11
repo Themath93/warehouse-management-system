@@ -225,7 +225,7 @@ def warehousing_inspection(input_date=str,print_form_dir = os.path.dirname(os.pa
 
 
 
-def branch_receiving(input_date=str,print_form_dir = "C:\\Users\\lms46\\Desktop\\fulfill\\xlwings_job\\print_form.xlsx"):
+def branch_receiving(input_date=str,print_form_dir = os.path.dirname(os.path.abspath(__file__)) +"\\print_form.xlsx"):
     """
     대리점 입고예정메일
     Return값으로 json 타입의 각대리점별 CI리스트를 반환한다.
