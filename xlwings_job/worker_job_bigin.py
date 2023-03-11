@@ -15,6 +15,9 @@ wb_worker = xw.Book.caller()
 def version_check():
     os.chdir(os.path.join(os.path.expanduser('~'),'Desktop') + "\\fulfill\\")
 
+    #Git 최신버전 가져오기 병합은 X
+    os.system("git fetch origin warehouse")
+
     my_version = os.popen('git log origin/warehouse -1 --pretty=%B').read().replace("\n\n","")
     new_version = os.popen('git log origin/warehouse -1 --not HEAD --pretty=%B').read().replace("\n\n","")
     
