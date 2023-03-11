@@ -42,3 +42,6 @@ PatchNote 230309 warehouse ver 1.134
 1. CODE 
     1. 서비스 출고 반납 관련 상태변경 메일 발송 기능 추가
     2. Version 업데이트시 버천 체크자동으로 하여 업데이트 기능 추가
+PatchNote 230309 warehouse ver 1.135
+1. CODE
+    1. Version 업데이트 방식 변경 및 업데이트 실패 시 이전 Version으로 작업 진행

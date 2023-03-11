@@ -32,12 +32,16 @@ def version_check():
         if answer != "yes":
             return
         else:
-            wb_worker.app.alert("업데이트를 진행합니다.","UPDATE")
-            os.system('git pull origin warehouse')
-            # os.system('git fetch --all')
-            # os.system('git reset --hard origin/warehouse')
-            wb_worker.app.alert("업데이트가 완료 되어있습니다. \
-                                \n 자세한 내용은 PATCH NOTE를 확인해주세요.","DONE")
+            try:
+                wb_worker.app.alert("업데이트를 진행합니다.","UPDATE")
+                os.system('git pull origin warehouse')
+                wb_worker.app.alert("업데이트가 완료 되어있습니다. \
+                                    \n 자세한 내용은 PATCH NOTE를 확인해주세요.","DONE")
+            except:
+                # os.system('git fetch --all')
+                # os.system('git reset --hard origin/warehouse')
+                wb_worker.app.alert("시스템 업데이트에 실패하였습니다. 기존 version으로 진행됩니다. \
+                                    \n 관리자에게 문의해주세요. ","FAILED")
             return
 
 
