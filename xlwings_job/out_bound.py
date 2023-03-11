@@ -91,7 +91,7 @@ class ShipReady():
                     return
                 
             if is_damaged == True:
-                ready_answer = wb_cy.app.alert("검수 중 Damamged 품목이 포함되어 있습니다. 계속진행 하시겟습니까?","Ship Ready Confirm",buttons='yes_no_cancel')
+                ready_answer = wb_cy.app.alert("검수 중 Damaged 품목이 포함되어 있습니다. 계속진행 하시겟습니까?","Ship Ready Confirm",buttons='yes_no_cancel')
                 if ready_answer != 'yes': #출고 안하겠다는말
                     wb_cy.app.alert("Ship Ready를 종료합니다.","Ship Ready Confirm")
                     return
@@ -282,7 +282,7 @@ class ShipConfirm():
                     del_method = pacels_dict
                     break
                 if answer == 'cancel':
-                    wb_cy.app.alert("종료합니다.","Quit")
+                    wb_cy.app.alert("종료합니다.","QUIT")
                     return
         elif (is_no_local == False) & (del_method == '택배') :
             wb_cy.app.alert("택배배송은 로컬품목없이 SO건만 출고시 사용 가능합니다. 배송방법을 다시선택해주세요.","Quit")
@@ -415,7 +415,7 @@ def local_act_ob(WS_SI,WS_LC) :
     WS_LC.range("H4").color = (0,255,255)
 
 def input_delivery_invoice_number_for_out_bound(parcel_list):
-    wb_cy.app.alert("Parcel_NO에 맞는 송장번호를 입력해주세요.","INFO")
+    wb_cy.app.alert("Parcel_NO에 맞는 송장번호를 입력해주세요.","INPUT")
     courier_num_list = []
     for i in range(len(parcel_list)):
         courier_num_list.append(wb_cy.app.api.InputBox(f"'{parcel_list[i]}'에 맞는 송장번호를 입력해주세요.","Delivery invoice number INPUT",Type=2))
