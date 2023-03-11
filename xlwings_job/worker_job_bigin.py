@@ -18,7 +18,7 @@ def version_check():
     #Git 최신버전 가져오기 병합은 X
     os.system("git fetch origin warehouse")
 
-    my_version = os.popen('git log origin/warehouse -1 --pretty=%B').read().replace("\n\n","")
+    my_version = os.popen('git log origin/warehouse -2 --pretty=%B').read().replace("\n\n","")
     new_version = os.popen('git log origin/warehouse -1 --not HEAD --pretty=%B').read().replace("\n\n","")
     
     need_update = new_version != ''
