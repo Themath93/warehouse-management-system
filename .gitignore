@@ -1,3 +1,4 @@
+*.pyc
 __pycache__/
 
 #주피터 노트북 conflict 요소들 add금지

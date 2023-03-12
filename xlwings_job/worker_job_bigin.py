@@ -38,7 +38,7 @@ def version_check():
             try:
                 wb_worker.app.alert("업데이트를 진행합니다.","UPDATE")
                 os.system('git pull origin warehouse')
-                wb_worker.app.alert("업데이트가 완료 되어있습니다. \
+                wb_worker.app.alert("업데이트가 완료 되었습니다. \
                                     \n 자세한 내용은 PATCH NOTE를 확인해주세요.","DONE")
             except:
                 # os.system('git fetch --all')
