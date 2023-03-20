@@ -296,3 +296,69 @@ class SvcTool(models.Model):
     class Meta:
         managed = False
         db_table = 'svc_tool'
+
+
+class DailyInBr(models.Model):
+    dir_key = models.BigAutoField(primary_key=True)
+    branch_name = models.CharField(max_length=100, blank=True, null=True)
+    std_day = models.CharField(max_length=100, blank=True, null=True)
+    qty = models.BigIntegerField(blank=True, null=True)
+    amount = models.FloatField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'daily_in_br'
+
+
+class DailyInIr(models.Model):
+    dir_key = models.BigAutoField(primary_key=True)
+    std_day = models.CharField(max_length=100, blank=True, null=True)
+    qty = models.BigIntegerField(blank=True, null=True)
+    amount = models.FloatField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'daily_in_ir'
+
+
+class DailyInLc(models.Model):
+    dil_key = models.BigAutoField(primary_key=True)
+    std_day = models.CharField(max_length=100, blank=True, null=True)
+    qty = models.BigIntegerField(blank=True, null=True)
+    amount = models.FloatField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'daily_in_lc'
+
+
+class DailyInSo(models.Model):
+    dis_key = models.BigAutoField(primary_key=True)
+    std_day = models.CharField(max_length=100, blank=True, null=True)
+    qty = models.BigIntegerField(blank=True, null=True)
+    amount = models.FloatField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'daily_in_so'
+
+
+class DailySoOut(models.Model):
+    dso_key = models.BigAutoField(primary_key=True)
+    ship_date = models.CharField(max_length=100, blank=True, null=True)
+    del_med = models.CharField(max_length=100, blank=True, null=True)
+    qty = models.BigIntegerField(blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'daily_so_out'
+
+
+class PodDelay(models.Model):
+    pd_key = models.BigAutoField(primary_key=True)
+    take_hours = models.BigIntegerField(blank=True, null=True)
+    std_day = models.CharField(max_length=100, blank=True, null=True)
+
+    class Meta:
+        managed = False
+        db_table = 'pod_delay'

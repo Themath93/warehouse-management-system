@@ -9,35 +9,28 @@
 
     <div class="content">
         <div class="row">
-            <div class="col-12">
-                <div class="card card-chart">
+            <div class="col-6">
+                <div class="card">
                     <div class="card-header ">
                         <div class="row">
                             <div class="col-sm-6 text-left">
-                                <h5 class="card-category">Total Shipments</h5>
-                                <h2 class="card-title">Performance</h2>
+                                <h5 class="card-category">Calculated by the number of parcels</h5>
+                                <h2 class="card-title">InBound</h2>
                             </div>
                             <div class="col-sm-6">
                                 <div class="btn-group btn-group-toggle float-right" data-toggle="buttons">
-                                    <label class="btn btn-sm btn-primary btn-simple active" id="0">
-                                        <input type="radio" name="options" checked>
-                                        <span class="d-none d-sm-block d-md-block d-lg-block d-xl-block">Accounts</span>
+                                    <label class="btn btn-sm btn-primary btn-simple active" id="in_so_chart" onclick="renderSoChart()">
+                                        <input type="radio"   checked>
+                                        <span class="d-none d-sm-block d-md-block d-lg-block d-xl-block">SO/SVC/LC</span>
                                         <span class="d-block d-sm-none">
                         <i class="tim-icons icon-single-02"></i>
                     </span>
                                     </label>
-                                    <label class="btn btn-sm btn-primary btn-simple" id="1">
-                                        <input type="radio" class="d-none d-sm-none" name="options">
-                                        <span class="d-none d-sm-block d-md-block d-lg-block d-xl-block">Purchases</span>
+                                    <label class="btn btn-sm btn-primary btn-simple" onclick="renderBrChart()" id="in_br_chart">
+                                        <input type="radio" class="d-none d-sm-none"  name="shipment_out">
+                                        <span class="d-none d-sm-block d-md-block d-lg-block d-xl-block">BRANCH</span>
                                         <span class="d-block d-sm-none">
                         <i class="tim-icons icon-gift-2"></i>
-                    </span>
-                                    </label>
-                                    <label class="btn btn-sm btn-primary btn-simple" id="2">
-                                        <input type="radio" class="d-none" name="options">
-                                        <span class="d-none d-sm-block d-md-block d-lg-block d-xl-block">Sessions</span>
-                                        <span class="d-block d-sm-none">
-                        <i class="tim-icons icon-tap-02"></i>
                     </span>
                                     </label>
                                 </div>
@@ -46,7 +39,44 @@
                     </div>
                     <div class="card-body">
                         <div class="chart-area">
-                            <canvas id="chartBig1"></canvas>
+                            <!-- <canvas id="chartBig1"></canvas> -->
+                            <canvas id="Inbound"></canvas>                            
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="card">
+                    <div class="card-header ">
+                        <div class="row">
+                            <div class="col-sm-6 text-left">
+                                <h5 class="card-category">SO의 경우 건 별로 / Branch의 경우 Parcels개수로 계산</h5>
+                                <h2 class="card-title">OutBound</h2>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="btn-group btn-group-toggle float-right" data-toggle="buttons">
+                                    <label class="btn btn-sm btn-primary btn-simple active" onclick="renderSoOutChart()" id="out_so_chart">
+                                        <input type="radio"  checked>
+                                        <span class="d-none d-sm-block d-md-block d-lg-block d-xl-block">SO</span>
+                                        <span class="d-block d-sm-none">
+                        <i class="tim-icons icon-single-02"></i>
+                    </span>
+                                    </label>
+                                    <label class="btn btn-sm btn-primary btn-simple" onclick="changeChart(this.id)" id="out_br_chart">
+                                        <input type="radio" class="d-none d-sm-none"  name="shipment_out">
+                                        <span class="d-none d-sm-block d-md-block d-lg-block d-xl-block">BRANCH</span>
+                                        <span class="d-block d-sm-none">
+                        <i class="tim-icons icon-gift-2"></i>
+                    </span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <div class="chart-area">
+                            <!-- <canvas id="chartBig1"></canvas> -->
+                            <canvas id="Outbound"></canvas>                            
                         </div>
                     </div>
                 </div>
@@ -56,8 +86,8 @@
             <div class="col-lg-4">
                 <div class="card card-chart">
                     <div class="card-header">
-                        <h5 class="card-category">Total Shipments</h5>
-                        <h3 class="card-title"><i class="tim-icons icon-bell-55 text-primary"></i> 763,215</h3>
+                        <h5 class="card-category">Sample Chart</h5>
+                        <h3 class="card-title"><i class="tim-icons icon-bell-55 text-primary"></i>추후 업데이트 예정</h3>
                     </div>
                     <div class="card-body">
                         <div class="chart-area">
@@ -69,8 +99,8 @@
             <div class="col-lg-4">
                 <div class="card card-chart">
                     <div class="card-header">
-                        <h5 class="card-category">Daily Sales</h5>
-                        <h3 class="card-title"><i class="tim-icons icon-delivery-fast text-info"></i> 3,500€</h3>
+                        <h5 class="card-category">Sample Chart</h5>
+                        <h3 class="card-title"><i class="tim-icons icon-delivery-fast text-info"></i>추후 업데이트 예정</h3>
                     </div>
                     <div class="card-body">
                         <div class="chart-area">
@@ -82,8 +112,8 @@
             <div class="col-lg-4">
                 <div class="card card-chart">
                     <div class="card-header">
-                        <h5 class="card-category">Completed Tasks</h5>
-                        <h3 class="card-title"><i class="tim-icons icon-send text-success"></i> 12,100K</h3>
+                        <h5 class="card-category">SampleChart</h5>
+                        <h3 class="card-title"><i class="tim-icons icon-send text-success"></i>추후 업데이트 예정</h3>
                     </div>
                     <div class="card-body">
                         <div class="chart-area">
@@ -282,7 +312,232 @@
 
 <!-- Specific Page JS goes HERE  -->
 {% block javascripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.3/dist/Chart.min.js"></script>
+<script>
+    var ctx = document.getElementById('Inbound').getContext('2d');
+    var ctb = document.getElementById('Outbound').getContext('2d');
+        $(document).ready(function () {
+            // Javascript method's body can be found in assets/js/demos.js
+            renderSoChart()
+            renderSoOutChart()
 
+        });
+
+    
+
+    function renderSoChart() {
+        var myChart_ = new Chart(ctx, {
+        type: 'line',
+        data: {
+            
+          labels : [{% for k,v in inbound_context.in_so_dict.items %}"{{ k }}",{% endfor %}],
+            datasets: [
+            {
+              label: "SO 입고분",
+              data : [{% for k,v in inbound_context.in_so_dict.items %}"{{ v }}",{% endfor %}],
+              backgroundColor: 'rgba(75, 192, 192, 0)',
+              borderColor: 'rgba(75, 192, 192, 1)',
+              borderWidth: 1
+            },
+            {
+              label: "IR 입고분",
+              data : [{% for k,v in inbound_context.in_ir_dict.items %}"{{ v }}",{% endfor %}],
+              backgroundColor: 'rgba(195, 40, 145, 0)',
+              borderColor: 'rgba(195, 40, 145, 1)',
+              borderWidth: 1
+            },
+            {
+              label: "LC 입고분",
+              data : [{% for k,v in inbound_context.in_lc_dict.items %}"{{ v }}",{% endfor %}],
+              backgroundColor: 'rgba(195, 40, 100, 0)',
+              borderColor: 'rgba(195, 40, 100, 1)',
+              borderWidth: 1
+            },
+
+        ]
+
+        },
+        options: {
+            responsive : true,
+            maintainAspectRatio: false,
+
+            scales : {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+        
+    }
+    
+
+    function changeChart(tag_id) {
+   
+    }    
+
+    function renderBrChart() {
+        var myChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            
+          labels : [{% for k,v in inbound_context.in_so_dict.items %}"{{ k }}",{% endfor %}],
+            datasets: [
+            {
+              label: "닥터바이오",
+              data : [{% for k,v in inbound_context.in_br_dict.DB.items %}"{{ v }}",{% endfor %}],
+              backgroundColor: 'rgba(75, 192, 192, 0)',
+              borderColor: 'rgba(255, 29, 24, 1)',
+              borderWidth: 1
+            },
+            {
+              label: "동일과학",
+              data : [{% for k,v in inbound_context.in_br_dict.DI.items %}"{{ v }}",{% endfor %}],
+              backgroundColor: 'rgba(195, 40, 145, 0)',
+              borderColor: 'rgba(255, 186, 0, 0.84)',
+              borderWidth: 1
+            },
+            {
+              label: "바이나리",
+              data : [{% for k,v in inbound_context.in_br_dict.BI.items %}"{{ v }}",{% endfor %}],
+              backgroundColor: 'rgba(195, 40, 100, 0)',
+              borderColor: 'rgba(203, 199, 2, 1)',
+              borderWidth: 1
+            },
+            {
+              label: "바이오토프",
+              data : [{% for k,v in inbound_context.in_br_dict.BT.items %}"{{ v }}",{% endfor %}],
+              backgroundColor: 'rgba(195, 40, 100, 0)',
+              borderColor: 'rgba(53, 255, 0, 0.84)',
+              borderWidth: 1
+            },
+            {
+              label: "비앤비대전",
+              data : [{% for k,v in inbound_context.in_br_dict.BNB.items %}"{{ v }}",{% endfor %}],
+              backgroundColor: 'rgba(195, 40, 100, 0)',
+              borderColor: 'rgba(0, 255, 255, 0.84)',
+              borderWidth: 1
+            },
+            {
+              label: "서린바이오사이언스",
+              data : [{% for k,v in inbound_context.in_br_dict.SLB.items %}"{{ v }}",{% endfor %}],
+              backgroundColor: 'rgba(195, 40, 100, 0)',
+              borderColor: 'rgba(0, 16, 255, 0.84)',
+              borderWidth: 1
+            },
+            {
+              label: "유비코리아",
+              data : [{% for k,v in inbound_context.in_br_dict.UB.items %}"{{ v }}",{% endfor %}],
+              backgroundColor: 'rgba(195, 40, 100, 0)',
+              borderColor: 'rgba(159, 0, 255, 0.84)',
+              borderWidth: 1
+            },
+            {
+              label: "이효바이오사이언스",
+              data : [{% for k,v in inbound_context.in_br_dict.LH.items %}"{{ v }}",{% endfor %}],
+              backgroundColor: 'rgba(195, 40, 100, 0)',
+              borderColor: 'rgba(255, 46, 197, 0.53)',
+              borderWidth: 1
+            },
+            {
+              label: "지더블유바이텍가산",
+              data : [{% for k,v in inbound_context.in_br_dict.GW_GS.items %}"{{ v }}",{% endfor %}],
+              backgroundColor: 'rgba(195, 40, 100, 0)',
+              borderColor: 'rgba(85, 56, 0, 1)',
+              borderWidth: 1
+            },
+            {
+              label: "지더블유바이텍광주",
+              data : [{% for k,v in inbound_context.in_br_dict.GW_GJ.items %}"{{ v }}",{% endfor %}],
+              backgroundColor: 'rgba(195, 40, 100, 0)',
+              borderColor: 'rgba(85, 87, 75, 1)',
+              borderWidth: 1
+            },
+            
+
+
+        ]
+
+        },
+        options: {
+            responsive : true,
+            maintainAspectRatio: false,
+
+            scales : {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+
+    }
+
+
+
+
+
+    function renderSoOutChart() {
+        var myChart_ = new Chart(ctb, {
+        type: 'line',
+        data: {
+          labels : [{% for k,v in inbound_context.in_so_dict.items %}"{{ k }}",{% endfor %}],
+            datasets: [
+            {
+              label: "일반배송",
+              data : [{% for k,v in outbound_context.out_so_dict.quick.items %}"{{ v }}",{% endfor %}],
+              backgroundColor: 'rgba(75, 192, 192, 0)',
+              borderColor: 'rgba(75, 192, 192, 1)',
+              borderWidth: 1
+            },
+            {
+              label: "택배",
+              data : [{% for k,v in outbound_context.out_so_dict.parcel_del.items %}"{{ v }}",{% endfor %}],
+              backgroundColor: 'rgba(195, 40, 145, 0)',
+              borderColor: 'rgba(195, 40, 145, 1)',
+              borderWidth: 1
+            },
+            {
+              label: "무진동차량",
+              data : [{% for k,v in outbound_context.out_so_dict.anit_swing.items %}"{{ v }}",{% endfor %}],
+              backgroundColor: 'rgba(195, 40, 100, 0)',
+              borderColor: 'rgba(100, 40, 100, 1)',
+              borderWidth: 1
+            },
+            {
+              label: "직배송",
+              data : [{% for k,v in outbound_context.out_so_dict.direct_del.items %}"{{ v }}",{% endfor %}],
+              backgroundColor: 'rgba(195, 40, 100, 0)',
+              borderColor: 'rgba(195, 40, 230, 1)',
+              borderWidth: 1
+            },
+            {
+              label: "기타",
+              data : [{% for k,v in outbound_context.out_so_dict.else.items %}"{{ v }}",{% endfor %}],
+              backgroundColor: 'rgba(195, 40, 100, 0)',
+              borderColor: 'rgba(195, 160, 100, 1)',
+              borderWidth: 1
+            },
+
+        ]
+
+        },
+        options: {
+            responsive : true,
+            maintainAspectRatio: false,
+
+            scales : {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+        
+    }
+
+</script>
 <script>
     $(document).ready(function () {
         // Javascript method's body can be found in assets/js/demos.js

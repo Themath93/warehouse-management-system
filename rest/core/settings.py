@@ -125,6 +125,12 @@ DATABASES = {
         'NAME':'fulfill_high', # tnsnames.ora 파일에 등록된 NAME을 등록
         'USER':'dw_fulfill', 
         'PASSWORD':'fulfillment123QWE!@#', #Please provide the db password here
+    },
+    'dm':{
+        'ENGINE':'django.db.backends.oracle',
+        'NAME':'fulfill_high', # tnsnames.ora 파일에 등록된 NAME을 등록
+        'USER':'dm_fulfill', 
+        'PASSWORD':'fulfillment123QWE!@#DM', #Please provide the db password here
     }
 
 }

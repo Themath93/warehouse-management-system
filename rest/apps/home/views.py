@@ -37,10 +37,78 @@ def index(request):
         html_template = loader.get_template('home/index_fe.html')
         return HttpResponse(html_template.render({'segment': 'index','my_svc_request':my_svc_request,"my_tools":my_tool,'my_parts':my_parts}, request))
     elif user_group == 'Manager':
+
+        ########################################################
+        ################### DB for Chart #######################
+        ########################################################
+
+
+        ################### Inbound #######################
+        daily_in_so = DailyInSo.objects.all().using('dm')
+        daily_in_ir = DailyInIr.objects.all().using('dm')
+        daily_in_lc = DailyInLc.objects.all().using('dm')
+        in_so_dict = get_weekly_qty_dict(daily_in_so)
+        in_ir_dict = get_weekly_qty_dict(daily_in_ir)
+        in_lc_dict = get_weekly_qty_dict(daily_in_lc)
+
+        daily_br_in = DailyInBr.objects.all().using('dm').order_by('-std_day')
+        
+        br_list =['동일과학','이효바이오사이언스','서린바이오사이언스','비앤비대전','바이오토프','유비코리아','바이나리','지더블유바이텍가산','지더블유바이텍화성','닥터바이오','지더블유바이텍광주']
+        cols = ['DI','LH','SLB','BNB','BT','UB','BI','GW_GS','GW_HS','DB','GW_GJ']
+        br_row = []
+        for br in br_list:
+            br_obj = list(daily_br_in.filter(branch_name=br))
+            std_day_list = list(map(lambda e : e.std_day,br_obj))
+            qty_list = list(map(lambda e : e.qty,br_obj))
+            br_row.append(dict(zip(std_day_list,qty_list)))
+            in_br_dict = dict(zip(cols,br_row))
+        inbound_context = {
+            'in_so_dict':in_so_dict,
+            'in_ir_dict':in_ir_dict,
+            'in_lc_dict':in_lc_dict,
+            'in_br_dict':in_br_dict
+        }
+        ################### Inbound #######################
+        ################### Outbound #######################
+        daily_out_so = DailySoOut.objects.all().using('dm').order_by('-ship_date')
+        del_med_list = ['일반배송', '택배', '무진동차량', '직배송', 'ELSE']
+        cols = ['quick','parcel_del','anit_swing','direct_del','eles']
+        out_row=[]
+        for med in del_med_list:
+            out_obj = list(daily_out_so.filter(del_med=med))
+            std_day_list = list(map(lambda e : e.ship_date,out_obj))
+            qty_list = list(map(lambda e : e.qty,out_obj))
+            out_row.append(dict(zip(std_day_list,qty_list)))
+            out_so_dict = dict(zip(cols,out_row))
+
+        outbound_context = {
+            'out_so_dict':out_so_dict,
+    
+        }
+
+        ################### Outbound #######################
+
+
+
+        ########################################################
+        ################### DB for Chart #######################
+        ########################################################
+
+        ######### 서비스 요청 상황 #####
         user_fe_initial = request.user.userdetail.subinventory
         my_svc_request = my_svc_request.order_by('-svc_key')
+        ######### 서비스 요청 상황 #####
+
+        context = {
+            'segment': 'index',
+            'my_svc_request':my_svc_request,
+            'inbound_context':inbound_context,
+            'outbound_context':outbound_context,
+            }
+
+
         html_template = loader.get_template('home/index.html')
-        return HttpResponse(html_template.render({'segment': 'index','my_svc_request':my_svc_request}, request))
+        return HttpResponse(html_template.render(context, request))
 
 @login_required(login_url="/login/")
 def pages(request):
@@ -75,6 +143,7 @@ def req_parts(request):
     user_group = str(Group.objects.filter(user=request.user)[0])
     tool = SvcTool.objects.filter(Q(on_hand=None)).order_by('tool_index').using("dw")
     json_tool = json.dumps(list(tool.values()))
+    tmp_date = '2023-02-01'
     if user_group == 'Field Engineer_FE':
         user_detail = request.user.userdetail
         prod_pose = ProdPose.objects.all().using('dw').filter(Q(subinventory="KR_SERV01"))
@@ -85,7 +154,7 @@ def req_parts(request):
         )
         # 매일 재고는 그날 그날 업데이트 분을 줘야 한다. 
         # 현재 개발단계에서는 그냥 특정일자 재고리스트를 참고하도록하자
-        tmp_date = '2023-02-01'
+        
         total_stock_db = list(TotalStock.objects.filter(Q(std_day=tmp_date) & Q(subinventory='KR_SERV01')).values())
         json_ts = json.dumps(total_stock_db,ensure_ascii=False)
         json_irs = json.dumps(list(ir_orders.values(
@@ -104,7 +173,7 @@ def req_parts(request):
     
         # 매일 재고는 그날 그날 업데이트 분을 줘야 한다. 
         # 현재 개발단계에서는 그냥 특정일자 재고리스트를 참고하도록하자
-        tmp_date = '2023-02-01'
+
         total_stock_db = list(TotalStock.objects.filter(Q(std_day=tmp_date) & Q(subinventory='KR_SERV01')).values())
         json_ts = json.dumps(total_stock_db,ensure_ascii=False)
         json_irs = json.dumps(list(ir_orders.values(
@@ -120,6 +189,7 @@ def req_parts(request):
 def svc_process(request):
 
     if request.method =='POST':
+        today = '2023-02-01'
 
 
         user_info = request.user.userdetail
@@ -152,7 +222,7 @@ def svc_process(request):
             rows=[]
             if 'input_qty_svc' in key:
                 in_ts_key = int(key.split('_')[-1])
-                req_part_db = TotalStock.objects.filter(Q(ts_key=in_ts_key))
+                req_part_db = TotalStock.objects.filter(Q(ts_key=in_ts_key) & Q(std_day=today))
                 rows.append(list(req_part_db.values('article_number'))[0]['article_number'])
                 rows.append('')
                 rows.append(int(value))
@@ -164,41 +234,79 @@ def svc_process(request):
 
                 # 가장 먼저해야하는 것은 SYSTEM_STOCK에 내용 반영 및 내용 전송
                 # 임시사용 db 
-                total_db = TotalStock.objects.filter(std_day='2023-02-01')
-                for d in data:
-                    if 'IR' not in d['serial_or_IR_no']:
-                        search_db = total_db.filter(article_number=d['part_no']).get(subinventory=d['currnet_stock'])
-                        search_db_qty = search_db.quantity
-                        update_qty = search_db_qty-d['qty']
-                        if update_qty < 0 : # 이 경우는 중복출고가 이뤄지던 도중 이미 품목이 가로채기 당한경우
-                            return HttpResponse(d['part_no']+'의 출고가능 수량은'+str(search_db_qty) + '개 입니다. 출고요청을 종료합니다.')
-                        search_db.quantity=update_qty
-                        if update_qty == 0: # 출고가능 개수가 0이면 db에서 삭제
-                            search_db.delete()
-                        else : 
-                            search_db.save()
-                        try : # 해당엔지니어에게 이미 파트가 있는 경우
-                            search_db_fe = total_db.filter(article_number=d['part_no']).get(subinventory=d['transfer_to'])
-                            search_db_qty_fe = search_db_fe.quantity
-                            update_qty_fe = search_db_qty_fe + d['qty']
-                            search_db_fe.quantity=update_qty_fe
-                            search_db_fe.save()
+                total_db = TotalStock.objects.filter(std_day=today)
+                # for d in data:
+                #     if 'IR' not in d['serial_or_IR_no']:
+                #         print(key,value)
+                #         print(d['part_no'])
+                #         search_db = total_db.filter(article_number=d['part_no']).get(subinventory=d['currnet_stock'])
+                #         search_db_qty = search_db.quantity
+                #         update_qty = search_db_qty-d['qty']
+                #         if update_qty < 0 : # 이 경우는 중복출고가 이뤄지던 도중 이미 품목이 가로채기 당한경우
+                #             return HttpResponse(d['part_no']+'의 출고가능 수량은'+str(search_db_qty) + '개 입니다. 출고요청을 종료합니다.')
+                #         search_db.quantity=update_qty
+                #         if update_qty == 0: # 출고가능 개수가 0이면 db에서 삭제
+                #             search_db.delete()
+                #         else : 
+                #             search_db.save()
+                #         try : # 해당엔지니어에게 이미 파트가 있는 경우
+                #             search_db_fe = total_db.filter(article_number=d['part_no']).get(subinventory=d['transfer_to'])
+                #             search_db_qty_fe = search_db_fe.quantity
+                #             update_qty_fe = search_db_qty_fe + d['qty']
+                #             search_db_fe.quantity=update_qty_fe
+                #             search_db_fe.save()
 
-                        except: # 해당 엔지니어가 해당 파트가 아예없는경우
-                            TotalStock(
-                                article_number = d['part_no'],
-                                subinventory = d['transfer_to'],
-                                quantity = d['qty'],
-                                country = 'None',
-                                prod_centre = 'None',
-                                prod_group = 'None',
-                                description = 'Reqeusted Part',
-                                prod_status_type = 'None',
-                                bin_cur = 'None',
-                                std_day = std_day,
-                                state = 'SHIP_CONFIRM',
-                                state_time = str(dt.datetime.now()).split('.')[0]
-                        ).save()
+                #         except: # 해당 엔지니어가 해당 파트가 아예없는경우
+                #             TotalStock(
+                #                 article_number = d['part_no'],
+                #                 subinventory = d['transfer_to'],
+                #                 quantity = d['qty'],
+                #                 country = 'None',
+                #                 prod_centre = 'None',
+                #                 prod_group = 'None',
+                #                 description = 'Reqeusted Part',
+                #                 prod_status_type = 'None',
+                #                 bin_cur = 'None',
+                #                 std_day = std_day,
+                #                 state = 'SHIP_CONFIRM',
+                #                 state_time = str(dt.datetime.now()).split('.')[0]
+                #         ).save()
+            
+                if 'IR' not in tmp['serial_or_IR_no']:
+                    print(key,value)
+                    print(tmp['part_no'])
+                    search_db = total_db.filter(article_number=tmp['part_no']).get(subinventory=tmp['currnet_stock'])
+                    search_db_qty = search_db.quantity
+                    update_qty = search_db_qty-tmp['qty']
+                    if update_qty < 0 : # 이 경우는 중복출고가 이뤄지던 도중 이미 품목이 가로채기 당한경우
+                        return HttpResponse(tmp['part_no']+'의 출고가능 수량은'+str(search_db_qty) + '개 입니다. 출고요청을 종료합니다.')
+                    search_db.quantity=update_qty
+                    if update_qty == 0: # 출고가능 개수가 0이면 db에서 삭제
+                        search_db.delete()
+                    else : 
+                        search_db.save()
+                    try : # 해당엔지니어에게 이미 파트가 있는 경우
+                        search_db_fe = total_db.filter(article_number=tmp['part_no']).get(subinventory=tmp['transfer_to'])
+                        search_db_qty_fe = search_db_fe.quantity
+                        update_qty_fe = search_db_qty_fe + tmp['qty']
+                        search_db_fe.quantity=update_qty_fe
+                        search_db_fe.save()
+
+                    except: # 해당 엔지니어가 해당 파트가 아예없는경우
+                        TotalStock(
+                            article_number = tmp['part_no'],
+                            subinventory = tmp['transfer_to'],
+                            quantity = tmp['qty'],
+                            country = 'None',
+                            prod_centre = 'None',
+                            prod_group = 'None',
+                            description = 'Reqeusted Part',
+                            prod_status_type = 'None',
+                            bin_cur = 'None',
+                            std_day = std_day,
+                            state = 'SHIP_CONFIRM',
+                            state_time = str(dt.datetime.now()).split('.')[0]
+                    ).save()
 
             elif 'input_qty_ir' in key:
                 in_ts_key = int(key.split('_')[-1])
@@ -470,3 +578,21 @@ def kakao_test(request):
 
     api.send_feed(content=content, item_content=item_content, social=social, buttons=buttons)
     return HttpResponse("sent message")
+
+
+
+
+
+def get_weekly_qty_dict(db_queryset,std_day_col_name='std_day'):
+    """
+    STD_DAY와 QTY 컬럼을 가지고 있는 쿼리셋 object를 arg로 넘기면 
+    """
+    date_list = [cal_std_day(i) for i in reversed(range(1,8))]
+    rows=[]
+    for date in date_list:
+        try :
+            each_qty = db_queryset.filter(std_day_col_name=date)[0].qty
+            rows.append(each_qty)
+        except:
+            rows.append(0)
+    return dict(zip(date_list,rows))

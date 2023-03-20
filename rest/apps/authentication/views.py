@@ -131,48 +131,48 @@ def send_return_request(request):
                     tmp = dict(zip(cols,rows))
                     data.append(tmp)
 
-                    # part_db적용
-                    total_db = TotalStock.objects.filter(std_day='2023-02-01')
-                    try : # KR_SERV01에 해당 파트가 있을경우
-                        search_db_kr = total_db.filter(article_number=ts_obj.article_number).get(subinventory='KR_SERV01')
-                        search_db_qty_kr = search_db_kr.quantity
-                        update_qty_kr = search_db_qty_kr + qty
-                        search_db_kr.quantity=update_qty_kr
-                        search_db_kr.save()
+                #     # part_db적용
+                #     total_db = TotalStock.objects.filter(std_day='2023-02-01')
+                #     try : # KR_SERV01에 해당 파트가 있을경우
+                #         search_db_kr = total_db.filter(article_number=ts_obj.article_number).get(subinventory='KR_SERV01')
+                #         search_db_qty_kr = search_db_kr.quantity
+                #         update_qty_kr = search_db_qty_kr + qty
+                #         search_db_kr.quantity=update_qty_kr
+                #         search_db_kr.save()
 
-                    except: # KR_SERV01에 해당 파트가 없을 경우
-                        TotalStock(
-                            article_number = ts_obj.article_number,
-                            subinventory = 'KR_SERV01',
-                            quantity = qty,
-                            country = '',
-                            prod_centre = '',
-                            prod_group = '',
-                            description = '',
-                            prod_status_type = '',
-                            bin_cur = bin,
-                            std_day = std_day,
-                            state = 'GOOD_WR',
-                            state_time = str(dt.datetime.now()).split('.')[0]
-                    ).save()
+                #     except: # KR_SERV01에 해당 파트가 없을 경우
+                #         TotalStock(
+                #             article_number = ts_obj.article_number,
+                #             subinventory = 'KR_SERV01',
+                #             quantity = qty,
+                #             country = '',
+                #             prod_centre = '',
+                #             prod_group = '',
+                #             description = '',
+                #             prod_status_type = '',
+                #             bin_cur = bin,
+                #             std_day = std_day,
+                #             state = 'GOOD_WR',
+                #             state_time = str(dt.datetime.now()).split('.')[0]
+                #     ).save()
 
 
 
-                elif 'tool' in k:
-                    tool_index = k.split('_')[2]
-                    tool_obj = SvcTool.objects.using('dw').get(tool_index=tool_index)
-                    rows.append(tool_obj.tool_nm)
-                    rows.append('TOOL')
-                    rows.append(subinventory)
-                    rows.append('KR_SERV01')
-                    rows.append('')
-                    tmp = dict(zip(cols,rows))
-                    data.append(tmp)
-                    # tool_db 적용
-                    tool_obj.on_hand = 'KR_SERV01'
-                    tool_obj.state = 'GOOD_WR'
-                    tool_obj.ship_date = std_day
-                    tool_obj.save(using='dw')
+                # elif 'tool' in k:
+                #     tool_index = k.split('_')[2]
+                #     tool_obj = SvcTool.objects.using('dw').get(tool_index=tool_index)
+                #     rows.append(tool_obj.tool_nm)
+                #     rows.append('TOOL')
+                #     rows.append(subinventory)
+                #     rows.append('KR_SERV01')
+                #     rows.append('')
+                #     tmp = dict(zip(cols,rows))
+                #     data.append(tmp)
+                #     # tool_db 적용
+                #     tool_obj.on_hand = 'KR_SERV01'
+                #     tool_obj.state = 'GOOD_WR'
+                #     tool_obj.ship_date = std_day
+                #     tool_obj.save(using='dw')
 
 
         # SERVICE_REQUEST 파트요청 접수..
