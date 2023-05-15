@@ -793,3 +793,13 @@ def open_user_guide():
     ppt_name = "cytiva_user_guide.pptx"
     guide_dir = os.path.join(os.path.expanduser('~'),'Desktop') + "\\fulfill\\xlwings_job\\"+ppt_name
     os.startfile(guide_dir)
+
+
+
+
+def cal_std_day(befor_day):   
+    x = dt.datetime.now() - dt.timedelta(befor_day)
+    year = x.year
+    month = x.month if x.month >= 10 else '0'+ str(x.month)
+    day = x.day if x.day >= 10 else '0'+ str(x.day)  
+    return str(year)+ '-' +str(month)+ '-' +str(day)

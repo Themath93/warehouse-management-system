@@ -11,7 +11,7 @@ from oracle_connect import DataWarehouse,WebDB
 from datajob.xlwings_dj.service_request import ServiceRequest
 from datajob.xlwings_dj.mail_detail import MailDetail
 from datajob.xlwings_dj.mail_status import MailStatus
-from xlwings_job.xl_utils import get_current_time, get_empty_row, save_barcode_loc
+from xlwings_job.xl_utils import cal_std_day, get_current_time, get_empty_row, save_barcode_loc
 
 
 import xlwings as xw
@@ -893,14 +893,72 @@ class MainControl:
         req_df = pd.DataFrame([DataWarehouse().execute(qry).fetchone()])
         current_status = req_df[16][0]
         up_time_content = req_df[15][0]
+
+
+        # test
+        cur_web= WebDB()
+        std_day = cal_std_day(1)
+        parts = req_df[13][0].replace("'",'"')
+        parts = json.dumps(parts,ensure_ascii=False)
+        parts= json.loads(parts)
+        parts= json.loads(parts)
+        df_parts = pd.DataFrame(parts)
+        wb_cy.app.alert(df_parts.iloc[0]['part_no'])
+        part_no = df_parts.iloc[0]['part_no']
+        qty = int(df_parts.iloc[0]['qty'])
+        ts_qry = f"SELECT QUANTITY FROM TOTAL_STOCK WHERE SUBINVENTORY = 'KR_SERV01' AND STD_DAY = '{std_day}' AND ARTICLE_NUMBER = '18116074'"
+        tmp_qty = int(cur_web.execute(ts_qry).fetchone())[1:-2]
+        ts_qry_up = f"UPDATE TOTAL_STOCK SET QUANTITY = {qty+tmp_qty}  WHERE SUBINVENTORY = 'KR_SERV01' AND STD_DAY = '{std_day}' AND ARTICLE_NUMBER = '18116074'"
+        
+        wb_cy.app.alert(str(tmp_qty))
+
+
+
         if current_status != dispatch_status:
             wb_cy.app.alert(current_status+ " 상태에서는 complete가 불가합니다. STATUS를 확인해주세요. 매서드를 종료합니다.",'Quit')
             return None
         
         # DB업데이트
+        ## ServiceRequest
         ServiceRequest.update_status(svc_key,up_time_content,complete_status)
+        ## SVC PART TOTAL_STOCK으로 되돌리기
+        # ## TOTAL_STOCK의 KR_SERV01에서 재고를 찾으려면 기준일 전날로 DB업로드해야함
+        std_day = cal_std_day(1)
+        parts = req_df[13][0].replace("'",'"')
+        parts = json.dumps(parts,ensure_ascii=False)
+        parts= json.loads(parts)
+        parts= json.loads(parts)
+        df_parts = pd.DataFrame(parts)
+        cur_web= WebDB()
+        cur_dw = DataWarehouse()
+        
+        for i in range(len(df_parts)):
+            part_no = df_parts.iloc[i]['part_no']
+            qty = int(df_parts.iloc[i]['qty'])
+            qty_qry = f"SELECT QUANTITY FROM TOTAL_STOCK WHERE SUBINVENTORY = 'KR_SERV01' AND ARTICLE_NUMBER = '{part_no}'"
+            try : 
+                tmp_qty = int(cur_web.execute(qty_qry).fetchone())[1:-2]
+                ts_qry_up = f"UPDATE TOTAL_STOCK SET QUANTITY = {qty+tmp_qty}  WHERE SUBINVENTORY = 'KR_SERV01' AND STD_DAY = '{std_day}' AND ARTICLE_NUMBER = '{part_no}'"
+            except :
+                ts_qry_in = f"""
+                    INSERT INTO TOTAL_STOCK
+                
+                """
+                # KR_SERV01에 해당 파트가 없는 경우에는 새로 만들어 주어야한다.
+                
+                
+            cur_web.execute()
+
+        ############################################################
+        ############################################################
         user_mail = get_user_email_with_case_id(svc_key)
         tmp_cc = 'deyoon@outlook.kr'
+        ############################################################
+        ############## 받는 메일주소, 참조메일주소 선언 ##################
+        ############################################################
+        ############################################################
+
+
         send_state_mail_to_requester(svc_key,self.STATUS[2],self.STATUS[3],user_mail,tmp_cc)
 
         # 메일리스트 다시불러오기
