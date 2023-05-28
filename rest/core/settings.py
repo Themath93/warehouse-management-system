@@ -65,6 +65,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'core.middleware.LogMiddleware',
 ]
 
 ROOT_URLCONF = 'core.urls'
@@ -182,3 +183,6 @@ STATICFILES_DIRS = (
 
 #############################################################
 #############################################################
+
+# Kafka and ElasticSearch config
+KAFKA_SERVERS = os.getenv('KAFKA_SERVERS', 'localhost:9092')

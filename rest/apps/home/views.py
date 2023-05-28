@@ -20,7 +20,6 @@ import pandas as pd
 import datetime as dt
 from PyKakao import Message
 
-
 @login_required(login_url="/login/")
 def index(request):
     get_request_type = request.GET.get('request_type')
@@ -140,10 +139,15 @@ def pages(request):
 @login_required(login_url="/login/")
 def req_parts(request):
     context={}
+
+    # 각종 재고 가져오는 기준일자 파트요청 하는날 기준 전날재고로 한다.
+    # tmp_date = cal_std_day(1)
+    tmp_date = '2023-03-19'
+
     user_group = str(Group.objects.filter(user=request.user)[0])
     tool = SvcTool.objects.filter(Q(on_hand=None)).order_by('tool_index').using("dw")
     json_tool = json.dumps(list(tool.values()))
-    tmp_date = '2023-02-01'
+
     if user_group == 'Field Engineer_FE':
         user_detail = request.user.userdetail
         prod_pose = ProdPose.objects.all().using('dw').filter(Q(subinventory="KR_SERV01"))
@@ -189,7 +193,8 @@ def req_parts(request):
 def svc_process(request):
 
     if request.method =='POST':
-        today = '2023-02-01'
+        # today = cal_std_day(1)
+        today = '2023-03-19'
 
 
         user_info = request.user.userdetail
@@ -235,42 +240,6 @@ def svc_process(request):
                 # 가장 먼저해야하는 것은 SYSTEM_STOCK에 내용 반영 및 내용 전송
                 # 임시사용 db 
                 total_db = TotalStock.objects.filter(std_day=today)
-                # for d in data:
-                #     if 'IR' not in d['serial_or_IR_no']:
-                #         print(key,value)
-                #         print(d['part_no'])
-                #         search_db = total_db.filter(article_number=d['part_no']).get(subinventory=d['currnet_stock'])
-                #         search_db_qty = search_db.quantity
-                #         update_qty = search_db_qty-d['qty']
-                #         if update_qty < 0 : # 이 경우는 중복출고가 이뤄지던 도중 이미 품목이 가로채기 당한경우
-                #             return HttpResponse(d['part_no']+'의 출고가능 수량은'+str(search_db_qty) + '개 입니다. 출고요청을 종료합니다.')
-                #         search_db.quantity=update_qty
-                #         if update_qty == 0: # 출고가능 개수가 0이면 db에서 삭제
-                #             search_db.delete()
-                #         else : 
-                #             search_db.save()
-                #         try : # 해당엔지니어에게 이미 파트가 있는 경우
-                #             search_db_fe = total_db.filter(article_number=d['part_no']).get(subinventory=d['transfer_to'])
-                #             search_db_qty_fe = search_db_fe.quantity
-                #             update_qty_fe = search_db_qty_fe + d['qty']
-                #             search_db_fe.quantity=update_qty_fe
-                #             search_db_fe.save()
-
-                #         except: # 해당 엔지니어가 해당 파트가 아예없는경우
-                #             TotalStock(
-                #                 article_number = d['part_no'],
-                #                 subinventory = d['transfer_to'],
-                #                 quantity = d['qty'],
-                #                 country = 'None',
-                #                 prod_centre = 'None',
-                #                 prod_group = 'None',
-                #                 description = 'Reqeusted Part',
-                #                 prod_status_type = 'None',
-                #                 bin_cur = 'None',
-                #                 std_day = std_day,
-                #                 state = 'SHIP_CONFIRM',
-                #                 state_time = str(dt.datetime.now()).split('.')[0]
-                #         ).save()
             
                 if 'IR' not in tmp['serial_or_IR_no']:
                     print(key,value)
@@ -596,3 +565,14 @@ def get_weekly_qty_dict(db_queryset,std_day_col_name='std_day'):
         except:
             rows.append(0)
     return dict(zip(date_list,rows))
+
+
+
+
+#############################################
+#############################################
+#############################################
+### kafka test #####
+@login_required(login_url="/login/")
+def kafka_test(request):
+    return HttpResponse("kafka_test")
