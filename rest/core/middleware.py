@@ -23,13 +23,14 @@ class LogMiddleware:
             'parameter': param_json,
             'timestamp': int(time.time()),
             'session_id':'None',
+            'std_day':str(dt.datetime.today()).split(' ')[0]
         }
 
         if request.session.keys():
             log_dict['session_id'] = request.session.session_key
 
-        print(log_dict)
-        print(request)
+        # print(log_dict)
+        # print(request)
         self.producer.send('requests', log_dict)
         response = self.get_response(request)
 
