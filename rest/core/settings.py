@@ -27,8 +27,11 @@ DEBUG = env('DEBUG')
 ASSETS_ROOT = os.getenv('ASSETS_ROOT', '/static/assets') 
 
 # load production server from .env
-ALLOWED_HOSTS        = ['localhost', 'localhost:85', '127.0.0.1',               env('SERVER', default='127.0.0.1') ]
-CSRF_TRUSTED_ORIGINS = ['http://localhost:85', 'http://127.0.0.1', 'https://' + env('SERVER', default='127.0.0.1') ]
+# ALLOWED_HOSTS        = ['localhost', 'localhost:85', '127.0.0.1',               env('SERVER', default='127.0.0.1') ]
+# CSRF_TRUSTED_ORIGINS = ['http://localhost:85', 'http://127.0.0.1', 'https://' + env('SERVER', default='127.0.0.1') ]
+
+ALLOWED_HOSTS        = ['43.200.244.44', '43.200.244.44:85', 'www.mike-de-blog.net',               env('SERVER', default='43.200.244.44') ]
+CSRF_TRUSTED_ORIGINS = ['http://43.200.244.44:85', 'http://43.200.244.44', 'https://' + env('SERVER', default='43.200.244.44') ]
 
 
 # DB
@@ -42,7 +45,7 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST = 'smtp-mail.outlook.com'
 EMAIL_HOST_USER = "deyoon@outlook.kr"
-EMAIL_HOST_PASSWORD = "qw934285!@#"
+EMAIL_HOST_PASSWORD = "as934285qweQWE"
 
 
 INSTALLED_APPS = [
@@ -180,9 +183,8 @@ STATICFILES_DIRS = (
     os.path.join(CORE_DIR, 'apps/static'),
 )
 
-
 #############################################################
 #############################################################
 
 # Kafka and ElasticSearch config
-KAFKA_SERVERS = os.getenv('KAFKA_SERVERS', 'localhost:9092')
+KAFKA_SERVERS = os.getenv('KAFKA_SERVERS', '43.201.103.136:9092')

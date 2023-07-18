@@ -5,7 +5,7 @@ import time
 
 class LogMiddleware:
 
-    producer = KafkaProducer(bootstrap_servers='localhost:9092', value_serializer=lambda v: json.dumps(v).encode('utf-8'))
+    producer = KafkaProducer(bootstrap_servers='43.201.103.136:9092', value_serializer=lambda v: json.dumps(v).encode('utf-8'))
 
     def __init__(self, get_response):
         self.get_response = get_response
