@@ -57,9 +57,11 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'apps.home',  # Enable the inner home (home)
     'apps.authentication',
+    'django_prometheus',
 ]
 
 MIDDLEWARE = [
+    # 'django_prometheus.middleware.PrometheusBeforeMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
@@ -69,6 +71,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'core.middleware.LogMiddleware',
+    # 'django_prometheus.middleware.PrometheusAfterMiddleware',
 ]
 
 ROOT_URLCONF = 'core.urls'
@@ -95,28 +98,7 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'core.wsgi.application'
 
-# Database
-# https://docs.djangoproject.com/en/3.0/ref/settings/#databases
-
-# if os.environ.get('DB_ENGINE') and os.environ.get('DB_ENGINE') == "mysql":
-#     DATABASES = { 
-#       'default': {
-#         'ENGINE'  : 'django.db.backends.mysql', 
-#         'NAME'    : os.getenv('DB_NAME'     , 'appseed_db'),
-#         'USER'    : os.getenv('DB_USERNAME' , 'appseed_db_usr'),
-#         'PASSWORD': os.getenv('DB_PASS'     , 'pass'),
-#         'HOST'    : os.getenv('DB_HOST'     , 'localhost'),
-#         'PORT'    : os.getenv('DB_PORT'     , 3306),
-#         }, 
-#     }
-# else:
-#     DATABASES = {
-#         'default': {
-#             'ENGINE': 'django.db.backends.sqlite3',
-#             'NAME': 'db.sqlite3',
-#         }
-#     }
-
+# Old DB connect oracle cloud with JDBC
 DATABASES = {
     'default':{
         'ENGINE':'django.db.backends.oracle',
@@ -138,6 +120,29 @@ DATABASES = {
     }
 
 }
+
+# DB setting for prometheus
+# DATABASES = {
+#     'default':{
+#         'ENGINE':'django.db.backends.oracle',
+#         'NAME':'fulfill_high', # tnsnames.ora 파일에 등록된 NAME을 등록
+#         'USER':'web_fulfill', 
+#         'PASSWORD':'fulfillment123QWE!@#', #Please provide the db password here
+#     },
+#     'dw':{
+#         'ENGINE':'django.db.backends.oracle',
+#         'NAME':'fulfill_high', # tnsnames.ora 파일에 등록된 NAME을 등록
+#         'USER':'dw_fulfill', 
+#         'PASSWORD':'fulfillment123QWE!@#', #Please provide the db password here
+#     },
+#     'dm':{
+#         'ENGINE':'django.db.backends.oracle',
+#         'NAME':'fulfill_high', # tnsnames.ora 파일에 등록된 NAME을 등록
+#         'USER':'dm_fulfill', 
+#         'PASSWORD':'fulfillment123QWE!@#DM', #Please provide the db password here
+#     }
+
+# }
 
 # Password validation
 # https://docs.djangoproject.com/en/3.0/ref/settings/#auth-password-validators
@@ -187,4 +192,4 @@ STATICFILES_DIRS = (
 #############################################################
 
 # Kafka and ElasticSearch config
-KAFKA_SERVERS = os.getenv('KAFKA_SERVERS', '43.201.103.136:9092')
+KAFKA_SERVERS = os.getenv('KAFKA_SERVERS', '43.205.123.229:9092')
