@@ -79,3 +79,17 @@ PatchNote 230309 warehouse ver 1.134
 PatchNote 230309 warehouse ver 1.136
 1. CODE
     1. Version 업데이트 방식 변경 및 업데이트 실패 시 이전 Version으로 작업 진행
+
+
+
+### PatchNote 230730 warehouse ver 1.21
+
+#### RunPython 방식변경
+- 기존의 방식은 *.py 에 Python code로 정의되어 있는 여러 매서드를 엑셀의 개발도구(VBA macro)에서 직접 불러와 사용하였습니다.
+- 이 방식은 엑셀 -> VBA -> 파이썬 -> 엑셀로 동작하는 방식으로 현업에서 사용할 때 꽤나 느리다는 불만이 있었습니다.
+
+#### RunPython : Use UDFs(User Defined Function) Server
+- 이제는 VBA 매크로에 파이썬의 모듈을 명시적으로 부를 필요없이
+- 파이썬 모듈을 직접 엑셀 Macro(Alt + F8)에서 지정한 후 사용하도록 해 중간과정을 없애 RunPython의 속도를 개선 시켰습니다.
+    - 자체적으로 시간을 재본결과 대략 20~30배 정도 빨라졌습니다.
+
