@@ -49,7 +49,7 @@ def version_check():
 
 
 
-
+@xw.sub
 def begin_work():
     # wb_worker = xw.Book.caller()
     answer = wb_worker.app.alert("FULFILLMENT FORM 을  가져오시겠습니까? \n\n yes를 선택하신 경우 기존에 DB로 전송되지 않은 시트 값들은 \n\n 전부 사라집니다.","CONFIRM",buttons="yes_no_cancel")
@@ -145,6 +145,7 @@ def begin_work():
 
 
     sht_main.range("D2").value = worker_name
+    sht_main.range("B1").value = "Ver1.20"
     wb_worker.app.alert(f"Hello, {worker_name}",'WELCOME!!')
 
     
