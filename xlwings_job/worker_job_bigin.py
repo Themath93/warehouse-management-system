@@ -8,7 +8,8 @@ import xlwings as xw
 import pandas as pd
 from xlwings_job.oracle_connect import DataWarehouse
 
-wb_caller = xw.Book("cytiva_worker.xlsm").set_mock_caller()
+
+wb_caller = xw.Book("cytiva_worker.xlsm").caller()
 wb_worker = xw.Book.caller()
 
 ## 수동으로 바꿀 것 새로운 버전 배포시 반드시 업데이트!
@@ -49,7 +50,7 @@ def version_check():
 
 
 
-
+@xw.sub
 def begin_work():
     # wb_worker = xw.Book.caller()
     answer = wb_worker.app.alert("FULFILLMENT FORM 을  가져오시겠습니까? \n\n yes를 선택하신 경우 기존에 DB로 전송되지 않은 시트 값들은 \n\n 전부 사라집니다.","CONFIRM",buttons="yes_no_cancel")
